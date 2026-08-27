@@ -44,10 +44,10 @@ package com.example.ui.components
  */
 object DonateInfo {
     // Opened in the browser when the user taps the top row.
-    const val SUPPORT_LINK_TITLE: String = "از پروژه حمایت کنید"
-    const val SUPPORT_LINK_URL: String = "https://example.com/support"
+    const val SUPPORT_LINK_TITLE: String = "دارامت"
+    const val SUPPORT_LINK_URL: String = "https://daramet.com/Idea_atmosphere"
 
-    const val BTC_ADDRESS: String = "YOUR_BITCOIN_ADDRESS_HERE"
-    const val USDT_ADDRESS: String = "YOUR_USDT_ADDRESS_HERE (TRC20)"
-    const val TON_ADDRESS: String = "YOUR_TON_ADDRESS_HERE"
+    const val BTC_ADDRESS: String = "Soon or Never"
+    const val USDT_ADDRESS: String = "Soon or Never"
+    const val TON_ADDRESS: String = "Soon or Never"
 }
