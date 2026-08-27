@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.R
 import com.example.ui.theme.AppStrings
+import androidx.compose.material3.HorizontalDivider
 
 /**
  * Donate popup (shown on every app launch, unless dismissed permanently) and
