@@ -9,11 +9,15 @@
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
 .DS_Store
-/build
-/captures
+build/
+captures/
 .externalNativeBuild
 .cxx
-local.properties
+
+# Secrets & signing keys — never commit these
 .env
-debug.keystore
+*.jks
+*.keystore
+
+# Custom APK output dir (see copyApkToApksDir task in app/build.gradle.kts)
 /apks/
