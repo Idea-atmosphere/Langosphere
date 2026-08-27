@@ -119,7 +119,7 @@ dependencies {
 }
 
 tasks.register<Copy>("copyApkToApksDir") {
-    from(layout.buildDirectory.file("outputs/apk/debug/Langosphere.apk"))
+    from(layout.buildDirectory.file("outputs/apk/debug/Langosphere-debug.apk"))
     into(rootProject.file("apks"))
 }
 
