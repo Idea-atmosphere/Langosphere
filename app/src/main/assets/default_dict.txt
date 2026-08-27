@@ -1,0 +1,1842 @@
+apple
+<span class="phonetic">/ˈæp.əl/</span> <span class="pos">noun</span> <span class="def">سیب</span>
+</>
+book
+<span class="phonetic">/bʊk/</span> <span class="pos">noun, verb</span> <span class="def">کتاب، رزرو کردن</span>
+</>
+cat
+<span class="phonetic">/kæt/</span> <span class="pos">noun</span> <span class="def">گربه</span>
+</>
+dog
+<span class="phonetic">/dɒɡ/</span> <span class="pos">noun</span> <span class="def">سگ</span>
+</>
+house
+<span class="phonetic">/haʊs/</span> <span class="pos">noun</span> <span class="def">خانه، منزل</span>
+</>
+car
+<span class="phonetic">/kɑːr/</span> <span class="pos">noun</span> <span class="def">ماشین، خودرو، اتومبیل</span>
+</>
+water
+<span class="phonetic">/ˈwɔː.tər/</span> <span class="pos">noun, verb</span> <span class="def">آب، آب دادن</span>
+</>
+tree
+<span class="phonetic">/triː/</span> <span class="pos">noun</span> <span class="def">درخت</span>
+</>
+school
+<span class="phonetic">/skuːl/</span> <span class="pos">noun</span> <span class="def">مدرسه</span>
+</>
+pen
+<span class="phonetic">/pen/</span> <span class="pos">noun</span> <span class="def">قلم، خودکار</span>
+</>
+computer
+<span class="phonetic">/kəmˈpjuː.tər/</span> <span class="pos">noun</span> <span class="def">کامپیوتر، رایانه</span>
+</>
+phone
+<span class="phonetic">/fəʊn/</span> <span class="pos">noun, verb</span> <span class="def">تلفن، زنگ زدن</span>
+</>
+internet
+<span class="phonetic">/ˈɪn.tə.net/</span> <span class="pos">noun</span> <span class="def">اینترنت</span>
+</>
+student
+<span class="phonetic">/ˈstjuː.dənt/</span> <span class="pos">noun</span> <span class="def">دانش‌آموز، دانشجو</span>
+</>
+teacher
+<span class="phonetic">/ˈtiː.tʃər/</span> <span class="pos">noun</span> <span class="def">معلم، آموزگار، استاد</span>
+</>
+love
+<span class="phonetic">/lʌv/</span> <span class="pos">noun, verb</span> <span class="def">عشق، محبت، دوست داشتن، عاشق شدن</span>
+</>
+friend
+<span class="phonetic">/frend/</span> <span class="pos">noun</span> <span class="def">دوست، رفیق</span>
+</>
+family
+<span class="phonetic">/ˈfæm.əl.i/</span> <span class="pos">noun</span> <span class="def">خانواده، خانوار</span>
+</>
+time
+<span class="phonetic">/taɪm/</span> <span class="pos">noun, verb</span> <span class="def">زمان، وقت، زمان‌بندی کردن</span>
+</>
+money
+<span class="phonetic">/ˈmʌn.i/</span> <span class="pos">noun</span> <span class="def">پول، ثروت</span>
+</>
+work
+<span class="phonetic">/wɜːk/</span> <span class="pos">noun, verb</span> <span class="def">کار، شغل، کار کردن، تلاش کردن</span>
+</>
+life
+<span class="phonetic">/laɪf/</span> <span class="pos">noun</span> <span class="def">زندگی، عمر، جان</span>
+</>
+day
+<span class="phonetic">/deɪ/</span> <span class="pos">noun</span> <span class="def">روز، روشنایی روز</span>
+</>
+night
+<span class="phonetic">/naɪt/</span> <span class="pos">noun</span> <span class="def">شب، تاریکی</span>
+</>
+food
+<span class="phonetic">/fuːd/</span> <span class="pos">noun</span> <span class="def">غذا، خوراک</span>
+</>
+dream
+<span class="phonetic">/driːm/</span> <span class="pos">noun, verb</span> <span class="def">رویا، خواب، ارزرو، خواب دیدن</span>
+</>
+language
+<span class="phonetic">/ˈlæŋ.ɡwɪdʒ/</span> <span class="pos">noun</span> <span class="def">زبان، زبان مادری</span>
+</>
+dictionary
+<span class="phonetic">/ˈdɪk.ʃən.ər.i/</span> <span class="pos">noun</span> <span class="def">دیکشنری، لغت‌نامه، فرهنگ لغت</span>
+</>
+translation
+<span class="phonetic">/trænsˈleɪ.ʃən/</span> <span class="pos">noun</span> <span class="def">ترجمه، برگردان</span>
+</>
+interactive
+<span class="phonetic">/ˌɪn.təˈræk.tɪv/</span> <span class="pos">adj</span> <span class="def">تعاملی، دوطرفه</span>
+</>
+video
+<span class="phonetic">/ˈvɪd.i.əʊ/</span> <span class="pos">noun</span> <span class="def">ویدیو، فیلم، تصویر متحرک</span>
+</>
+audio
+<span class="phonetic">/ˈɔː.di.əʊ/</span> <span class="pos">noun, adj</span> <span class="def">صدا، صوت، صوتی</span>
+</>
+play
+<span class="phonetic">/pleɪ/</span> <span class="pos">verb, noun</span> <span class="def">بازی کردن، پخش کردن، نمایش دادن، نمایشنامه</span>
+</>
+pause
+<span class="phonetic">/pɔːz/</span> <span class="pos">verb, noun</span> <span class="def">متوقف کردن، مکث، وقفه</span>
+</>
+subtitle
+<span class="phonetic">/ˈsʌb.taɪ.təl/</span> <span class="pos">noun</span> <span class="def">زیرنویس</span>
+</>
+world
+<span class="phonetic">/wɜːld/</span> <span class="pos">noun</span> <span class="def">جهان، دنیا، گیتی</span>
+</>
+read
+<span class="phonetic">/riːd/</span> <span class="pos">verb</span> <span class="def">خواندن، مطالعه کردن</span>
+</>
+write
+<span class="phonetic">/raɪt/</span> <span class="pos">verb</span> <span class="def">نوشتن، به رشته تحریر درآوردن</span>
+</>
+speak
+<span class="phonetic">/spiːk/</span> <span class="pos">verb</span> <span class="def">صحبت کردن، تکلم کردن، سخن گفتن</span>
+</>
+listen
+<span class="phonetic">/ˈlɪs.ən/</span> <span class="pos">verb</span> <span class="def">گوش دادن، شنیدن، استماع کردن</span>
+</>
+learn
+<span class="phonetic">/lɜːn/</span> <span class="pos">verb</span> <span class="def">یادگیری، آموختن، فرارفتن</span>
+</>
+easy
+<span class="phonetic">/ˈiː.zi/</span> <span class="pos">adj</span> <span class="def">آسان، راحت، ساده</span>
+</>
+hard
+<span class="phonetic">/hɑːd/</span> <span class="pos">adj, adv</span> <span class="def">سخت، دشوار، سفت، با تلاش زیاد</span>
+</>
+beautiful
+<span class="phonetic">/ˈbjuː.tɪ.fəl/</span> <span class="pos">adj</span> <span class="def">زیبا، قشنگ، شکیل</span>
+</>
+happy
+<span class="phonetic">/ˈhæp.i/</span> <span class="pos">adj</span> <span class="def">خوشحال، شاد، مسرور</span>
+</>
+smart
+<span class="phonetic">/smɑːt/</span> <span class="pos">adj</span> <span class="def">باهوش، زرنگ، هوشمند</span>
+</>
+active
+<span class="phonetic">/ˈæk.tɪv/</span> <span class="pos">adj</span> <span class="def">فعال، کوشا، پرتحرک</span>
+</>
+system
+<span class="phonetic">/ˈsɪs.təm/</span> <span class="pos">noun</span> <span class="def">سیستم، سامانه، دستگاه، نظم</span>
+</>
+application
+<span class="phonetic">/ˌæp.lɪˈkeɪ.ʃən/</span> <span class="pos">noun</span> <span class="def">اپلیکیشن، برنامه، کاربرد، درخواست</span>
+</>
+database
+<span class="phonetic">/ˈdeɪ.tə.beɪs/</span> <span class="pos">noun</span> <span class="def">پایگاه‌داده، بانک اطلاعاتی</span>
+</>
+happy
+<span class="phonetic">/ˈhæp.i/</span> <span class="pos">adj</span> <span class="def">خوشحال، شاد، فرخنده</span>
+</>
+sad
+<span class="phonetic">/sæd/</span> <span class="pos">adj</span> <span class="def">غمگین، ناراحت، اندوهگین</span>
+</>
+sky
+<span class="phonetic">/skaɪ/</span> <span class="pos">noun</span> <span class="def">آسمان، سپهر</span>
+</>
+sun
+<span class="phonetic">/sʌn/</span> <span class="pos">noun</span> <span class="def">خورشید، آفتاب</span>
+</>
+moon
+<span class="phonetic">/muːn/</span> <span class="pos">noun</span> <span class="def">ماه</span>
+</>
+star
+<span class="phonetic">/stɑːr/</span> <span class="pos">noun</span> <span class="def">ستاره، اختر</span>
+</>
+city
+<span class="phonetic">/ˈsɪt.i/</span> <span class="pos">noun</span> <span class="def">شهر</span>
+</>
+country
+<span class="phonetic">/ˈkʌn.tri/</span> <span class="pos">noun</span> <span class="def">کشور، میهن، روستا، حومه شهر</span>
+</>
+music
+<span class="phonetic">/ˈmjuː.zɪk/</span> <span class="pos">noun</span> <span class="def">موسیقی، آهنگ، نوا</span>
+</>
+song
+<span class="phonetic">/sɒŋ/</span> <span class="pos">noun</span> <span class="def">آواز، سرود، ترانه</span>
+</>
+player
+<span class="phonetic">/ˈpleɪ.ər/</span> <span class="pos">noun</span> <span class="def">پخش‌کننده، بازیکن، نوازنده</span>
+</>
+screen
+<span class="phonetic">/skriːn/</span> <span class="pos">noun, verb</span> <span class="def">صفحه نمایش، نمایشگر، پرده، فیلتر کردن</span>
+</>
+smart
+<span class="phonetic">/smɑːt/</span> <span class="pos">adj</span> <span class="def">باهوش، شیک، هوشمند</span>
+</>
+fast
+<span class="phonetic">/fɑːst/</span> <span class="pos">adj, adv</span> <span class="def">سریع، تند، روزه گرفتن</span>
+</>
+slow
+<span class="phonetic">/sləʊ/</span> <span class="pos">adj</span> <span class="def">آهسته، کند، آرام</span>
+</>
+big
+<span class="phonetic">/bɪɡ/</span> <span class="pos">adj</span> <span class="def">بزرگ، عظیم</span>
+</>
+small
+<span class="phonetic">/smɔːl/</span> <span class="pos">adj</span> <span class="def">کوچک، اندک</span>
+</>
+good
+<span class="phonetic">/ɡʊd/</span> <span class="pos">adj, noun</span> <span class="def">خوب، نیکو، کالا، مصلحت</span>
+</>
+bad
+<span class="phonetic">/bæd/</span> <span class="pos">adj</span> <span class="def">بد، نامناسب، خراب</span>
+</>
+new
+<span class="phonetic">/njuː/</span> <span class="pos">adj</span> <span class="def">جدید، نو، تازه</span>
+</>
+old
+<span class="phonetic">/əʊld/</span> <span class="pos">adj</span> <span class="def">قدیمی، کهنه، پیر، مسن</span>
+</>
+young
+<span class="phonetic">/jʌŋ/</span> <span class="pos">adj</span> <span class="def">جوان، نوپا</span>
+</>
+child
+<span class="phonetic">/tʃaɪld/</span> <span class="pos">noun</span> <span class="def">کودک، بچه، فرزند</span>
+</>
+man
+<span class="phonetic">/mæn/</span> <span class="pos">noun</span> <span class="def">مرد، انسان</span>
+</>
+woman
+<span class="phonetic">/ˈwʊm.ən/</span> <span class="pos">noun</span> <span class="def">زن</span>
+</>
+all
+<span class="phonetic">/ɔːl/</span> <span class="pos">adj, pron, adv</span> <span class="def">همه، تمام، کلاً</span>
+</>
+some
+<span class="phonetic">/sʌm/</span> <span class="pos">adj, pron</span> <span class="def">برخی، بعضی، مقداری</span>
+</>
+any
+<span class="phonetic">/ˈen.i/</span> <span class="pos">adj, pron</span> <span class="def">هر، هیچ</span>
+</>
+no
+<span class="phonetic">/nəʊ/</span> <span class="pos">adv, adj, noun</span> <span class="def">خیر، نه، هیچ</span>
+</>
+yes
+<span class="phonetic">/jes/</span> <span class="pos">adv</span> <span class="def">بله، آری</span>
+</>
+understand
+<span class="phonetic">/ˌʌn.dəˈstænd/</span> <span class="pos">verb</span> <span class="def">فهمیدن، درک کردن، متوجه شدن</span>
+</>
+meaning
+<span class="phonetic">/ˈmiː.nɪŋ/</span> <span class="pos">noun</span> <span class="def">معنی، مفهوم، مقصود</span>
+</>
+word
+<span class="phonetic">/wɜːd/</span> <span class="pos">noun</span> <span class="def">کلمه، واژه، حرف، قول</span>
+</>
+sentence
+<span class="phonetic">/ˈsen.təns/</span> <span class="pos">noun, verb</span> <span class="def">جمله، محکومیت، رای دادگاه، محکوم کردن</span>
+</>
+paragraph
+<span class="phonetic">/ˈpær.ə.ɡrɑːf/</span> <span class="pos">noun</span> <span class="def">پاراگراف، بند، مطلع</span>
+</>
+text
+<span class="phonetic">/tekst/</span> <span class="pos">noun, verb</span> <span class="def">متن، پیام متنی، مسیج دادن</span>
+</>
+pdf
+<span class="phonetic">/ˌpiː.diːˈef/</span> <span class="pos">noun</span> <span class="def">پی‌دی‌اف، سند الکترونیکی متنی</span>
+</>
+document
+<span class="phonetic">/ˈdɒk.jə.mənt/</span> <span class="pos">noun, verb</span> <span class="def">سند، مدرک، مستند کردن</span>
+</>
+history
+<span class="phonetic">/ˈhɪs.tər.i/</span> <span class="pos">noun</span> <span class="def">تاریخ، پیشینه، تاریخچه</span>
+</>
+clear
+<span class="phonetic">/klɪər/</span> <span class="pos">adj, verb</span> <span class="def">شفاف، واضح، تمیز کردن، پاک کردن</span>
+</>
+delete
+<span class="phonetic">/dɪˈliːt/</span> <span class="pos">verb</span> <span class="def">حذف کردن، پاک کردن</span>
+</>
+add
+<span class="phonetic">/æd/</span> <span class="pos">verb</span> <span class="def">افزودن، اضافه کردن، جمع زدن</span>
+</>
+open
+<span class="phonetic">/ˈəʊ.pən/</span> <span class="pos">verb, adj</span> <span class="def">باز کردن، گشودن، باز، مفتوح</span>
+</>
+close
+<span class="phonetic">/kləʊz/</span> <span class="pos">verb, adj, adv</span> <span class="def">بستن، مسدود کردن، نزدیک، صمیمی</span>
+</>
+search
+<span class="phonetic">/sɜːtʃ/</span> <span class="pos">verb, noun</span> <span class="def">جستجو کردن، کاوش، گشتن</span>
+</>
+select
+<span class="phonetic">/sɪˈlekt/</span> <span class="pos">verb, adj</span> <span class="def">انتخاب کردن، برگزیدن، برگزیده</span>
+</>
+file
+<span class="phonetic">/faɪl/</span> <span class="pos">noun, verb</span> <span class="def">فایل، پرونده، زونکن، بایگانی کردن</span>
+</>
+folder
+<span class="phonetic">/ˈfəʊl.dər/</span> <span class="pos">noun</span> <span class="def">فولدر، پوشه</span>
+</>
+import
+<span class="phonetic">/ɪmˈpɔːt/</span> <span class="pos">verb, noun</span> <span class="def">وارد کردن، واردات، اهمیت</span>
+</>
+export
+<span class="phonetic">/ɪkˈspɔːt/</span> <span class="pos">verb, noun</span> <span class="def">صادر کردن، صادرات</span>
+</>
+error
+<span class="phonetic">/ˈer.ər/</span> <span class="pos">noun</span> <span class="def">خطا، اشتباه، نادرستی</span>
+</>
+success
+<span class="phonetic">/səkˈses/</span> <span class="pos">noun</span> <span class="def">موفقیت، کام‌یابی، پیروزی</span>
+</>
+warning
+<span class="phonetic">/ˈwɔː.nɪŋ/</span> <span class="pos">noun</span> <span class="def">هشدار، اخطار</span>
+</>
+info
+<span class="phonetic">/ˈɪn.fəʊ/</span> <span class="pos">noun</span> <span class="def">اطلاعات (مخفف information)</span>
+</>
+settings
+<span class="phonetic">/ˈset.ɪŋz/</span> <span class="pos">noun</span> <span class="def">تنظیمات، پیکربندی</span>
+</>
+help
+<span class="phonetic">/help/</span> <span class="pos">verb, noun</span> <span class="def">کمک کردن، یاری رساندن، کمک، مساعدت</span>
+</>
+about
+<span class="phonetic">/əˈbaʊt/</span> <span class="pos">prep, adv</span> <span class="def">درباره، درمورد، تقریباً</span>
+</>
+version
+<span class="phonetic">/ˈvɜː.ʒən/</span> <span class="pos">noun</span> <span class="def">نسخه، ورژن</span>
+</>
+exit
+<span class="phonetic">/ˈek.sɪt/</span> <span class="pos">noun, verb</span> <span class="def">خروج، بیرون رفتن</span>
+</>
+start
+<span class="phonetic">/stɑːt/</span> <span class="pos">verb, noun</span> <span class="def">شروع کردن، آغاز، راه انداختن</span>
+</>
+stop
+<span class="phonetic">/stɒp/</span> <span class="pos">verb, noun</span> <span class="def">متوقف کردن، متوقف شدن، ایست، توقف</span>
+</>
+end
+<span class="phonetic">/end/</span> <span class="pos">noun, verb</span> <span class="def">پایان، انتها، خاتمه دادن</span>
+</>
+ready
+<span class="phonetic">/ˈred.i/</span> <span class="pos">adj</span> <span class="def">آماده، مهیا، حاضر</span>
+</>
+go
+<span class="phonetic">/ɡəʊ/</span> <span class="pos">verb</span> <span class="def">رفتن، حرکت کردن</span>
+</>
+come
+<span class="phonetic">/kʌm/</span> <span class="pos">verb</span> <span class="def">آمدن، فرارسیدن</span>
+</>
+see
+<span class="phonetic">/siː/</span> <span class="pos">verb</span> <span class="def">دیدن، تماشا کردن، فهمیدن</span>
+</>
+look
+<span class="phonetic">/lʊk/</span> <span class="pos">verb, noun</span> <span class="def">نگاه کردن، به نظر رسیدن، ظاهر، نگاه</span>
+</>
+find
+<span class="phonetic">/faɪnd/</span> <span class="pos">verb</span> <span class="def">پیدا کردن، یافتن</span>
+</>
+give
+<span class="phonetic">/ɡɪv/</span> <span class="pos">verb</span> <span class="def">دادن، اهدا کردن</span>
+</>
+take
+<span class="phonetic">/teɪk/</span> <span class="pos">verb</span> <span class="def">گرفتن، بردن، برداشتن</span>
+</>
+make
+<span class="phonetic">/meɪk/</span> <span class="pos">verb</span> <span class="def">ساختن، تولید کردن، درست کردن</span>
+</>
+do
+<span class="phonetic">/duː/</span> <span class="pos">verb</span> <span class="def">انجام دادن، کردن</span>
+</>
+say
+<span class="phonetic">/seɪ/</span> <span class="pos">verb</span> <span class="def">گفتن، بیان کردن</span>
+</>
+tell
+<span class="phonetic">/tel/</span> <span class="pos">verb</span> <span class="def">اخبار دادن، گفتن، تعریف کردن</span>
+</>
+ask
+<span class="phonetic">/ɑːsk/</span> <span class="pos">verb</span> <span class="def">پرسیدن، درخواست کردن</span>
+</>
+answer
+<span class="phonetic">/ˈɑːn.sər/</span> <span class="pos">noun, verb</span> <span class="def">پاسخ، جواب، پاسخ دادن</span>
+</>
+question
+<span class="phonetic">/ˈkwes.tʃən/</span> <span class="pos">noun, verb</span> <span class="def">سوال، پرسش، به چالش کشیدن</span>
+</>
+problem
+<span class="phonetic">/ˈprɒb.ləm/</span> <span class="pos">noun</span> <span class="def">مشکل، مسئله، دشواری</span>
+</>
+solution
+<span class="phonetic">/səˈluː.ʃən/</span> <span class="pos">noun</span> <span class="def">راه حل، حلال، محلول</span>
+</>
+game
+<span class="phonetic">/ɡeɪm/</span> <span class="pos">noun</span> <span class="def">بازی، رقابت</span>
+</>
+sport
+<span class="phonetic">/spɔːt/</span> <span class="pos">noun</span> <span class="def">ورزش</span>
+</>
+study
+<span class="phonetic">/ˈstʌd.i/</span> <span class="pos">verb, noun</span> <span class="def">مطالعه کردن، درس خواندن، بررسی کردن، مطالعه، پژوهش</span>
+</>
+course
+<span class="phonetic">/kɔːs/</span> <span class="pos">noun</span> <span class="def">دوره آموزشی، مسیر، کلاس</span>
+</>
+lesson
+<span class="phonetic">/ˈles.ən/</span> <span class="pos">noun</span> <span class="def">درس، آموزه، عبرت</span>
+</>
+science
+<span class="phonetic">/ˈsaɪ.əns/</span> <span class="pos">noun</span> <span class="def">علم، دانش، علوم تجربی</span>
+</>
+art
+<span class="phonetic">/ɑːt/</span> <span class="pos">noun</span> <span class="def">هنر، فن</span>
+</>
+design
+<span class="phonetic">/dɪˈzaɪn/</span> <span class="pos">verb, noun</span> <span class="def">طراحی کردن، نقشه کشیدن، طرح، فرم زیباشناختی</span>
+</>
+style
+<span class="phonetic">/staɪl/</span> <span class="pos">noun, verb</span> <span class="def">سبک، استایل، مدل</span>
+</>
+color
+<span class="phonetic">/ˈkʌl.ər/</span> <span class="pos">noun, verb</span> <span class="def">رنگ، رنگ‌آمیزی کردن</span>
+</>
+shape
+<span class="phonetic">/ʃeɪp/</span> <span class="pos">noun, verb</span> <span class="def">شکل، فرم، قالب، شکل دادن</span>
+</>
+music
+<span class="phonetic">/ˈmjuː.zɪk/</span> <span class="pos">noun</span> <span class="def">موسیقی، نوا، ساز</span>
+</>
+song
+<span class="phonetic">/sɒŋ/</span> <span class="pos">noun</span> <span class="def">ترانه، آواز، ساخته صوتی</span>
+</>
+movie
+<span class="phonetic">/ˈmuː.vi/</span> <span class="pos">noun</span> <span class="def">فیلم سینمایی، اثر ویدیویی</span>
+</>
+cinema
+<span class="phonetic">/ˈsɪn.ə.mə/</span> <span class="pos">noun</span> <span class="def">سینما</span>
+</>
+theater
+<span class="phonetic">/ˈθɪə.tər/</span> <span class="pos">noun</span> <span class="def">تئاتر، تماشاخانه</span>
+</>
+show
+<span class="phonetic">/ʃəʊ/</span> <span class="pos">verb, noun</span> <span class="def">نشان دادن، عیان کردن، نمایش، شو</span>
+</>
+media
+<span class="phonetic">/ˈmiː.di.ə/</span> <span class="pos">noun</span> <span class="def">رسانه، مدیا (جمع medium)</span>
+</>
+type
+<span class="phonetic">/taɪp/</span> <span class="pos">noun, verb</span> <span class="def">نوع، جنس، تیپ، تایپ کردن</span>
+</>
+key
+<span class="phonetic">/kiː/</span> <span class="pos">noun, adj</span> <span class="def">کلید، دکمه، راهنما، اصلی، کلیدی</span>
+</>
+board
+<span class="phonetic">/bɔːd/</span> <span class="pos">noun, verb</span> <span class="def">تخته، برد الکترونیکی، هیئت مدیره، سوار شدن (به وسیله نقلیه)</span>
+</>
+space
+<span class="phonetic">/speɪs/</span> <span class="pos">noun</span> <span class="def">فضا، فاصله، جای خالی</span>
+</>
+line
+<span class="phonetic">/laɪn/</span> <span class="pos">noun, verb</span> <span class="def">خط، ریسمان، ردیف، خط‌کشی کردن</span>
+</>
+list
+<span class="phonetic">/lɪst/</span> <span class="pos">noun, verb</span> <span class="def">فهرست، لیست، لیست کردن</span>
+</>
+card
+<span class="phonetic">/kɑːd/</span> <span class="pos">noun</span> <span class="def">کارت، ورق</span>
+</>
+button
+<span class="phonetic">/ˈbʌt.ən/</span> <span class="pos">noun, verb</span> <span class="def">دکمه، تکمه، دکمه زدن</span>
+</>
+menu
+<span class="phonetic">/ˈmen.juː/</span> <span class="pos">noun</span> <span class="def">منو، لیست غذا، لیست گزینه‌ها</span>
+</>
+window
+<span class="phonetic">/ˈwɪn.dəʊ/</span> <span class="pos">noun</span> <span class="def">پنجره، دریچه</span>
+</>
+view
+<span class="phonetic">/vjuː/</span> <span class="pos">noun, verb</span> <span class="def">نما، چشم‌انداز، منظره، بازدید، تماشا کردن، دیدن</span>
+</>
+layout
+<span class="phonetic">/ˈleɪ.aʊt/</span> <span class="pos">noun</span> <span class="def">طرح‌بندی، چیدمان</span>
+</>
+theme
+<span class="phonetic">/θiːm/</span> <span class="pos">noun</span> <span class="def">پوسته، تم، زمینه، موضوع</span>
+</>
+mode
+<span class="phonetic">/məʊd/</span> <span class="pos">noun</span> <span class="def">حالت، مود، روش</span>
+</>
+dark
+<span class="phonetic">/dɑːk/</span> <span class="pos">adj, noun</span> <span class="def">تاریک، تیره، تاریکی</span>
+</>
+light
+<span class="phonetic">/laɪt/</span> <span class="pos">noun, adj, verb</span> <span class="def">نور، روشنایی، سبک، روشن، روشن کردن</span>
+</>
+green
+<span class="phonetic">/ɡriːn/</span> <span class="pos">noun, adj</span> <span class="def">سبز، سرسبز</span>
+</>
+blue
+<span class="phonetic">/bluː/</span> <span class="pos">noun, adj</span> <span class="def">آبی، افسرده</span>
+</>
+red
+<span class="phonetic">/red/</span> <span class="pos">noun, adj</span> <span class="def">قرمز، سرخ</span>
+</>
+white
+<span class="phonetic">/waɪt/</span> <span class="pos">noun, adj</span> <span class="def">سفید، باکره، پاک</span>
+</>
+black
+<span class="phonetic">/blæk/</span> <span class="pos">noun, adj</span> <span class="def">سیاه، مشکی، تاریک</span>
+</>
+yellow
+<span class="phonetic">/ˈjel.əʊ/</span> <span class="pos">noun, adj</span> <span class="def">زرد</span>
+</>
+orange
+<span class="phonetic">/ˈɒr.ɪndʒ/</span> <span class="pos">noun, adj</span> <span class="def">پرتقال، نارنجی</span>
+</>
+purple
+<span class="phonetic">/ˈpɜː.pəl/</span> <span class="pos">noun, adj</span> <span class="def">بنفش</span>
+</>
+pink
+<span class="phonetic">/pɪŋk/</span> <span class="pos">noun, adj</span> <span class="def">صورتی</span>
+</>
+gray
+<span class="phonetic">/ɡreɪ/</span> <span class="pos">noun, adj</span> <span class="def">خاکستری، طوسی</span>
+</>
+brown
+<span class="phonetic">/braʊn/</span> <span class="pos">noun, adj</span> <span class="def">قهوه‌ای</span>
+</>
+gold
+<span class="phonetic">/ɡəʊld/</span> <span class="pos">noun, adj</span> <span class="def">طلا، طلایی</span>
+</>
+silver
+<span class="phonetic">/ˈsɪl.vər/</span> <span class="pos">noun, adj</span> <span class="def">نقره، نقره‌ای</span>
+</>
+metal
+<span class="phonetic">/ˈmet.əl/</span> <span class="pos">noun, adj</span> <span class="def">فلز، فلزی</span>
+</>
+glass
+<span class="phonetic">/ɡlɑːs/</span> <span class="pos">noun</span> <span class="def">شیشه، گیلاس، لیوان</span>
+</>
+wood
+<span class="phonetic">/wʊd/</span> <span class="pos">noun</span> <span class="def">چوب، جنگل کوچک</span>
+</>
+paper
+<span class="phonetic">/ˈpeɪ.pər/</span> <span class="pos">noun, verb</span> <span class="def">کاغذ، مقاله، لایحه، کاغذ دیواری کردن</span>
+</>
+plastic
+<span class="phonetic">/ˈplæs.tɪk/</span> <span class="pos">noun, adj</span> <span class="def">پلاستیک، پلاستیکی، انعطاف‌پذیر</span>
+</>
+stone
+<span class="phonetic">/stəʊn/</span> <span class="pos">noun</span> <span class="def">سنگ، هسته میوه</span>
+</>
+rock
+<span class="phonetic">/rɒk/</span> <span class="pos">noun, verb</span> <span class="def">صخره، سنگ بزرگ، تکان دادن، تکان خوردن، موسیقی راک</span>
+</>
+sand
+<span class="phonetic">/sænd/</span> <span class="pos">noun</span> <span class="def">شن، ماسه</span>
+</>
+dust
+<span class="phonetic">/dʌst/</span> <span class="pos">noun, verb</span> <span class="def">گرد و خاک، غبار، گردگیری کردن</span>
+</>
+wind
+<span class="phonetic">/wɪnd/</span> <span class="pos">noun, verb</span> <span class="def">باد، پیچیدن، کوک کردن</span>
+</>
+rain
+<span class="phonetic">/reɪn/</span> <span class="pos">noun, verb</span> <span class="def">باران، باریدن</span>
+</>
+snow
+<span class="phonetic">/snəʊ/</span> <span class="pos">noun, verb</span> <span class="def">برف، برف باریدن</span>
+</>
+ice
+<span class="phonetic">/aɪs/</span> <span class="pos">noun, verb</span> <span class="def">یخ، یخ بستن</span>
+</>
+fire
+<span class="phonetic">/faɪər/</span> <span class="pos">noun, verb</span> <span class="def">آتش، شلیک کردن، اخراج کردن</span>
+</>
+earth
+<span class="phonetic">/ɜːθ/</span> <span class="pos">noun</span> <span class="def">زمین، کره زمین، خاک</span>
+</>
+nature
+<span class="phonetic">/ˈneɪ.tʃər/</span> <span class="pos">noun</span> <span class="def">طبیعت، ذات، طینت</span>
+</>
+animal
+<span class="phonetic">/ˈæn.ɪ.məl/</span> <span class="pos">noun, adj</span> <span class="def">حیوان، جانور، حیوانی</span>
+</>
+plant
+<span class="phonetic">/plɑːnt/</span> <span class="pos">noun, verb</span> <span class="def">گیاه، کارخانه، کاشتن، نشاندن</span>
+</>
+flower
+<span class="phonetic">/ˈflaʊ.ər/</span> <span class="pos">noun, verb</span> <span class="def">گل، شکوفه دادن</span>
+</>
+fruit
+<span class="phonetic">/fruːt/</span> <span class="pos">noun</span> <span class="def">میوه، ثمره</span>
+</>
+vegetable
+<span class="phonetic">/ˈvedʒ.tə.bəl/</span> <span class="pos">noun</span> <span class="def">سبزی، سبزیجات</span>
+</>
+meat
+<span class="phonetic">/miːt/</span> <span class="pos">noun</span> <span class="def">گوشت خوراکی</span>
+</>
+bread
+<span class="phonetic">/bred/</span> <span class="pos">noun</span> <span class="def">نان، معیشت</span>
+</>
+milk
+<span class="phonetic">/mɪlk/</span> <span class="pos">noun, verb</span> <span class="def">شیر، شیر دوشیدن</span>
+</>
+tea
+<span class="phonetic">/tiː/</span> <span class="pos">noun</span> <span class="def">چای</span>
+</>
+coffee
+<span class="phonetic">/ˈkɒf.i/</span> <span class="pos">noun</span> <span class="def">قهوه</span>
+</>
+sugar
+<span class="phonetic">/ˈʃʊɡ.ər/</span> <span class="pos">noun, verb</span> <span class="def">شکر، قند، شیرین کردن</span>
+</>
+salt
+<span class="phonetic">/sɒlt/</span> <span class="pos">noun, verb</span> <span class="def">نمک، نمک زدن</span>
+</>
+pepper
+<span class="phonetic">/ˈpep.ər/</span> <span class="pos">noun, verb</span> <span class="def">فلفل</span>
+</>
+oil
+<span class="phonetic">/ɔɪl/</span> <span class="pos">noun, verb</span> <span class="def">روغن، نفت، روغن‌کاری کردن</span>
+</>
+gas
+<span class="phonetic">/ɡæs/</span> <span class="pos">noun</span> <span class="def">گاز، بنزین</span>
+</>
+fuel
+<span class="phonetic">/ˈfjuː.əl/</span> <span class="pos">noun, verb</span> <span class="def">سوخت، تحریک کردن</span>
+</>
+power
+<span class="phonetic">/ˈpaʊ.ər/</span> <span class="pos">noun, verb</span> <span class="def">قدرت، نیرو، توان، برق، نیرو دادن</span>
+</>
+light
+<span class="phonetic">/laɪt/</span> <span class="pos">noun, adj, verb</span> <span class="def">امیدبخش، نور، روشنایی، اندک</span>
+</>
+device
+<span class="phonetic">/dɪˈvaɪs/</span> <span class="pos">noun</span> <span class="def">دستگاه، ابزار، وسیله</span>
+</>
+tool
+<span class="phonetic">/tuːl/</span> <span class="pos">noun</span> <span class="def">ابزار، افزاره</span>
+</>
+machine
+<span class="phonetic">/məˈʃiːn/</span> <span class="pos">noun</span> <span class="def">ماشین، دستگاه صنعتی</span>
+</>
+engine
+<span class="phonetic">/ˈen.dʒɪn/</span> <span class="pos">noun</span> <span class="def">موتور محرک</span>
+</>
+battery
+<span class="phonetic">/ˈbæt.ər.i/</span> <span class="pos">noun</span> <span class="def">باتری، قوه، ضرب و جرح</span>
+</>
+wire
+<span class="phonetic">/waɪər/</span> <span class="pos">noun, verb</span> <span class="def">سیم، مفتول، سیم‌کشی کردن</span>
+</>
+cable
+<span class="phonetic">/ˈkeɪ.bəl/</span> <span class="pos">noun</span> <span class="def">کابل، ریسمان کلفت</span>
+</>
+card
+<span class="phonetic">/kɑːd/</span> <span class="pos">noun</span> <span class="def">برگه مقوایی، کارت تلفن/حافظه</span>
+</>
+chip
+<span class="phonetic">/tʃɪp/</span> <span class="pos">noun, verb</span> <span class="def">تراشه، مدار مجتمع، چیپس، لب‌پریدگی پیدا کردن</span>
+</>
+sensor
+<span class="phonetic">/ˈsen.sər/</span> <span class="pos">noun</span> <span class="def">حسگر، سنسور</span>
+</>
+camera
+<span class="phonetic">/ˈkæm.rə/</span> <span class="pos">noun</span> <span class="def">دوربین عکاسی یا فیلم‌برداری</span>
+</>
+lens
+<span class="phonetic">/lenz/</span> <span class="pos">noun</span> <span class="def">عدسی، لنز</span>
+</>
+glass
+<span class="phonetic">/ɡlɑːs/</span> <span class="pos">noun</span> <span class="def">عینک، شیشه پنجره</span>
+</>
+mirror
+<span class="phonetic">/ˈmɪr.ər/</span> <span class="pos">noun, verb</span> <span class="def">آینه، منعکس کردن</span>
+</>
+image
+<span class="phonetic">/ˈɪm.ɪdʒ/</span> <span class="pos">noun</span> <span class="def">تصویر، عکس، ایماژ</span>
+</>
+picture
+<span class="phonetic">/ˈpɪk.tʃər/</span> <span class="pos">noun, verb</span> <span class="def">عکس، تصویر، تجسم کردن</span>
+</>
+photo
+<span class="phonetic">/ˈfəʊ.təʊ/</span> <span class="pos">noun</span> <span class="def">عکس، فتو</span>
+</>
+paint
+<span class="phonetic">/peɪnt/</span> <span class="pos">verb, noun</span> <span class="def">نقاشی کردن، رنگ زدن، رنگ نقاشی</span>
+</>
+draw
+<span class="phonetic">/drɔː/</span> <span class="pos">verb</span> <span class="def">کشیدن، رسم کردن، جذب کردن، مساوی شدن</span>
+</>
+write
+<span class="phonetic">/raɪt/</span> <span class="pos">verb</span> <span class="def">نگاشتن، مکتوب کردن</span>
+</>
+sign
+<span class="phonetic">/saɪn/</span> <span class="pos">noun, verb</span> <span class="def">نشانه، علامت، تابلو، امضا کردن</span>
+</>
+signal
+<span class="phonetic">/ˈsɪɡ.nəl/</span> <span class="pos">noun, verb</span> <span class="def">سیگنال، علامت اخطار، مخابره کردن</span>
+</>
+code
+<span class="phonetic">/kəʊd/</span> <span class="pos">noun, verb</span> <span class="def">کد، رمز، قانون، کدنویسی کردن</span>
+</>
+program
+<span class="phonetic">/ˈprəʊ.ɡræm/</span> <span class="pos">noun, verb</span> <span class="def">برنامه، طرح، برنامه‌ریزی کردن، نوشتن برنامه کامپیوتری</span>
+</>
+software
+<span class="phonetic">/ˈsɒft.weər/</span> <span class="pos">noun</span> <span class="def">نرم‌افزار</span>
+</>
+hardware
+<span class="phonetic">/ˈhɑːd.weər/</span> <span class="pos">noun</span> <span class="def">سخت‌افزار، یراق‌آلات</span>
+</>
+network
+<span class="phonetic">/ˈnet.wɜːk/</span> <span class="pos">noun, verb</span> <span class="def">شبکه، مهندسی شبکه، شبکه ساختن/ارتباط برقرار کردن</span>
+</>
+server
+<span class="phonetic">/ˈsɜː.vər/</span> <span class="pos">noun</span> <span class="def">سرور، خدمت‌دهنده در شبکه، سینی پذیرایی</span>
+</>
+client
+<span class="phonetic">/ˈklaɪ.ənt/</span> <span class="pos">noun</span> <span class="def">مشتری، کلاینت در شبکه، موکل</span>
+</>
+user
+<span class="phonetic">/ˈjuː.zər/</span> <span class="pos">noun</span> <span class="def">کاربر، استفاده‌کننده</span>
+</>
+password
+<span class="phonetic">/ˈpɑːs.wɜːd/</span> <span class="pos">noun</span> <span class="def">رمز عبور، کلمه عبور</span>
+</>
+account
+<span class="phonetic">/əˈkaʊnt/</span> <span class="pos">noun, verb</span> <span class="def">حساب بانکی/کاربری، گزارش، شرح دادن، محسوب شدن</span>
+</>
+profile
+<span class="phonetic">/ˈprəʊ.faɪl/</span> <span class="pos">noun</span> <span class="def">پروفایل، بیوگرافی کوتاه، نیم‌رخ</span>
+</>
+data
+<span class="phonetic">/ˈdeɪ.tə/</span> <span class="pos">noun</span> <span class="def">داده‌ها، اطلاعات فرآوری نشده</span>
+</>
+information
+<span class="phonetic">/ˌɪn.fəˈmeɪ.ʃən/</span> <span class="pos">noun</span> <span class="def">اطلاعات، آگاهی</span>
+</>
+knowledge
+<span class="phonetic">/ˈnɒl.ɪdʒ/</span> <span class="pos">noun</span> <span class="def">دانش، معرفت، دانایی</span>
+</>
+wisdom
+<span class="phonetic">/ˈwɪz.dəm/</span> <span class="pos">noun</span> <span class="def">حکمت، خرد، دانایی عمیق</span>
+</>
+truth
+<span class="phonetic">/truːθ/</span> <span class="pos">noun</span> <span class="def">حقیقت، راستی، واقعیت</span>
+</>
+lie
+<span class="phonetic">/laɪ/</span> <span class="pos">noun, verb</span> <span class="def">دروغ، دروغ گفتن، دراز کشیدن، قرار داشتن</span>
+</>
+right
+<span class="phonetic">/raɪt/</span> <span class="pos">adj, adv, noun</span> <span class="def">راست، درست، حق، مستقیماً</span>
+</>
+wrong
+<span class="phonetic">/rɒŋ/</span> <span class="pos">adj, adv, noun</span> <span class="def">غلط، اشتباه، نادرست، ستم، زیان</span>
+</>
+correct
+<span class="phonetic">/kəˈrekt/</span> <span class="pos">adj, verb</span> <span class="def">صحیح، درست، اصلاح کردن، تصحیح کردن</span>
+</>
+true
+<span class="phonetic">/truː/</span> <span class="pos">adj</span> <span class="def">راست، حقیقی، وفادار</span>
+</>
+false
+<span class="phonetic">/fɔːls/</span> <span class="pos">adj</span> <span class="def">دروغ، نادرست، کاذب، بدلی</span>
+</>
+fact
+<span class="phonetic">/fækt/</span> <span class="pos">noun</span> <span class="def">واقعیت، حقیقت عینی و ملموس</span>
+</>
+opinion
+<span class="phonetic">/əˈpɪn.jən/</span> <span class="pos">noun</span> <span class="def">نظر، رای، اندیشه علمی یا اعتقادی</span>
+</>
+idea
+<span class="phonetic">/aɪˈdɪə/</span> <span class="pos">noun</span> <span class="def">ایده، فکر، عقیده</span>
+</>
+thought
+<span class="phonetic">/θɔːt/</span> <span class="pos">noun</span> <span class="def">اندیشه، فکر، غوطه در تخیل</span>
+</>
+mind
+<span class="phonetic">/maɪnd/</span> <span class="pos">noun, verb</span> <span class="def">ذهن، روان، عقل، ذهنیت، اهمیت دادن، مراقب بودن</span>
+</>
+heart
+<span class="phonetic">/hɑːt/</span> <span class="pos">noun</span> <span class="def">قلب، دل، مرکز، شجاعت</span>
+</>
+body
+<span class="phonetic">/ˈbɒd.i/</span> <span class="pos">noun</span> <span class="def">بدن، جسم، جسد، بدنه، مجمع</span>
+</>
+head
+<span class="phonetic">/hed/</span> <span class="pos">noun, verb</span> <span class="def">سر، رئیس، کله، هدایت کردن، رهسپار کردن</span>
+</>
+eye
+<span class="phonetic">/aɪ/</span> <span class="pos">noun</span> <span class="def">چشم، دیدگاه، روزنه</span>
+</>
+ear
+<span class="phonetic">/ɪər/</span> <span class="pos">noun</span> <span class="def">گوش، شنوایی، سنبله گندم</span>
+</>
+mouth
+<span class="phonetic">/maʊθ/</span> <span class="pos">noun</span> <span class="def">دهان، فرودگاه رودخانه در دریا</span>
+</>
+nose
+<span class="phonetic">/nəʊz/</span> <span class="pos">noun</span> <span class="def">بینی، دماغه</span>
+</>
+face
+<span class="phonetic">/feɪs/</span> <span class="pos">noun, verb</span> <span class="def">صورت، چهره، نما، روبرو شدن، مواجه شدن</span>
+</>
+hand
+<span class="phonetic">/hænd/</span> <span class="pos">noun, verb</span> <span class="def">دست، عقربه، کمک، تحویل دادن، سپردن</span>
+</>
+arm
+<span class="phonetic">/ɑːm/</span> <span class="pos">noun, verb</span> <span class="def">بازو، شاخه، تسلیح کردن، اسلحه دادن</span>
+</>
+leg
+<span class="phonetic">/leɡ/</span> <span class="pos">noun</span> <span class="def">پا از ران تا مچ، پایه صندلی، مرحله مسابقه</span>
+</>
+foot
+<span class="phonetic">/fʊt/</span> <span class="pos">noun</span> <span class="def">پا مچ به پایین، پایه، فوت (واحد طول)</span>
+</>
+finger
+<span class="phonetic">/ˈfɪŋ.ɡər/</span> <span class="pos">noun, verb</span> <span class="def">انگشت دست، لمس کردن</span>
+</>
+toe
+<span class="phonetic">/təʊ/</span> <span class="pos">noun</span> <span class="def">انگشت پا</span>
+</>
+hair
+<span class="phonetic">/heər/</span> <span class="pos">noun</span> <span class="def">مو، طره مو</span>
+</>
+skin
+<span class="phonetic">/skɪn/</span> <span class="pos">noun, verb</span> <span class="def">پوست بدن، پوست کندن</span>
+</>
+blood
+<span class="phonetic">/blʌd/</span> <span class="pos">noun</span> <span class="def">خون، رگه، نژاد</span>
+</>
+bone
+<span class="phonetic">/bəʊn/</span> <span class="pos">noun</span> <span class="def">استخوان</span>
+</>
+muscle
+<span class="phonetic">/ˈmʌs.əl/</span> <span class="pos">noun</span> <span class="def">ماهیچه، عضله</span>
+</>
+voice
+<span class="phonetic">/vɔɪs/</span> <span class="pos">noun, verb</span> <span class="def">صدا حنجره انسان، آوازه، بیان کردن</span>
+</>
+sound
+<span class="phonetic">/saʊnd/</span> <span class="pos">noun, adj, verb</span> <span class="def">صدا هر ارتعاشی، سالم، به نظر رسیدن، به صدا درآوردن</span>
+</>
+noise
+<span class="phonetic">/nɔɪz/</span> <span class="pos">noun</span> <span class="def">سر و صدا، نویز، پارازیت</span>
+</>
+silence
+<span class="phonetic">/ˈsaɪ.ləns/</span> <span class="pos">noun, verb</span> <span class="def">سکوت، خاموشی، ساکت کردن</span>
+</>
+peace
+<span class="phonetic">/piːs/</span> <span class="pos">noun</span> <span class="def">صلح، آرامش، سازش</span>
+</>
+war
+<span class="phonetic">/wɔːr/</span> <span class="pos">noun, verb</span> <span class="def">جنگ، نبرد، جنگیدن</span>
+</>
+fight
+<span class="phonetic">/faɪt/</span> <span class="pos">verb, noun</span> <span class="def">جنگیدن، مبارزه کردن، دعوا، مبارزه</span>
+</>
+win
+<span class="phonetic">/wɪn/</span> <span class="pos">verb, noun</span> <span class="def">برنده شدن، پیروز شدن، برد، پیروزی</span>
+</>
+lose
+<span class="phonetic">/luːz/</span> <span class="pos">verb</span> <span class="def">باختن، گم کردن، از دست دادن</span>
+</>
+victory
+<span class="phonetic">/ˈvɪk.tər.i/</span> <span class="pos">noun</span> <span class="def">پیروزی، فتح</span>
+</>
+defeat
+<span class="phonetic">/dɪˈfiːt/</span> <span class="pos">verb, noun</span> <span class="def">شکست دادن، باطل کردن، شکست، ناکامی</span>
+</>
+fail
+<span class="phonetic">/feɪl/</span> <span class="pos">verb, noun</span> <span class="def">رد شدن، مردود شدن، ناموفق شدن، ناکامی</span>
+</>
+pass
+<span class="phonetic">/pɑːs/</span> <span class="pos">verb, noun</span> <span class="def">عبور کردن، قبول شدن، گذراندن، پاس، گذرنامه</span>
+</>
+test
+<span class="phonetic">/test/</span> <span class="pos">noun, verb</span> <span class="def">امتحان، آزمون، آزمایش، سنجیدن</span>
+</>
+exam
+<span class="phonetic">/ɪɡˈzæm/</span> <span class="pos">noun</span> <span class="def">امتحانی غایی و جدی (مخفف examination)</span>
+</>
+quiz
+<span class="phonetic">/kwɪz/</span> <span class="pos">noun, verb</span> <span class="def">کوئیز، مسابقه اطلاعات عمومی، امتحان کلاسی کوتاه</span>
+</>
+grade
+<span class="phonetic">/ɡreɪd/</span> <span class="pos">noun, verb</span> <span class="def">نمره، رتبه، پایه تحصیلی، تصحیح کردن/کلاس‌بندی کردن</span>
+</>
+mark
+<span class="phonetic">/mɑːk/</span> <span class="pos">noun, verb</span> <span class="def">نشان، علامت، نمره، علامت‌گذاری کردن</span>
+</>
+score
+<span class="phonetic">/skɔːr/</span> <span class="pos">noun, verb</span> <span class="def">امتیاز، تعداد گل، به ثمر رساندن</span>
+</>
+point
+<span class="phonetic">/pɔɪnt/</span> <span class="pos">noun, verb</span> <span class="def">امتیاز، نکته، اعشار، اشاره کردن، جهت‌دهی کردن</span>
+</>
+number
+<span class="phonetic">/ˈnʌm.bər/</span> <span class="pos">noun, verb</span> <span class="def">عدد، شماره، نمره، شماره‌گذاری کردن</span>
+</>
+zero
+<span class="phonetic">/ˈzɪə.rəʊ/</span> <span class="pos">noun</span> <span class="def">صفر</span>
+</>
+one
+<span class="phonetic">/wʌn/</span> <span class="pos">noun, adj, pron</span> <span class="def">یک، فرد، یگانه</span>
+</>
+two
+<span class="phonetic">/tuː/</span> <span class="pos">noun, adj</span> <span class="def">دو</span>
+</>
+three
+<span class="phonetic">/θriː/</span> <span class="pos">noun, adj</span> <span class="def">سه</span>
+</>
+first
+<span class="phonetic">/fɜːst/</span> <span class="pos">adj, adv, noun</span> <span class="def">نخستین، نخست، اول</span>
+</>
+second
+<span class="phonetic">/ˈsek.ənd/</span> <span class="pos">adj, adv, noun, verb</span> <span class="def">دوم، ثانی، ثانیه، تایید کردن</span>
+</>
+third
+<span class="phonetic">/θɜːd/</span> <span class="pos">adj, adv, noun</span> <span class="def">سوم، یک‌سوم</span>
+</>
+last
+<span class="phonetic">/lɑːst/</span> <span class="pos">adj, adv, verb</span> <span class="def">آخرین، آخر، دوام آوردن</span>
+</>
+next
+<span class="phonetic">/nekst/</span> <span class="pos">adj, adv</span> <span class="def">بعدی، در کنار</span>
+</>
+before
+<span class="phonetic">/bɪˈfɔːr/</span> <span class="pos">prep, adv, conj</span> <span class="def">قبل از، پیش، جلو</span>
+</>
+after
+<span class="phonetic">/ˈɑːf.tər/</span> <span class="pos">prep, adv, conj</span> <span class="def">بعد از، پس از</span>
+</>
+now
+<span class="phonetic">/naʊ/</span> <span class="pos">adv</span> <span class="def">اکنون، حالا</span>
+</>
+then
+<span class="phonetic">/ðen/</span> <span class="pos">adv, adj</span> <span class="def">سپس، آن وقت، در آن زمان</span>
+</>
+always
+<span class="phonetic">/ˈɔːl.weɪz/</span> <span class="pos">adv</span> <span class="def">همواره، همیشه</span>
+</>
+never
+<span class="phonetic">/ˈnev.ər/</span> <span class="pos">adv</span> <span class="def">هرگز، هیچ وقت</span>
+</>
+sometimes
+<span class="phonetic">/ˈsʌm.taɪmz/</span> <span class="pos">adv</span> <span class="def">گاهی، بعضی اوقات</span>
+</>
+often
+<span class="phonetic">/ˈɒf.ən/</span> <span class="pos">adv</span> <span class="def">اغلب، بیشتر اوقات</span>
+</>
+usually
+<span class="phonetic">/ˈjuː.ʒu.ə.li/</span> <span class="pos">adv</span> <span class="def">معمولاً</span>
+</>
+seldom
+<span class="phonetic">/ˈsel.dəm/</span> <span class="pos">adv</span> <span class="def">به ندرت</span>
+</>
+rarely
+<span class="phonetic">/ˈreə.li/</span> <span class="pos">adv</span> <span class="def">به ندرت، کم اتفاق می‌افتد</span>
+</>
+how
+<span class="phonetic">/haʊ/</span> <span class="pos">adv, conj</span> <span class="def">چگونه، چطور، چقدر</span>
+</>
+what
+<span class="phonetic">/wɒt/</span> <span class="pos">pron, adj</span> <span class="def">چه، کلام، آنچه</span>
+</>
+where
+<span class="phonetic">/weər/</span> <span class="pos">adv, conj, pron</span> <span class="def">کجا، مکانی که</span>
+</>
+when
+<span class="phonetic">/wen/</span> <span class="pos">adv, conj</span> <span class="def">چه زمان، کی، هنگامی که</span>
+</>
+who
+<span class="phonetic">/huː/</span> <span class="pos">pron</span> <span class="def">چه کسی، کی، کسی که</span>
+</>
+why
+<span class="phonetic">/waɪ/</span> <span class="pos">adv, conj</span> <span class="def">چرا، دلیلی که</span>
+</>
+because
+<span class="phonetic">/bɪˈkɒz/</span> <span class="pos">conj</span> <span class="def">زیرا، برای اینکه، چون</span>
+</>
+so
+<span class="phonetic">/səʊ/</span> <span class="pos">adv, conj</span> <span class="def">بنابراین، پس، خیلی، به این ترتیب</span>
+</>
+but
+<span class="phonetic">/bʌt/</span> <span class="pos">conj, prep, adv</span> <span class="def">اما، ولی، جز، فقط</span>
+</>
+or
+<span class="phonetic">/ɔːr/</span> <span class="pos">conj</span> <span class="def">یا</span>
+</>
+and
+<span class="phonetic">/ænd/</span> <span class="pos">conj</span> <span class="def">و</span>
+</>
+if
+<span class="phonetic">/ɪf/</span> <span class="pos">conj</span> <span class="def">اگر، آیا</span>
+</>
+then
+<span class="phonetic">/ðen/</span> <span class="pos">adv</span> <span class="def">در این صورت، آنموقع</span>
+</>
+with
+<span class="phonetic">/wɪð/</span> <span class="pos">prep</span> <span class="def">با، به همراه، به وسیله</span>
+</>
+without
+<span class="phonetic">/wɪˈðaʊt/</span> <span class="pos">prep, adv</span> <span class="def">بدونِ، فاقدِ</span>
+</>
+about
+<span class="phonetic">/əˈkaʊt/</span> <span class="pos">prep</span> <span class="def">درباره، در خصوص</span>
+</>
+for
+<span class="phonetic">/fɔːr/</span> <span class="pos">prep, conj</span> <span class="def">برای، به جهتِ، زیرا که</span>
+</>
+of
+<span class="phonetic">/ɒv/</span> <span class="pos">prep</span> <span class="def">از، متعلق به، دارای</span>
+</>
+to
+<span class="phonetic">/tuː/</span> <span class="pos">prep</span> <span class="def">به، به سوی، تا، نسبت به</span>
+</>
+from
+<span class="phonetic">/frɒm/</span> <span class="pos">prep</span> <span class="def">از، از جانب</span>
+</>
+in
+<span class="phonetic">/ɪn/</span> <span class="pos">prep, adv</span> <span class="def">در، داخل، درون</span>
+</>
+on
+<span class="phonetic">/ɒn/</span> <span class="pos">prep, adv</span> <span class="def">روی، بر روی، روشن، برقرار</span>
+</>
+at
+<span class="phonetic">/æt/</span> <span class="pos">prep</span> <span class="def">در (زمان یا مکان دقیق)</span>
+</>
+by
+<span class="phonetic">/baɪ/</span> <span class="pos">prep, adv</span> <span class="def">به وسیله، توسط، کنارِ، از مسیرِ</span>
+</>
+through
+<span class="phonetic">/θruː/</span> <span class="pos">prep, adv</span> <span class="def">از میان، از طریق، در سرتاسر</span>
+</>
+between
+<span class="phonetic">/bɪˈtwiːn/</span> <span class="pos">prep, adv</span> <span class="def">بین، در میان دو چیز/شخص</span>
+</>
+among
+<span class="phonetic">/əˈmʌŋ/</span> <span class="pos">prep</span> <span class="def">در میان (بیشتر از دو چیز/شخص)</span>
+</>
+under
+<span class="phonetic">/ˈʌn.dər/</span> <span class="pos">prep, adv</span> <span class="def">زیر، تحتِ، فرودست</span>
+</>
+over
+<span class="phonetic">/ˈəʊ.vər/</span> <span class="pos">prep, adv</span> <span class="def">بالای، سراسر، بیش از، خاتمه‌یافته</span>
+</>
+above
+<span class="phonetic">/əˈbʌv/</span> <span class="pos">prep, adv</span> <span class="def">بالای، فرادست</span>
+</>
+below
+<span class="phonetic">/bɪˈləʊ/</span> <span class="pos">prep, adv</span> <span class="def">پایین، زیرِ</span>
+</>
+high
+<span class="phonetic">/haɪ/</span> <span class="pos">adj, adv, noun</span> <span class="def">بلند، رفیع، زیاد، اوج</span>
+</>
+low
+<span class="phonetic">/ləʊ/</span> <span class="pos">adj, adv, noun</span> <span class="def">پایین، کم، نامرغوب</span>
+</>
+tall
+<span class="phonetic">/tɔːl/</span> <span class="pos">adj</span> <span class="def">قدبلند، مرتفع</span>
+</>
+short
+<span class="phonetic">/ʃɔːt/</span> <span class="pos">adj, adv</span> <span class="def">کوتاه، کم، مختصر</span>
+</>
+long
+<span class="phonetic">/lɒŋ/</span> <span class="pos">adj, adv, verb</span> <span class="def">طولانی، دراز، با اشتیاق طلب کردن</span>
+</>
+wide
+<span class="phonetic">/waɪd/</span> <span class="pos">adj, adv</span> <span class="def">پهن، عریض، گسترده، گشاد</span>
+</>
+narrow
+<span class="phonetic">/ˈnær.əʊ/</span> <span class="pos">adj, verb</span> <span class="def">باریک، تنگ، محدود کردن</span>
+</>
+deep
+<span class="phonetic">/diːp/</span> <span class="pos">adj, adv</span> <span class="def">عمیق، ژرف</span>
+</>
+shallow
+<span class="phonetic">/ˈʃæl.əʊ/</span> <span class="pos">adj</span> <span class="def">کم‌عمق، سطحی</span>
+</>
+heavy
+<span class="phonetic">/ˈhev.i/</span> <span class="pos">adj</span> <span class="def">سنگین، انبوه، شدید</span>
+</>
+light
+<span class="phonetic">/laɪt/</span> <span class="pos">adj</span> <span class="def">سبک‌وزن، کم‌فشار</span>
+</>
+soft
+<span class="phonetic">/sɒft/</span> <span class="pos">adj</span> <span class="def">نرم، ملایم، لطیف</span>
+</>
+hard
+<span class="phonetic">/hɑːd/</span> <span class="pos">adj</span> <span class="def">سفت، متصلب، خشن</span>
+</>
+rough
+<span class="phonetic">/rʌf/</span> <span class="pos">adj, adv</span> <span class="def">ناهموار، زبر، تقریبی، خشن</span>
+</>
+smooth
+<span class="phonetic">/smuːð/</span> <span class="pos">adj, verb</span> <span class="def">صاف، نرم، روان، هموار کردن</span>
+</>
+clean
+<span class="phonetic">/kliːn/</span> <span class="pos">adj, verb</span> <span class="def">تمیز، پاکیزه، پاک کردن/تمیز کردن</span>
+</>
+dirty
+<span class="phonetic">/ˈdɜː.ti/</span> <span class="pos">adj, verb</span> <span class="def">کثیف، آلوده، کثیف کردن</span>
+</>
+dry
+<span class="phonetic">/draɪ/</span> <span class="pos">adj, verb</span> <span class="def">خشک، خشن، بی‌روح، خشک کردن</span>
+</>
+wet
+<span class="phonetic">/wet/</span> <span class="pos">adj, verb</span> <span class="def">خیس، مرطوب، بارانی، خیس کردن</span>
+</>
+hot
+<span class="phonetic">/hɒt/</span> <span class="pos">adj</span> <span class="def">داغ، گرم، تند، جذاب</span>
+</>
+warm
+<span class="phonetic">/wɔːm/</span> <span class="pos">adj, verb</span> <span class="def">گرم، صمیمی، گرم کردن</span>
+</>
+cool
+<span class="phonetic">/kuːl/</span> <span class="pos">adj, verb</span> <span class="def">خنک، خونسرد، باحال، خنک کردن</span>
+</>
+cold
+<span class="phonetic">/kəʊld/</span> <span class="pos">adj, noun</span> <span class="def">سرد، سرما، سرماخوردگی</span>
+</>
+sweet
+<span class="phonetic">/swiːt/</span> <span class="pos">adj, noun</span> <span class="def">شیرین، دلنشین، شیرینی</span>
+</>
+sour
+<span class="phonetic">/saʊər/</span> <span class="pos">adj, verb</span> <span class="def">ترش، لجباز، ترش کردن</span>
+</>
+bitter
+<span class="phonetic">/ˈbɪt.ər/</span> <span class="pos">adj, noun</span> <span class="def">تلخ، گزنده، خصومت‌آمیز</span>
+</>
+salty
+<span class="phonetic">/ˈsɔːl.ti/</span> <span class="pos">adj</span> <span class="def">شور، نمکی</span>
+</>
+fresh
+<span class="phonetic">/freʃ/</span> <span class="pos">adj</span> <span class="def">تازه، باطراوت، جدید</span>
+</>
+stale
+<span class="phonetic">/steɪl/</span> <span class="pos">adj</span> <span class="def">کهنه، بیات</span>
+</>
+rotten
+<span class="phonetic">/ˈrɒt.ən/</span> <span class="pos">adj</span> <span class="def">پوسیده، گندیده، خراب</span>
+</>
+ripe
+<span class="phonetic">/raɪp/</span> <span class="pos">adj</span> <span class="def">رسیده، بالغ</span>
+</>
+raw
+<span class="phonetic">/rɔː/</span> <span class="pos">adj</span> <span class="def">خام، نپخته، فرآوری نشده</span>
+</>
+cooked
+<span class="phonetic">/kʊkt/</span> <span class="pos">adj</span> <span class="def">پخته، طبخ شده</span>
+</>
+delicious
+<span class="phonetic">/dɪˈlɪʃ.əs/</span> <span class="pos">adj</span> <span class="def">لذیذ، خوشمزه</span>
+</>
+tasty
+<span class="phonetic">/ˈteɪ.sti/</span> <span class="pos">adj</span> <span class="def">لذیذ، خوش طعم</span>
+</>
+hungry
+<span class="phonetic">/ˈhʌŋ.ɡri/</span> <span class="pos">adj</span> <span class="def">گرسنه</span>
+</>
+thirsty
+<span class="phonetic">/ˈθɜː.sti/</span> <span class="pos">adj</span> <span class="def">شنه، عطشان</span>
+</>
+full
+<span class="phonetic">/fʊl/</span> <span class="pos">adj, adv, noun</span> <span class="def">پر، کامل، سیر، لبریز</span>
+</>
+empty
+<span class="phonetic">/ˈemp.ti/</span> <span class="pos">adj, verb</span> <span class="def">خالی، تهی، خالی کردن</span>
+</>
+busy
+<span class="phonetic">/ˈbɪz.i/</span> <span class="pos">adj, verb</span> <span class="def">مشغول، شلوغ، پر رفت‌وآمد، به کار گماشتن</span>
+</>
+free
+<span class="phonetic">/friː/</span> <span class="pos">adj, adv, verb</span> <span class="def">آزاد، رایگان، رها، رها کردن/آزاد کردن</span>
+</>
+lazy
+<span class="phonetic">/ˈleɪ.zi/</span> <span class="pos">adj</span> <span class="def">تنبلی، تنبل</span>
+</>
+crazy
+<span class="phonetic">/ˈkreɪ.zi/</span> <span class="pos">adj</span> <span class="def">دیوانه، مجنون، شیفته</span>
+</>
+silly
+<span class="phonetic">/ˈsɪl.i/</span> <span class="pos">adj</span> <span class="def">نادان، احمقانه، ساده‌لوح</span>
+</>
+funny
+<span class="phonetic">/ˈfʌn.i/</span> <span class="pos">adj</span> <span class="def">خنده‌دار، بامزه، عجیب و غریب</span>
+</>
+boring
+<span class="phonetic">/ˈbɔː.rɪŋ/</span> <span class="pos">adj</span> <span class="def">کسل‌کننده، خسته‌کننده</span>
+</>
+exciting
+<span class="phonetic">/ɪkˈsaɪ.tɪŋ/</span> <span class="pos">adj</span> <span class="def">هیجان‌انگیز، محرک</span>
+</>
+interesting
+<span class="phonetic">/ˈɪn.tres.tɪŋ/</span> <span class="pos">adj</span> <span class="def">جالب، جذاب</span>
+</>
+important
+<span class="phonetic">/ɪmˈpɔː.tənt/</span> <span class="pos">adj</span> <span class="def">مهم، با اهمیت، پرنفوذ</span>
+</>
+necessary
+<span class="phonetic">/ˈnes.ə.ser.i/</span> <span class="pos">adj</span> <span class="def">ضروری، لازم</span>
+</>
+possible
+<span class="phonetic">/ˈpɒs.ə.bəl/</span> <span class="pos">adj</span> <span class="def">ممکن، شدنی، محتمل</span>
+</>
+impossible
+<span class="phonetic">/ɪmˈpɒs.ə.bəl/</span> <span class="pos">adj</span> <span class="def">غیرممکن، ناشدنی، محال</span>
+</>
+certain
+<span class="phonetic">/ˈsɜː.tən/</span> <span class="pos">adj</span> <span class="def">مطمئن، قطعی، مشخص</span>
+</>
+uncertain
+<span class="phonetic">/ʌnˈsɜː.tən/</span> <span class="pos">adj</span> <span class="def">نامطمئن، مشکوک، متغیر</span>
+</>
+clear
+<span class="phonetic">/klɪər/</span> <span class="pos">adj</span> <span class="def">واضح، روشن</span>
+</>
+obvious
+<span class="phonetic">/ˈɒb.vi.əs/</span> <span class="pos">adj</span> <span class="def">بدیهی، مبرهن، آشکار</span>
+</>
+secret
+<span class="phonetic">/ˈsiː.krət/</span> <span class="pos">noun, adj</span> <span class="def">راز، سر، مخفی، رمزآلود</span>
+</>
+private
+<span class="phonetic">/ˈpraɪ.vət/</span> <span class="pos">adj, noun</span> <span class="def">خصوصی، اختصاصی، سرباز ارتش</span>
+</>
+public
+<span class="phonetic">/ˈpʌb.lɪk/</span> <span class="pos">adj, noun</span> <span class="def">عمومی، علنی، عامه مردم</span>
+</>
+common
+<span class="phonetic">/ˈkɒm.ən/</span> <span class="pos">adj</span> <span class="def">مشترک، رایج، عامیانه</span>
+</>
+rare
+<span class="phonetic">/reər/</span> <span class="pos">adj</span> <span class="def">کمیاب، نادر، نیم‌پز (گوشت)</span>
+</>
+special
+<span class="phonetic">/ˈspeʃ.əl/</span> <span class="pos">adj, noun</span> <span class="def">ویژه، مخصوص، خاص، استثنایی</span>
+</>
+general
+<span class="phonetic">/ˈdʒen.ər.əl/</span> <span class="pos">adj, noun</span> <span class="def">عمومی، کلی، ژنرال، تیمسار</span>
+</>
+local
+<span class="phonetic">/ˈləʊ.kəl/</span> <span class="pos">adj, noun</span> <span class="def">محلی، موضعی</span>
+</>
+national
+<span class="phonetic">/ˈnæʃ.ən.əl/</span> <span class="pos">adj</span> <span class="def">ملی، کشوری</span>
+</>
+international
+<span class="phonetic">/ˌɪn.təˈnæʃ.ən.əl/</span> <span class="pos">adj</span> <span class="def">بین‌المللی</span>
+</>
+global
+<span class="phonetic">/ˈɡləʊ.bəl/</span> <span class="pos">adj</span> <span class="def">جهانی، سراسری</span>
+</>
+universal
+<span class="phonetic">/ˌjuː.nɪˈvɜː.səl/</span> <span class="pos">adj</span> <span class="def">جهانی، فراگیر، همگانی</span>
+</>
+total
+<span class="phonetic">/ˈtəʊ.təl/</span> <span class="pos">adj, noun, verb</span> <span class="def">کل، مجموع، مطلق، جمع زدن، بالغ شدن بر</span>
+</>
+partial
+<span class="phonetic">/ˈpɑː.ʃəl/</span> <span class="pos">adj</span> <span class="def">برخی، جزئی، ناتمام، طرفدارانه</span>
+</>
+perfect
+<span class="phonetic">/ˈpɜː.fekt/</span> <span class="pos">adj, verb</span> <span class="def">کامل، بی‌عیب، عالی، به کمال رساندن</span>
+</>
+complete
+<span class="phonetic">/kəmˈpliːt/</span> <span class="pos">adj, verb</span> <span class="def">کامل، مجهز، به اتمام رساندن</span>
+</>
+incomplete
+<span class="phonetic">/ˌɪn.kəmˈpliːt/</span> <span class="pos">adj</span> <span class="def">ناقص، ناتمام</span>
+</>
+simple
+<span class="phonetic">/ˈsɪm.pəl/</span> <span class="pos">adj</span> <span class="def">ساده، بی‌تکلف، آسان</span>
+</>
+complex
+<span class="phonetic">/ˈkɒm.pleks/</span> <span class="pos">adj, noun</span> <span class="def">پیچیده، مجتمع ساختمانی/صنعتی</span>
+</>
+easy
+<span class="phonetic">/ˈiː.zi/</span> <span class="pos">adj</span> <span class="def">سهل، بی دردسر</span>
+</>
+difficult
+<span class="phonetic">/ˈdɪf.ɪ.kəlt/</span> <span class="pos">adj</span> <span class="def">دشوار، پرزحمت</span>
+</>
+trouble
+<span class="phonetic">/ˈtrʌb.əl/</span> <span class="pos">noun, verb</span> <span class="def">دردسر، زحمت، مزاحم شدن</span>
+</>
+danger
+<span class="phonetic">/ˈdeɪn.dʒər/</span> <span class="pos">noun</span> <span class="def">خطر، مخاطره</span>
+</>
+safe
+<span class="phonetic">/seɪf/</span> <span class="pos">adj, noun</span> <span class="def">امن، بی‌خطر، گاوصندوق</span>
+</>
+secure
+<span class="phonetic">/sɪˈkjʊər/</span> <span class="pos">adj, verb</span> <span class="def">امن، مستحکم، ایمن کردن، به دست آوردن</span>
+</>
+quiet
+<span class="phonetic">/ˈkwaɪ.ət/</span> <span class="pos">adj, noun, verb</span> <span class="def">ساکت، آرام، آرامش، ساکت کردن</span>
+</>
+noisy
+<span class="phonetic">/ˈnɔɪ.zi/</span> <span class="pos">adj</span> <span class="def">شلوغ، پر سر و صدا</span>
+</>
+loud
+<span class="phonetic">/laʊd/</span> <span class="pos">adj, adv</span> <span class="def">بلند (صدا)</span>
+</>
+soft
+<span class="phonetic">/sɒft/</span> <span class="pos">adj</span> <span class="def">ملایم، کم‌توان</span>
+</>
+sharp
+<span class="phonetic">/ʃɑːp/</span> <span class="pos">adj, adv</span> <span class="def">تیز، تند، دقیق، ناگهانی</span>
+</>
+dull
+<span class="phonetic">/dʌl/</span> <span class="pos">adj, verb</span> <span class="def">کند، خنگ، ملال‌آور، مه‌آلود، کند کردن/تیره کردن</span>
+</>
+flat
+<span class="phonetic">/flæt/</span> <span class="pos">adj, noun</span> <span class="def">صاف، مسطح، آپارتمان، پنچر</span>
+</>
+round
+<span class="phonetic">/raʊnd/</span> <span class="pos">adj, adv, prep, noun, verb</span> <span class="def">گرد، مدور، دورِ، راند، نوبت، دور زدن/گرد کردن</span>
+</>
+square
+<span class="phonetic">/skweər/</span> <span class="pos">noun, adj, verb</span> <span class="def">مربع، میدان، مجذور، چهارگوش کردن، تسویه کردن</span>
+</>
+triangle
+<span class="phonetic">/ˈtraɪ.æŋ.ɡəl/</span> <span class="pos">noun</span> <span class="def">مثلث</span>
+</>
+circle
+<span class="phonetic">/ˈsɜː.kəl/</span> <span class="pos">noun, verb</span> <span class="def">دایره، محفل، دور زدن، چرخیدن</span>
+</>
+line
+<span class="phonetic">/laɪn/</span> <span class="pos">noun</span> <span class="def">سطر، طناب</span>
+</>
+point
+<span class="phonetic">/pɔɪnt/</span> <span class="pos">noun</span> <span class="def">نقطه، موضع</span>
+</>
+dot
+<span class="phonetic">/dɒt/</span> <span class="pos">noun, verb</span> <span class="def">نقطه کوچک، دات</span>
+</>
+space
+<span class="phonetic">/speɪs/</span> <span class="pos">noun</span> <span class="def">وسعت، خلا</span>
+</>
+time
+<span class="phonetic">/taɪm/</span> <span class="pos">noun</span> <span class="def">مرتبه، ضرباهنگ</span>
+</>
+year
+<span class="phonetic">/jɪər/</span> <span class="pos">noun</span> <span class="def">سال، سنه</span>
+</>
+month
+<span class="phonetic">/mʌnθ/</span> <span class="pos">noun</span> <span class="def">ماه (تقویمی)</span>
+</>
+week
+<span class="phonetic">/wiːk/</span> <span class="pos">noun</span> <span class="def">هفته</span>
+</>
+day
+<span class="phonetic">/deɪ/</span> <span class="pos">noun</span> <span class="def">روز روشن</span>
+</>
+hour
+<span class="phonetic">/aʊər/</span> <span class="pos">noun</span> <span class="def">ساعت (مدت ۶۰ دقیقه)</span>
+</>
+minute
+<span class="phonetic">/ˈmɪn.ɪt/</span> <span class="pos">noun</span> <span class="def">دقیقه، پیش‌نویس صورتجلسه</span>
+</>
+second
+<span class="phonetic">/ˈsek.ənd/</span> <span class="pos">noun</span> <span class="def">ثانیه</span>
+</>
+moment
+<span class="phonetic">/ˈməʊ.mənt/</span> <span class="pos">noun</span> <span class="def">لحظه، دم</span>
+</>
+instant
+<span class="phonetic">/ˈɪn.stənt/</span> <span class="pos">noun, adj</span> <span class="def">لحظه، آن، فوری، زودحل (قهوه)</span>
+</>
+present
+<span class="phonetic">/ˈprez.ənt/</span> <span class="pos">noun, adj, verb</span> <span class="def">حال، اکنون، هدیه، حاضر، ارائه دادن، تقدیم کردن</span>
+</>
+past
+<span class="phonetic">/pɑːst/</span> <span class="pos">noun, adj, prep</span> <span class="def">گذشته، پیشینه، از سر گذشته، پس از</span>
+</>
+future
+<span class="phonetic">/ˈfjuː.tʃər/</span> <span class="pos">noun, adj</span> <span class="def">آینده، آتی</span>
+</>
+age
+<span class="phonetic">/eɪdʒ/</span> <span class="pos">noun, verb</span> <span class="def">سن، سن و سال، عصر، عهد، پیر شدن/سالخورده کردن</span>
+</>
+century
+<span class="phonetic">/ˈsen.tʃər.i/</span> <span class="pos">noun</span> <span class="def">قرن، سده</span>
+</>
+history
+<span class="phonetic">/ˈhɪs.tər.i/</span> <span class="pos">noun</span> <span class="def">تاریخ علوم/اقوام</span>
+</>
+science
+<span class="phonetic">/ˈsaɪ.əns/</span> <span class="pos">noun</span> <span class="def">علم روشمند</span>
+</>
+technology
+<span class="phonetic">/tekˈnɒl.ə.dʒi/</span> <span class="pos">noun</span> <span class="def">فناوری، تکنولوژی</span>
+</>
+art
+<span class="phonetic">/ɑːt/</span> <span class="pos">noun</span> <span class="def">هنر خلاقانه</span>
+</>
+design
+<span class="phonetic">/dɪˈzaɪn/</span> <span class="pos">noun</span> <span class="def">نقشه طراحانه</span>
+</>
+production
+<span class="phonetic">/prəˈdʌk.ʃən/</span> <span class="pos">noun</span> <span class="def">تولید، انبوه محصول</span>
+</>
+industry
+<span class="phonetic">/ˈɪn.də.stri/</span> <span class="pos">noun</span> <span class="def">صنعت، پشتکار</span>
+</>
+business
+<span class="phonetic">/ˈbɪz.nɪs/</span> <span class="pos">noun</span> <span class="def">تجارت، کسب و کار، کاسبی، معامله</span>
+</>
+market
+<span class="phonetic">/ˈmɑː.kɪt/</span> <span class="pos">noun, verb</span> <span class="def">بازار، تقاضا، عرضه کردن در بازار</span>
+</>
+shop
+<span class="phonetic">/ʃɒp/</span> <span class="pos">noun, verb</span> <span class="def">مغازه، دکان، خرید کردن</span>
+</>
+store
+<span class="phonetic">/stɔːr/</span> <span class="pos">noun, verb</span> <span class="def">فروشگاه، انبار، ذخیره، انبار کردن/ذخیره کردن</span>
+</>
+price
+<span class="phonetic">/praɪs/</span> <span class="pos">noun, verb</span> <span class="def">قیمت، بها، ارزش، قیمت‌گذاری کردن</span>
+</>
+cost
+<span class="phonetic">/kɒst/</span> <span class="pos">noun, verb</span> <span class="def">هزینه، مخارج، هزینه داشتن، تمام شدن به قیمتِ</span>
+</>
+value
+<span class="phonetic">/ˈvæl.juː/</span> <span class="pos">noun, verb</span> <span class="def">ارزش، قدر، مقدار، ارزش قائل شدن، ارزیابی کردن</span>
+</>
+worth
+<span class="phonetic">/wɜːθ/</span> <span class="pos">adj, noun</span> <span class="def">ارزنده، دارای ارزشِ، ارزش، شایستگی</span>
+</>
+free
+<span class="phonetic">/friː/</span> <span class="pos">adj</span> <span class="def">بلاعوض، رایین</span>
+</>
+cheap
+<span class="phonetic">/tʃiːp/</span> <span class="pos">adj, adv</span> <span class="def">ارزان، کم‌ارزش، خسیسانه</span>
+</>
+expensive
+<span class="phonetic">/ɪkˈspen.sɪv/</span> <span class="pos">adj</span> <span class="def">گران‌قیمت، پرهزینه</span>
+</>
+rich
+<span class="phonetic">/rɪtʃ/</span> <span class="pos">adj</span> <span class="def">ثروتمند، غنی، پرمایه، چرب</span>
+</>
+poor
+<span class="phonetic">/pɔːr/</span> <span class="pos">adj</span> <span class="def">فقیر، بی‌نوا، ناچیز، ضعیف</span>
+</>
+bank
+<span class="phonetic">/bæŋk/</span> <span class="pos">noun, verb</span> <span class="def">بانک، ساحل رودخانه، سپرده‌گذاری کردن در بانک</span>
+</>
+coin
+<span class="phonetic">/kɔɪn/</span> <span class="pos">noun, verb</span> <span class="def">سکه، ضرب کردن سکه/ابداع کردن اصطلاح</span>
+</>
+note
+<span class="phonetic">/nəʊt/</span> <span class="pos">noun, verb</span> <span class="def">یادداشت، اسکناس، نت موسیقی، توجه، یادداشت کردن، متوجه شدن</span>
+</>
+bill
+<span class="phonetic">/bɪl/</span> <span class="pos">noun, verb</span> <span class="def">قبض، صورتحساب، لایحه قانونی، نوک پرنده، صورتحساب فرستادن</span>
+</>
+check
+<span class="phonetic">/tʃek/</span> <span class="pos">verb, noun</span> <span class="def">بررسی کردن، چک کردن، متوقف کردن، چک بانکی، تیک علامت</span>
+</>
+card
+<span class="phonetic">/kɑːd/</span> <span class="pos">noun</span> <span class="def">کارت اعتباری/ویزیت</span>
+</>
+ticket
+<span class="phonetic">/ˈtɪk.ɪt/</span> <span class="pos">noun, verb</span> <span class="def">بلیط، برچسب جریمه، جریمه کردن</span>
+</>
+pass
+<span class="phonetic">/pɑːs/</span> <span class="pos">noun</span> <span class="def">کارت عبور، مجوز</span>
+</>
+key
+<span class="phonetic">/kiː/</span> <span class="pos">noun</span> <span class="def">بصیرت</span>
+</>
+lock
+<span class="phonetic">/lɒk/</span> <span class="pos">noun, verb</span> <span class="def">قفل، طره مو، قفل کردن، مسدود کردن</span>
+</>
+gate
+<span class="phonetic">/ɡeɪt/</span> <span class="pos">noun</span> <span class="def">دروازه، گیت ورودی</span>
+</>
+door
+<span class="phonetic">/dɔːr/</span> <span class="pos">noun</span> <span class="def">در، باب</span>
+</>
+wall
+<span class="phonetic">/wɔːl/</span> <span class="pos">noun, verb</span> <span class="def">دیوار، جدار، دیوار کشیدن دورِ</span>
+</>
+floor
+<span class="phonetic">/flɔːr/</span> <span class="pos">noun, verb</span> <span class="def">کف اتاق، کف زمین، طبقه ساختمان، مغلوب کردن/کف زدن</span>
+</>
+roof
+<span class="phonetic">/ruːf/</span> <span class="pos">noun, verb</span> <span class="def">سقف، پشت‌بام، سقف زدن برای</span>
+</>
+house
+<span class="phonetic">/haʊs/</span> <span class="pos">noun</span> <span class="def">سرا</span>
+</>
+home
+<span class="phonetic">/həʊm/</span> <span class="pos">noun, adv, adj</span> <span class="def">منزل، خانه قلبی/مادری، موطن، به خانه، خانگی/داخلی</span>
+</>
+room
+<span class="phonetic">/ruːm/</span> <span class="pos">noun, verb</span> <span class="def">اتاق، فضا، جا، هم‌اتاق شدن</span>
+</>
+bed
+<span class="phonetic">/bed/</span> <span class="pos">noun, verb</span> <span class="def">تختخواب، بستر رودخانه/باغچه، بستر خواب فراهم کردن</span>
+</>
+chair
+<span class="phonetic">/tʃeər/</span> <span class="pos">noun, verb</span> <span class="def">صندلی، ریاست جلسه، ریاست جلسه را بر عهده داشتن</span>
+</>
+table
+<span class="phonetic">/ˈteɪ.bəl/</span> <span class="pos">noun, verb</span> <span class="def">میز، جدول، ارایه دادن به صورت جدول</span>
+</>
+desk
+<span class="phonetic">/desk/</span> <span class="pos">noun</span> <span class="def">میز تحریر/کار، باجه اطلاعات/پذیرش</span>
+</>
+box
+<span class="phonetic">/bɒks/</span> <span class="pos">noun, verb</span> <span class="def">جعبه، صندوق، بوکس بازی کردن، سیلی زدن</span>
+</>
+bag
+<span class="phonetic">/bæɡ/</span> <span class="pos">noun, verb</span> <span class="def">کیف، ساک، کیسه، کیسه کردن/به چنگ آوردن</span>
+</>
+pocket
+<span class="phonetic">/ˈpɒk.ɪt/</span> <span class="pos">noun, adj, verb</span> <span class="def">جیب، کیسه کوچک، جیبی، به جیب زدن</span>
+</>
+coat
+<span class="phonetic">/kəʊt/</span> <span class="pos">noun, verb</span> <span class="def">کت، بارانی، پالتو، لایه، روکش کردن</span>
+</>
+shirt
+<span class="phonetic">/ʃɜːt/</span> <span class="pos">noun</span> <span class="def">پیراهن مردانه</span>
+</>
+pants
+<span class="phonetic">/pænts/</span> <span class="pos">noun</span> <span class="def">شلوار</span>
+</>
+shoe
+<span class="phonetic">/ʃuː/</span> <span class="pos">noun, verb</span> <span class="def">کفش، نعل اسب، نعل کردن</span>
+</>
+hat
+<span class="phonetic">/hæt/</span> <span class="pos">noun</span> <span class="def">کلاه لبه‌دار</span>
+</>
+dress
+<span class="phonetic">/dres/</span> <span class="pos">noun, verb</span> <span class="def">لباس زنانه، پوشاک، لباس پوشیدن، آرایش کردن، پیراستن</span>
+</>
+suit
+<span class="phonetic">/suːt/</span> <span class="pos">noun, verb</span> <span class="def">کت و شلوار، پرونده قضایی، مناسب بودن، هماهنگ بودن</span>
+</>
+cloth
+<span class="phonetic">/klɒθ/</span> <span class="pos">noun</span> <span class="def">پارچه، دستمال پاک‌کننده</span>
+</>
+clothes
+<span class="phonetic">/kləʊðz/</span> <span class="pos">noun</span> <span class="def">لباس‌ها، پوشاک</span>
+</>
+wear
+<span class="phonetic">/weər/</span> <span class="pos">verb, noun</span> <span class="def">پوشیدن، به تن داشتن، فرسودن، فرسودگی، استهلاک</span>
+</>
+wash
+<span class="phonetic">/wɒʃ/</span> <span class="pos">verb, noun</span> <span class="def">شستن، شستشو</span>
+</>
+clean
+<span class="phonetic">/kliːn/</span> <span class="pos">verb</span> <span class="def">شستشو دادن، پیراستن</span>
+</>
+dry
+<span class="phonetic">/draɪ/</span> <span class="pos">verb</span> <span class="def">خشک کردن لباس/ظروف</span>
+</>
+iron
+<span class="phonetic">/ˈaɪ.ən/</span> <span class="pos">noun, verb</span> <span class="def">آهن، اتو، اتو کردن</span>
+</>
+ring
+<span class="phonetic">/rɪŋ/</span> <span class="pos">noun, verb</span> <span class="def">حلقه، انگشتر، زنگ تلفن/در، به صدا درآوردن زنگ، حلقه زدن</span>
+</>
+watch
+<span class="phonetic">/wɒtʃ/</span> <span class="pos">verb, noun</span> <span class="def">تماشا کردن، کشیک دادن، ساعت مچی، کشیک، پاسبانی</span>
+</>
+clock
+<span class="phonetic">/klɒk/</span> <span class="pos">noun, verb</span> <span class="def">ساعت دیواری یا رومیزی، ثبت کردن زمان کارکرد</span>
+</>
+time
+<span class="phonetic">/taɪm/</span> <span class="pos">noun</span> <span class="def">فرصت، عصر</span>
+</>
+sky
+<span class="phonetic">/skaɪ/</span> <span class="pos">noun</span> <span class="def">سپهر نیلگون</span>
+</>
+cloud
+<span class="phonetic">/klaʊd/</span> <span class="pos">noun, verb</span> <span class="def">ابر، غبار متراکم، کدر کردن، ابری شدن</span>
+</>
+rain
+<span class="phonetic">/reɪn/</span> <span class="pos">noun</span> <span class="def">مطر</span>
+</>
+snow
+<span class="phonetic">/snəʊ/</span> <span class="pos">noun</span> <span class="def">شدت سرما به صورت دانه برف</span>
+</>
+wind
+<span class="phonetic">/wɪnd/</span> <span class="pos">noun</span> <span class="def">جریان باد</span>
+</>
+storm
+<span class="phonetic">/stɔːm/</span> <span class="pos">noun, verb</span> <span class="def">توفان، یورش بردن، توفانی شدن</span>
+</>
+weather
+<span class="phonetic">/ˈweð.ər/</span> <span class="pos">noun, verb</span> <span class="def">آب و هوا، شرایط جوی، سالم ماندن از بحران/هوازدگی پیدا کردن</span>
+</>
+climate
+<span class="phonetic">/ˈklaɪ.mət/</span> <span class="pos">noun</span> <span class="def">اقلیم، آب و هوای منطقه</span>
+</>
+season
+<span class="phonetic">/ˈsiː.zən/</span> <span class="pos">noun, verb</span> <span class="def">فصل، چاشنی زدن، باتجربه کردن</span>
+</>
+spring
+<span class="phonetic">/sprɪŋ/</span> <span class="pos">noun, verb</span> <span class="def">بهار، فنر، چشمه، جهیدن، ناگهان پدیدار شدن</span>
+</>
+summer
+<span class="phonetic">/ˈsʌm.ər/</span> <span class="pos">noun</span> <span class="def">تابستان</span>
+</>
+autumn
+<span class="phonetic">/ˈɔː.təm/</span> <span class="pos">noun</span> <span class="def">پاییز</span>
+</>
+winter
+<span class="phonetic">/ˈwɪn.tər/</span> <span class="pos">noun</span> <span class="def">زمستان</span>
+</>
+year
+<span class="phonetic">/jɪər/</span> <span class="pos">noun</span> <span class="def">یک دور گردش زمین دور خورشید</span>
+</>
+month
+<span class="phonetic">/mʌnθ/</span> <span class="pos">noun</span> <span class="def">دوره تقریبی ۳۰ روزه</span>
+</>
+week
+<span class="phonetic">/wiːk/</span> <span class="pos">noun</span> <span class="def">دوره هفت روزه</span>
+</>
+day
+<span class="phonetic">/deɪ/</span> <span class="pos">noun</span> <span class="def">بازه ۲۴ ساعته</span>
+</>
+hour
+<span class="phonetic">/aʊər/</span> <span class="pos">noun</span> <span class="def">دوره ۶۰ دقیقه‌ای</span>
+</>
+minute
+<span class="phonetic">/ˈmɪn.ɪt/</span> <span class="pos">noun</span> <span class="def">دوره دقیقه‌ای کوتاه</span>
+</>
+second
+<span class="phonetic">/ˈsek.ənd/</span> <span class="pos">noun</span> <span class="def">یک‌شصتم دقیقه</span>
+</>
+moment
+<span class="phonetic">/ˈməʊ.mənt/</span> <span class="pos">noun</span> <span class="def">بازه زمانی آنی</span>
+</>
+instant
+<span class="phonetic">/ˈɪn.stənt/</span> <span class="pos">noun</span> <span class="def">کوتاه‌ترین وهله</span>
+</>
+present
+<span class="phonetic">/ˈprez.ənt/</span> <span class="pos">noun</span> <span class="def">زمان حال حاضر</span>
+</>
+past
+<span class="phonetic">/pɑːst/</span> <span class="pos">noun</span> <span class="def">سرگذشته</span>
+</>
+future
+<span class="phonetic">/ˈfjuː.tʃər/</span> <span class="pos">noun</span> <span class="def">سیر تقدیر آینده</span>
+</>
+age
+<span class="phonetic">/eɪdʒ/</span> <span class="pos">noun</span> <span class="def">سن شناسنامه یا دوران زمین‌شناسی</span>
+</>
+century
+<span class="phonetic">/ˈsen.tʃər.i/</span> <span class="pos">noun</span> <span class="def">یک صده تمام</span>
+</>
+history
+<span class="phonetic">/ˈhɪs.tər.i/</span> <span class="pos">noun</span> <span class="def">عصر مکتوب ثبت‌شده</span>
+</>
+science
+<span class="phonetic">/ˈsaɪ.əns/</span> <span class="pos">noun</span> <span class="def">علوم تجربی و نظری</span>
+</>
+technology
+<span class="phonetic">/tekˈnɒl.ə.dʒi/</span> <span class="pos">noun</span> <span class="def">صنایع نوین</span>
+</>
+art
+<span class="phonetic">/ɑːt/</span> <span class="pos">noun</span> <span class="def">هنرهای هفت‌گانه</span>
+</>
+design
+<span class="phonetic">/dɪˈzaɪn/</span> <span class="pos">noun</span> <span class="def">مهندسی شکل ظاهری</span>
+</>
+production
+<span class="phonetic">/prəˈdʌk.ʃən/</span> <span class="pos">noun</span> <span class="def">فرآیند فرآوری کالا</span>
+</>
+industry
+<span class="phonetic">/ˈɪn.də.stri/</span> <span class="pos">noun</span> <span class="def">واحدهای بزرگ صنعتی</span>
+</>
+business
+<span class="phonetic">/ˈbɪz.nɪs/</span> <span class="pos">noun</span> <span class="def">تبادلات تجاری بازرگانی</span>
+</>
+market
+<span class="phonetic">/ˈmɑː.kɪt/</span> <span class="pos">noun</span> <span class="def">بازار تقاضای اقتصادی</span>
+</>
+shop
+<span class="phonetic">/ʃɒp/</span> <span class="pos">noun</span> <span class="def">دکه خرید خرد</span>
+</>
+store
+<span class="phonetic">/stɔːr/</span> <span class="pos">noun</span> <span class="def">انباشته کالا</span>
+</>
+price
+<span class="phonetic">/praɪs/</span> <span class="pos">noun</span> <span class="def">بهای پرداختی</span>
+</>
+cost
+<span class="phonetic">/cost/</span> <span class="pos">noun</span> <span class="def">مخارج تمام شده</span>
+</>
+value
+<span class="phonetic">/ˈvæl.juː/</span> <span class="pos">noun</span> <span class="def">ارزش ذاتی یا عددی</span>
+</>
+worth
+<span class="phonetic">/wɜːθ/</span> <span class="pos">noun</span> <span class="def">میزان دارایی یا شایستگی ارزشمندی</span>
+</>
+free
+<span class="phonetic">/friː/</span> <span class="pos">adj</span> <span class="def">خلاص و راد</span>
+</>
+cheap
+<span class="phonetic">/tʃiːp/</span> <span class="pos">adj</span> <span class="def">بسیار ارزشمند به لحاظ قیمت پایین</span>
+</>
+expensive
+<span class="phonetic">/ɪkˈspen.sɪv/</span> <span class="pos">adj</span> <span class="def">گران به لحاظ بهای سرسام‌آور</span>
+</>
+rich
+<span class="phonetic">/rɪtʃ/</span> <span class="pos">adj</span> <span class="def">دارای تمکن مالی هنگفت</span>
+</>
+poor
+<span class="phonetic">/pɔːr/</span> <span class="pos">adj</span> <span class="def">مستمند</span>
+</>
+bank
+<span class="phonetic">/bæŋk/</span> <span class="pos">noun</span> <span class="def">بانک مالی</span>
+</>
+coin
+<span class="phonetic">/kɔɪn/</span> <span class="pos">noun</span> <span class="def">سکه‌های مفرغی یا نقدی</span>
+</>
+note
+<span class="phonetic">/nəʊt/</span> <span class="pos">noun</span> <span class="def">نت آهنگین یا رگه نوشته شده</span>
+</>
+bill
+<span class="phonetic">/bɪl/</span> <span class="pos">noun</span> <span class="def">سند دیون مالی</span>
+</>
+check
+<span class="phonetic">/check/</span> <span class="pos">noun</span> <span class="def">سند رسمی پرداخت مشروط</span>
+</>
+card
+<span class="phonetic">/kɑːd/</span> <span class="pos">noun</span> <span class="def">رگه پلاستیکی مغناطیسی پرداخت</span>
+</>
+ticket
+<span class="phonetic">/ˈtɪk.ɪt/</span> <span class="pos">noun</span> <span class="def">برگه مجوز ورود به سینما/حمل و نقل</span>
+</>
+pass
+<span class="phonetic">/pass/</span> <span class="pos">noun</span> <span class="def">مجوز گذار</span>
+</>
+key
+<span class="phonetic">/kiː/</span> <span class="pos">noun</span> <span class="def">مفتاح</span>
+</>
+lock
+<span class="phonetic">/lɒk/</span> <span class="pos">noun</span> <span class="def">بند و بست فیزیکی/مکانیکی چفت شده</span>
+</>
+gate
+<span class="phonetic">/ɡeɪt/</span> <span class="pos">noun</span> <span class="def">دری لنگه‌ای عظیم</span>
+</>
+door
+<span class="phonetic">/dɔːr/</span> <span class="pos">noun</span> <span class="def">دریچه بازشو ارتباطی عمومی</span>
+</>
+wall
+<span class="phonetic">/wɔːl/</span> <span class="pos">noun</span> <span class="def">دیواری ضخیم پیرامونی محافظت‌کننده</span>
+</>
+floor
+<span class="phonetic">/flɔːr/</span> <span class="pos">noun</span> <span class="def">سطح سخت قابل تردد بنا</span>
+</>
+roof
+<span class="phonetic">/ruːf/</span> <span class="pos">noun</span> <span class="def">پوشش فوقانی کل عمارت</span>
+</>
+house
+<span class="phonetic">/haʊs/</span> <span class="pos">noun</span> <span class="def">عمارت مسکونی خانوادگی</span>
+</>
+home
+<span class="phonetic">/həʊm/</span> <span class="pos">noun</span> <span class="def">وطن قلبی عاطفی آرامش‌بخش</span>
+</>
+room
+<span class="phonetic">/ruːm/</span> <span class="pos">noun</span> <span class="def">اتاقک جداسازی‌شده بنا</span>
+</>
+bed
+<span class="phonetic">/bed/</span> <span class="pos">noun</span> <span class="def">بستر استراحت خوابگاه</span>
+</>
+chair
+<span class="phonetic">/tʃeər/</span> <span class="pos">noun</span> <span class="def">چهارپایه پشتی‌دار راحت</span>
+</>
+table
+<span class="phonetic">/ˈteɪ.bəl/</span> <span class="pos">noun</span> <span class="def">سطح تراز پایه دار مخصوص کار یا غذا</span>
+</>
+desk
+<span class="phonetic">/desk/</span> <span class="pos">noun</span> <span class="def">میز شیب‌دار کشودار اداری یا تحصیلی</span>
+</>
+box
+<span class="phonetic">/box/</span> <span class="pos">noun</span> <span class="def">پاکت مقوایی محکم نگهداری ملزومات</span>
+</>
+bag
+<span class="phonetic">/bag/</span> <span class="pos">noun</span> <span class="def">کیسه قابل حمل دستی نگهداشت اسناد/خرید</span>
+</>
+pocket
+<span class="phonetic">/ˈpɒk.ɪt/</span> <span class="pos">noun</span> <span class="def">محفظه جیبی دوزی لباس</span>
+</>
+coat
+<span class="phonetic">/coat/</span> <span class="pos">noun</span> <span class="def">جامه‌ای آستین‌بلند ضخیم در سرما</span>
+</>
+shirt
+<span class="phonetic">/shirt/</span> <span class="pos">noun</span> <span class="def">پیراهن یقه دار دکمه‌دار مردانه</span>
+</>
+pants
+<span class="phonetic">/pants/</span> <span class="pos">noun</span> <span class="def">جامه‌ای پایین‌تنه پاچه‌دار مردانه/زنانه</span>
+</>
+shoe
+<span class="phonetic">/shoe/</span> <span class="pos">noun</span> <span class="def">پاپوش محکم چرمی پیاده‌روی</span>
+</>
+hat
+<span class="phonetic">/hat/</span> <span class="pos">noun</span> <span class="def">سایه‌بان سر یا کلاه</span>
+</>
+dress
+<span class="phonetic">/dress/</span> <span class="pos">noun</span> <span class="def">لباس فاخر مجلسی بلند زنانه</span>
+</>
+suit
+<span class="phonetic">/suit/</span> <span class="pos">noun</span> <span class="def">کت و جامه همسان مکمل مجلسی رسمی</span>
+</>
+cloth
+<span class="phonetic">/cloth/</span> <span class="pos">noun</span> <span class="def">بافته تاروپودی پارچه‌ای نساجی شده</span>
+</>
+clothes
+<span class="phonetic">/clothes/</span> <span class="pos">noun</span> <span class="def">مجموعه تن‌پوش جامه رخت</span>
+</>
+wear
+<span class="phonetic">/wear/</span> <span class="pos">noun</span> <span class="def">میزان استفاده و فرسودگی</span>
+</>
+wash
+<span class="phonetic">/wash/</span> <span class="pos">noun</span> <span class="def">فرآیند نظافت طهارت شستشویی</span>
+</>
+clean
+<span class="phonetic">/clean/</span> <span class="pos">noun</span> <span class="def">پاکیزکی عاری از گند</span>
+</>
+dry
+<span class="phonetic">/dry/</span> <span class="pos">noun</span> <span class="def">حالت خشکی تبخیریافته</span>
+</>
+iron
+<span class="phonetic">/iron/</span> <span class="pos">noun</span> <span class="def">فلزی مستحکم کانی آهنی</span>
+</>
+ring
+<span class="phonetic">/ring/</span> <span class="pos">noun</span> <span class="def">سازه‌ای دایره‌ای شکل فلزی گرانبها دستی انگشتری</span>
+</>
+watch
+<span class="phonetic">/watch/</span> <span class="pos">noun</span> <span class="def">زمان‌سنجی پوشیدنی مچی</span>
+</>
+clock
+<span class="phonetic">/clock/</span> <span class="pos">noun</span> <span class="def">دستگاه بزرگ دیواری زنگ‌دار مطلع زمان</span>
+</>
+time
+<span class="phonetic">/time/</span> <span class="pos">noun</span> <span class="def">بازه گذر موقت چرخشی گیتی</span>
+</>

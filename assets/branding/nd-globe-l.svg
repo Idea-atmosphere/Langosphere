@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432" role="img" aria-labelledby="title desc">
+  <title id="title">ND globe with L mark</title>
+  <desc id="desc">A luminous blue globe with latitude and longitude lines and a white L at its center.</desc>
+  <defs>
+    <linearGradient id="surface" x1="112" y1="84" x2="324" y2="350" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#54B5FF"/>
+      <stop offset="0.48" stop-color="#2783DE"/>
+      <stop offset="1" stop-color="#1556A8"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="136" y1="102" x2="270" y2="322" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity=".34"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="70" y="70" width="292" height="292" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#081C3A" flood-opacity=".34"/>
+    </filter>
+  </defs>
+  <rect width="432" height="432" rx="96" fill="#0F2345"/>
+  <g filter="url(#shadow)">
+    <circle cx="216" cy="216" r="132" fill="url(#surface)"/>
+    <circle cx="216" cy="216" r="132" fill="none" stroke="#BDE5FF" stroke-width="8"/>
+    <ellipse cx="216" cy="216" rx="61" ry="132" fill="none" stroke="#D8F0FF" stroke-width="6" stroke-opacity=".72"/>
+    <path d="M92 174h248M84 216h264M92 258h248" fill="none" stroke="#D8F0FF" stroke-width="6" stroke-linecap="round" stroke-opacity=".72"/>
+    <path d="M118 140c61 28 135 28 196 0M118 292c61-28 135-28 196 0" fill="none" stroke="#D8F0FF" stroke-width="6" stroke-linecap="round" stroke-opacity=".72"/>
+    <path d="M123 153c29-46 78-69 128-61-68 22-111 86-99 156 9 52 50 91 100 103-58 10-115-20-140-75-20-44-16-88 11-123Z" fill="url(#shine)"/>
+    <path d="M184 150v128h84" fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

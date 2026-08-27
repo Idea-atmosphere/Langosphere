@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- ND globe with L mark, scaled from assets/branding/nd-globe-l.svg. Content stays inside the adaptive-icon safe zone (36dp-72dp). -->
+    <path android:pathData="M21,54a33,33 0,1 1,66,0a33,33 0,1 1,-66,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="28"
+                android:startY="21"
+                android:endX="81"
+                android:endY="87.5">
+                <item android:offset="0" android:color="#54B5FF" />
+                <item android:offset="0.48" android:color="#2783DE" />
+                <item android:offset="1" android:color="#1556A8" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:fillColor="#00000000" android:strokeColor="#BDE5FF" android:strokeWidth="2" android:pathData="M21,54a33,33 0,1 1,66,0a33,33 0,1 1,-66,0" />
+    <path android:fillColor="#00000000" android:strokeColor="#D8F0FF" android:strokeAlpha="0.72" android:strokeWidth="1.5" android:pathData="M38.75,54a15.25,33 0,1 1,30.5,0a15.25,33 0,1 1,-30.5,0" />
+    <path android:fillColor="#00000000" android:strokeColor="#D8F0FF" android:strokeAlpha="0.72" android:strokeWidth="1.5" android:strokeLineCap="round" android:pathData="M23,43.5h62M21,54h66M23,64.5h62M29.5,35c15.25,7 33.75,7 49,0M29.5,73c15.25,-7 33.75,-7 49,0" />
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="7.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M46,37.5v32h21" />
+</vector>

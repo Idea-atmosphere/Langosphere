@@ -1,0 +1,360 @@
+package com.example.ui.theme
+
+/**
+ * App-wide UI language support. [AppLanguage] is persisted and exposed by
+ * AppViewModel (see AppViewModel.appLanguage / setAppLanguage); each screen
+ * builds an [AppStrings] instance from the current language to look up its
+ * user-facing text.
+ *
+ * Coverage: MainScreen, ReaderScreen, LeitnerScreen, AgentScreen,
+ * TranslationScreen, VideoPlayerScreen, DictionaryBottomSheet, and the
+ * donate popup / About dialog. A handful of raw exception messages
+ * surfaced verbatim from Kotlin/Android APIs (e.g. `e.message`) are not
+ * covered since they are not localizable app strings.
+ */
+enum class AppLanguage(val code: String) {
+    FA("fa"),
+    EN("en");
+
+    companion object {
+        fun fromCode(code: String?): AppLanguage = if (code == "en") EN else FA
+    }
+}
+
+class AppStrings(lang: AppLanguage) {
+    val isEn = lang == AppLanguage.EN
+    private fun t(fa: String, en: String) = if (isEn) en else fa
+
+    // ── App-wide / MainScreen ──
+    val appTitle = t("لنگوسفر", "Langosphere")
+    val tabReader = t("کتابخوان / متن", "Reader / Text")
+    val tabVideo = t("پخش‌کننده ویدیو", "Video Player")
+    val tabAgent = t("دستیار", "Assistant")
+    val tabLeitner = t("جعبه لایتنر", "Leitner Box")
+    val changeThemeCd = t("تغییر تم", "Change theme")
+    val themeLightMenu = t("☀️ روشن", "☀️ Light")
+    val themeDarkMenu = t("🌙 تاریک", "🌙 Dark")
+    val themeSystemMenu = t("📱 سیستم", "📱 System")
+    val appLanguageMenu = t("🌐 زبان برنامه", "🌐 App language")
+    val appLanguageDialogTitle = t("زبان برنامه", "App language")
+    val languageFaLabel = "فارسی"
+    val languageEnLabel = "English"
+    val unlimitedLabel = t("نامحدود", "Unlimited")
+    fun maxWordsMenuLabel(count: Int) = t(
+        "📝 تعداد کلمات: ${if (count == 0) "نامحدود" else "$count"}",
+        "📝 Word count: ${if (count == 0) "Unlimited" else "$count"}"
+    )
+    val fileManagerMenu = t("📁 مدیریت فایل‌ها", "📁 File manager")
+    val aboutMenu = t("ℹ️ درباره", "ℹ️ About")
+    val videoAudioLabel = t("فیلم / آهنگ", "Video / Audio")
+    val subEnLabel = t("زیرنویس انگلیسی", "English subtitle")
+    val subFaLabel = t("زیرنویس فارسی", "Persian subtitle")
+
+    // Max words dialog
+    val maxWordsDialogTitle = t("تعداد کلمات وارد شده", "Imported word count")
+    val maxWordsUnlimitedAll = t("نامحدود (همه کلمات)", "Unlimited (all words)")
+    fun maxWordsCountText(n: Int) = t("$n کلمه", "$n words")
+    val rangeStart = t("۰", "0")
+    val rangeMid = t("۵۰۰۰", "5000")
+    val rangeEnd = t("۱۰۰۰۰", "10000")
+    val maxWordsHint = t(
+        "۰ = نامحدود. هنگام وارد کردن فایل دیکشنری اعمال می‌شود.",
+        "0 = unlimited. Applied when importing a dictionary file."
+    )
+    val save = t("ذخیره", "Save")
+    val cancel = t("لغو", "Cancel")
+    val close = t("بستن", "Close")
+
+    // File manager dialog
+    val fileManagerTitle = t("📁 مدیریت فایل‌ها", "📁 File manager")
+    val fileManagerSavedLabel = t("فایل‌های ذخیره شده در فضای برنامه:", "Files saved in app storage:")
+    val exportAll = t("خروجی همه", "Export all")
+    val noFilesSaved = t("هیچ فایلی ذخیره نشده.", "No files saved.")
+    val exportCd = t("خروجی", "Export")
+    val deleteCd = t("حذف", "Delete")
+
+    // ── ReaderScreen ──
+    val importingDbTitle = t("در حال ایجاد دیتابیس دیکشنری...", "Building dictionary database...")
+    fun importingWordsCount(n: Int) = t("$n واژه ثبت شد\nلطفا صبور باشید...", "$n words registered\nPlease wait...")
+    val errorTitle = t("خطا", "Error")
+    val ok = t("باشه", "OK")
+    val textColorCd = t("رنگ متن", "Text color")
+    val exitFullscreenCd = t("خروج از تمام صفحه", "Exit fullscreen")
+    val fullscreenCd = t("تمام صفحه", "Fullscreen")
+    val dictLoadedActive = t("دیکشنری آفلاین فعال", "Offline dictionary active")
+    val dictEmpty = t("پایگاه‌داده خالی است", "Database is empty")
+    val dictHint = t(
+        "فایل‌های MDX، MDD، دیتابیس SQLite (.db) یا متنی را اضافه کرده و همزمان استفاده کنید.",
+        "Add MDX, MDD, SQLite (.db), or plain text files and use them together."
+    )
+    val addDictionary = t("افزودن دیکشنری", "Add dictionary")
+    val clearAll = t("پاک کردن همه", "Clear all")
+    fun importedFilesCount(n: Int) = t("فایل‌های وارد شده ($n)", "Imported files ($n)")
+    val selectTextPdf = t("انتخاب متن / PDF", "Select text / PDF")
+    val prevPage = t("◀ قبلی", "◀ Previous")
+    val nextPage = t("بعدی ▶", "Next ▶")
+    fun pageOfCount(n: Int) = t("از $n صفحه", "of $n pages")
+    val emptyReaderHint = t("برای شروع مطالعه، یک سند را بارگذاری کنید.", "Load a document to start reading.")
+    val colorDialogSubtitle = t(
+        "یکی از رنگ‌های زیر را انتخاب کنید یا رنگ دلخواه خود را بسازید:",
+        "Choose one of the colors below, or mix your own:"
+    )
+    val customColorLabel = t("رنگ دلخواه", "Custom color")
+    val redLabel = t("قرمز", "Red")
+    val greenLabel = t("سبز", "Green")
+    val blueLabel = t("آبی", "Blue")
+    val applyCustomColor = t("اعمال رنگ دلخواه", "Apply custom color")
+    val presetDefault = t("پیش‌فرض", "Default")
+    val presetBlack = t("سیاه", "Black")
+    val presetWhite = t("سفید", "White")
+    val presetGreen = t("سبز", "Green")
+    val presetRed = t("قرمز", "Red")
+    val presetCyan = t("فیروزه‌ای", "Cyan")
+    val presetIndigo = t("بنفش", "Indigo")
+    val presetAmber = t("کهربایی", "Amber")
+
+    // ── LeitnerScreen ──
+    val leitnerTitle = t("📦 جعبه لایتنر", "📦 Leitner Box")
+    val exportAnki = t("خروجی Anki (txt)", "Export to Anki (txt)")
+    fun leitnerSummary(all: Int, due: Int) = t(
+        "در مجموع $all کارت، $due کارت آمادهٔ مرور امروز.",
+        "$all cards total, $due due for review today."
+    )
+    fun reviewTodayChip(n: Int) = t("مرور امروز ($n)", "Review today ($n)")
+    fun allCardsChip(n: Int) = t("همه کارت‌ها ($n)", "All cards ($n)")
+    val leitnerEmptyAddHint = t(
+        "هنوز کلمه‌ای به جعبه لایتنر اضافه نکرده‌اید. روی هر کلمه در دیکشنری ضربه بزنید و «افزودن به جعبه لایتنر» را انتخاب کنید.",
+        "You haven't added any words to the Leitner box yet. Tap a word in the dictionary and choose \"Add to Leitner box\"."
+    )
+    val leitnerEmptyDoneToday = t("کارتی برای مرور امروز باقی نمانده. 🎉", "No cards left to review today. 🎉")
+    val leitnerEmptyNoCards = t("هنوز کلمه‌ای به جعبه لایتنر اضافه نکرده‌اید.", "You haven't added any words to the Leitner box yet.")
+    fun boxOfFive(level: Int) = t("جعبه $level از 5", "Box $level of 5")
+    fun boxLabel(level: Int) = t("جعبه $level", "Box $level")
+    val showMeaning = t("نمایش معنی", "Show meaning")
+    val didntKnow = t("بلد نبودم", "Didn't know")
+    val knewIt = t("بلد بودم", "Knew it")
+
+    // ── AgentScreen ──
+    val agentNewChatCd = t("چت جدید", "New chat")
+    val agentHistoryCd = t("تاریخچه چت", "Chat history")
+    val agentMemoryCd = t("حافظه AI", "AI memory")
+    val agentSettingsCd = t("تنظیمات", "Settings")
+    val agentNoFileLoaded = t("فایلی بارگذاری نشده", "No file loaded")
+    val agentMemoryActive = t("🧠 حافظه فعال", "🧠 Memory active")
+    val apiKeyLabel = "API Key"
+    val baseUrlLabel = "Base URL"
+    val modelLabel = "Model"
+    val targetLangLabel = t("زبان مقصد", "Target language")
+    val targetLangPlaceholder = t("فارسی", "Persian")
+    val bubbleColorTitle = t("رنگ حباب پیام‌ها", "Message bubble color")
+    val bubbleColorHint = t(
+        "رنگ پیام‌هایی که شما ارسال می‌کنید و پیام‌هایی که از Agent دریافت می‌کنید را جدا از هم انتخاب کنید",
+        "Choose separate colors for the messages you send and the ones you receive from the Agent"
+    )
+    val sentMessagesLabel = t("پیام‌های شما (ارسالی)", "Your messages (sent)")
+    val receivedMessagesLabel = t("پیام‌های دستیار (دریافتی)", "Assistant messages (received)")
+    val defaultCd = t("پیش‌فرض", "Default")
+    val learnFromSubtitlesBtn = t("🧠 یادگیری از زیرنویس", "🧠 Learn from subtitles")
+    val learnFromDictionaryBtn = t("📖 یادگیری از دیکشنری", "📖 Learn from dictionary")
+    val stopCd = t("توقف", "Stop")
+    val agentThinking = t("در حال فکر کردن...", "Thinking...")
+    val askAgentPlaceholder = t("از Agent بپرسید...", "Ask the Agent...")
+    val sendCd = t("ارسال", "Send")
+    val chatHistoryTitle = t("تاریخچه چت‌ها", "Chat history")
+    val noChatsSaved = t("هیچ چتی ذخیره نشده.", "No chats saved.")
+    val openCd = t("باز کردن", "Open")
+    val memoryTabPrompts = t("پرامپت‌ها", "Prompts")
+    val memoryTabCorrections = t("اصلاحات", "Corrections")
+    val memoryTabSkills = t("مهارت‌ها", "Skills")
+    val memoryTabExportImport = t("خروجی/ورودی", "Export/Import")
+    val promptTranslate = t("ترجمه", "Translate")
+    val promptChat = t("چت", "Chat")
+    val promptAgent = "Agent"
+    val promptTranslateEmpty = t("ترجمه خالی‌ها", "Translate blanks")
+    val customBadge = t("سفارشی ✓", "Custom ✓")
+    val editBtn = t("ویرایش", "Edit")
+    val resetBtn = t("بازنشانی", "Reset")
+    fun editingPromptTitle(name: String) = t("ویرایش پرامپت: $name", "Editing prompt: $name")
+    val promptTextPlaceholder = t("متن پرامپت...", "Prompt text...")
+    val noCorrectionsSaved = t("هیچ اصلاحی ذخیره نشده. وقتی خروجی AI رو تصحیح کنی، خودکار ذخیره می‌شه.", "No corrections saved yet. They're saved automatically whenever you correct an AI output.")
+    fun correctionsSavedCount(n: Int) = t("$n اصلاح ذخیره شده:", "$n corrections saved:")
+    fun sourceLabel(text: String) = t("منبع: $text", "Source: $text")
+    val addManualCorrection = t("+ افزودن اصلاح دستی", "+ Add manual correction")
+    val addCorrectionTitle = t("افزودن اصلاح", "Add correction")
+    val sourceTextLabel = t("متن منبع", "Source text")
+    val wrongTranslationLabel = t("ترجمه اشتباه", "Wrong translation")
+    val correctTranslationLabel = t("ترجمه درست", "Correct translation")
+    val noSkillsSaved = t("هیچ مهارت/یادداشتی ذخیره نشده.\nبرای افزودن، در چت بنویس:\n«یادداشت: ...» یا «قانون: ...»", "No skills/notes saved yet.\nTo add one, write in chat:\n\"note: ...\" or \"rule: ...\"")
+    fun skillsSavedCount(n: Int) = t("$n مهارت/یادداشت:", "$n skills/notes:")
+    val addSkillNote = t("+ افزودن مهارت/یادداشت", "+ Add skill/note")
+    val addSkillTitle = t("افزودن مهارت/یادداشت", "Add skill/note")
+    val textLabel = t("متن", "Text")
+    val categoryUserNote = t("یادداشت", "Note")
+    val categoryTranslationRule = t("قانون ترجمه", "Translation rule")
+    val categorySkill = t("مهارت", "Skill")
+    val categoryDictionaryTip = t("نکته دیکشنری", "Dictionary tip")
+    val exportImportTitle = t("خروجی/ورودی حافظه AI", "AI memory export/import")
+    val exportImportDesc = t("تمام داده‌های حافظه (پرامپت‌ها، اصلاحات، مهارت‌ها) به‌صورت یه فایل JSON.", "All memory data (prompts, corrections, skills) as a single JSON file.")
+    val exportToDownloadsBtn = t("📥 خروجی به Downloads", "📥 Export to Downloads")
+    val importFromFileLabel = t("ورودی از فایل:", "Import from file:")
+    val selectFileImportBtn = t("📤 انتخاب فایل و وارد کردن", "📤 Select file and import")
+    val clearAllMemoryBtn = t("🗑 پاک کردن کل حافظه", "🗑 Clear all memory")
+
+    // ── TranslationScreen ──
+    val subEnChip = t("زیرنویس انگلیسی", "English subtitle")
+    val subFaChip = t("زیرنویس فارسی", "Persian subtitle")
+    fun linesPerRequestLabel(isDefault: Boolean, n: Int) = t(
+        if (isDefault) "خط در هر درخواست: پیش‌فرض (همه)" else "خط در هر درخواست: $n",
+        if (isDefault) "Lines per request: default (all)" else "Lines per request: $n"
+    )
+    val defaultChip = t("پیش‌فرض", "Default")
+    val translateBtn = t("ترجمه", "Translate")
+    val allBtn = t("همه", "All")
+    val apiKeySetError = t("API Key را تنظیم کنید", "Please set the API Key")
+    val noLinesLeftError = t("خطی برای ترجمه باقی نمانده", "No lines left to translate")
+    fun translatingLinesProgress(start: Int, end: Int, total: Int) = t(
+        "ترجمه خطوط $start تا $end از $total...",
+        "Translating lines $start to $end of $total..."
+    )
+    fun translatingAllProgress(total: Int) = t("ترجمه همه $total خط...", "Translating all $total lines...")
+    fun errorWithMessage(msg: String?) = t("خطا: $msg", "Error: $msg")
+    val prevLineCd = t("خط قبلی", "Previous line")
+    val nextLineCd = t("خط بعدی", "Next line")
+    fun batchInfo(current: Int, total: Int, start: Int, end: Int) = t(
+        "دسته $current از $total (خطوط $start تا $end)",
+        "Batch $current of $total (lines $start to $end)"
+    )
+    val nextBatchBtn = t("۱۰۰ خط بعدی", "Next 100 lines")
+    val allDoneLabel = t("✅ تمام", "✅ Done")
+    val noSubtitleLoadedTitle = t("زیرنویسی بارگذاری نشده", "No subtitle loaded")
+    val noSubtitleLoadedHint = t("از تب پخش‌کننده ویدیو زیرنویس اضافه کنید", "Add a subtitle from the Video Player tab")
+    fun moreLinesLabel(n: Int) = t("... و $n خط دیگر", "... and $n more lines")
+    val askAboutSubtitlePlaceholder = t("پرسش درباره زیرنویس...", "Ask about the subtitle...")
+    val translationSettingsTitle = t("تنظیمات ترجمه هوشمند", "Smart translation settings")
+    val langFa = t("فارسی", "Persian")
+    val langAr = t("عربی", "Arabic")
+    val langTr = t("ترکی", "Turkish")
+    val langFr = t("فرانسه", "French")
+    val langDe = t("آلمانی", "German")
+    val langEs = t("اسپانیایی", "Spanish")
+    val langJa = t("ژاپنی", "Japanese")
+    val langKo = t("کره‌ای", "Korean")
+    val translationProcessing = t("در حال پردازش...", "Processing...")
+
+    // ── VideoPlayerScreen ──
+    val resetPositionsTitle = t("بازنشانی موقعیت دکمه‌ها", "Reset button positions")
+    val resumePlayBtn = t("ادامه پلی", "Resume playback")
+    val autoStopPrevSubtitle = t("توقف خودکار — زیرنویس قبلی", "Auto-stop — previous subtitle")
+    val autoStopCurrentSubtitle = t("توقف خودکار — زیرنویس فعلی", "Auto-stop — current subtitle")
+    val resumeCd = t("ادامه", "Resume")
+    val playerSettingsCd = t("تنظیمات پخش‌کننده", "Player settings")
+    val audioPlayingHint = t("🎵 در حال پخش است... ضربه روی کلمات برای ترجمه", "🎵 Now playing... tap words to translate")
+    val playerSettingsTitle = t("تنظیمات پخش‌کننده و زیرنویس", "Player and subtitle settings")
+    val design1Title = t("طراحی ۱ (ظاهر مدرن و جلوه نیمه‌شفاف)", "Design 1 (modern look with glass effect)")
+    val design1Desc = t("فعال کردن پوسته شیک، آمیخته با سایه‌های نرم و جلوه‌های زیبای ریتمیک (Blur)", "Enable the sleek skin with soft shadows and a smooth blur effect")
+    val appAccentColorTitle = t("رنگ اصلی برنامه", "App accent color")
+    val appAccentColorDesc = t("رنگ دکمه‌ها، آیکون‌ها و جلوه‌های اصلی برنامه را به سلیقهٔ خودتان تغییر دهید", "Customize the color of buttons, icons, and the app's main accents")
+    val showSubtitlesTitle = t("نمایش زیرنویس‌ها", "Show subtitles")
+    val showSubtitlesDesc = t("نمایش یا عدم نمایش متن‌های زیرنویس روی ویدیو", "Show or hide subtitle text over the video")
+    val smartPauseTitle = t("توقف هوشمند کلمات", "Smart word pause")
+    val smartPauseDesc = t("توقف فیلم با زدن روی کلمه بدون سیاه شدن آزاردهنده صفحه", "Pause the video by tapping a word, without an annoying blackout")
+    val doubleTapSkipTitle = t("زمان پرش دوبار لمس ویدیو", "Double-tap skip duration")
+    fun secondsLabel(n: Int) = t("$n ثانیه", "$n seconds")
+    val subtitleFontSizeTitle = t("اندازه فونت زیرنویس", "Subtitle font size")
+    val subtitlePositionTitle = t("موقعیّت قرارگیری (ارتفاع از پایین)", "Position (height from bottom)")
+    val subtitleColorTitle = t("رنگ زیرنویس‌ها", "Subtitle colors")
+    val subEnParenLabel = t("زیرنویس انگلیسی (EN)", "English subtitle (EN)")
+    val subFaParenLabel = t("زیرنویس فارسی (FA)", "Persian subtitle (FA)")
+    val subtitleFontTitle = t("فونت زیرنویس‌ها", "Subtitle fonts")
+    val subtitleFontDesc = t("در صورتی که گزینه‌های پیش‌فرض برای فارسی مناسب نبود، فونت دلخواه (.ttf/.otf) وارد کنید", "If the built-in options don't suit Persian well, import a custom font (.ttf/.otf)")
+    val fontEnLabel = t("فونت انگلیسی (EN)", "English font (EN)")
+    val fontFaLabel = t("فونت فارسی (FA)", "Persian font (FA)")
+    val fontDefault = t("پیش‌فرض", "Default")
+    val fontCustomLabel = t("دلخواه", "Custom")
+    val importCustomFontBtn = t("📂 وارد کردن فونت دلخواه", "📂 Import custom font")
+    val removeCustomFontBtn = t("حذف فونت دلخواه", "Remove custom font")
+    val syncTitle = t("⏱️ هماهنگ‌سازی زمان زیرنویس‌ها (جلو/عقب بردن)", "⏱️ Subtitle time sync (shift forward/back)")
+    fun syncCurrentOffset(label: String, offset: String) = t("$label — تغییر فعلی: $offset ثانیه", "$label — current shift: $offset sec")
+    fun shiftValueLabel(offset: String) = t("تغییر: $offset ثانیه", "Shift: $offset sec")
+    val langCodeEn = t("انگلیسی (EN)", "English (EN)")
+    val langCodeFa = t("فارسی (FA)", "Persian (FA)")
+    val exactTimeLabel = t("زمان دقیق (ثانیه)", "Exact time (seconds)")
+    val applyBtn = t("اعمال", "Apply")
+    val syncHint = t("راهنما: عدد مثبت یعنی زیرنویس جلوتر نمایش داده شود (تأخیر آن جبران شود) و عدد منفی یعنی عقب‌تر.", "Tip: a positive number shows the subtitle earlier (compensating for delay); a negative number shows it later.")
+    val saveSrtBtn = t("💾 ذخیره فایل SRT", "💾 Save SRT file")
+    val noFaSubtitleToSave = t("زیرنویس فارسی برای ذخیره وجود ندارد", "No Persian subtitle to save")
+    val confirmReturnBtn = t("تایید و بازگشت", "Confirm and return")
+    val allSubtitlesListTitle = t("لیست تمام زیرنویس‌ها (برای پرش کلیک کنید)", "All subtitles (tap to jump)")
+    val loadSubtitleHint = t("پس از بارگذاری فایل زیرنویس، لیست خطوط اینجا نمایش داده می‌شود.", "Once a subtitle file is loaded, the line list will appear here.")
+    val syncSettingsRowTitle = t("تنظیم و هماهنگ‌سازی زمان زیرنویس‌ها (Sync)", "Adjust and sync subtitle timing")
+    val collapseSync = t("بستن تنظیمات ▲", "Collapse settings ▲")
+    val expandSync = t("کلیک برای تنظیم زمان ▼", "Tap to adjust timing ▼")
+    val playingLabel = t("در حال پخش", "Playing")
+    val playFromStartBtn = t("پخش از ابتدا", "Play from start")
+    val playAutoStopBtn = t("پخش و توقف خودکار", "Play with auto-stop")
+    val translatingLabel = t("در حال ترجمه...", "Translating...")
+    val aiTranslateBtn = t("🤖 ترجمه AI", "🤖 AI translate")
+
+    // ── DictionaryBottomSheet ──
+    val allFilterChip = t("همه", "All")
+    val addedToLeitnerLabel = t("در جعبه لایتنر ذخیره شد ✓", "Saved to Leitner box ✓")
+    val addToLeitnerBtn = t("افزودن به جعبه لایتنر", "Add to Leitner box")
+    val searchWordPlaceholder = t("جستجوی کلمه...", "Search a word...")
+    val wordLabel = t("کلمه", "Word")
+    val searchCd = t("جستجو", "Search")
+    val subtitleAndTranslationLabel = t("متن زیرنویس و ترجمه", "Subtitle text and translation")
+    fun matchedTranslationLabel(text: String) = t("ترجمه منطبق: $text", "Matched translation: $text")
+    val autoDetectWarning = t("⚠️ تشخیص خودکار — ممکن است اشتباه باشد", "⚠️ Auto-detected — may be inaccurate")
+    val noResultsFound = t("واژه‌ای یافت نشد. پسوندها (s, ed, ing) را حذف و مجددا جستجو کنید.", "No word found. Try removing suffixes (s, ed, ing) and search again.")
+
+    // ── AppViewModel status/toast messages ──
+    val invalidIndexError = t("ایندکس نامعتبر", "Invalid index")
+    val translationEmptyError = t("ترجمه خالی بود", "Translation was empty")
+    val subEnNotLoaded = t("زیرنویس انگلیسی بارگذاری نشده", "English subtitle not loaded")
+    val subFaNotLoadedBoth = t("زیرنویس فارسی بارگذاری نشده. هر دو فایل را وارد کنید.", "Persian subtitle not loaded. Please import both files.")
+    val noMatchedPairsFound = t("هیچ جفت هماهنگ پیدا نشد.", "No matching pairs found.")
+    fun learnedPairsCount(n: Int) = t("یادگیری: $n جفت ذخیره شد", "Learned: $n pairs saved")
+    val dictNotLoadedForLearning = t("دیکشنری بارگذاری نشده.", "Dictionary not loaded.")
+    fun learnedWordsCount(count: Int, total: Int) = t("یادگیری از دیکشنری: $count کلمه ذخیره شد (از $total کلمه)", "Learned from dictionary: $count words saved (of $total)")
+    val fileNotFoundError = t("فایل پیدا نشد", "File not found")
+    fun savedAtPath(path: String) = t("✅ ذخیره شد: $path", "✅ Saved: $path")
+    val noFilesToExport = t("هیچ فایلی برای خروجی وجود ندارد", "No files to export")
+    fun exportedFilesSummary(ok: Int, total: Int, names: String) = t("✅ $ok از $total فایل در Downloads ذخیره شد:\n$names", "✅ $ok of $total files saved to Downloads:\n$names")
+    val noFaSubtitleExists = t("زیرنویس فارسی وجود ندارد", "No Persian subtitle exists")
+    val srtCreateError = t("خطا در ایجاد فایل SRT", "Error creating SRT file")
+    val downloadsCreateError = t("خطا در ایجاد فایل در Downloads", "Error creating file in Downloads")
+    val fileWriteError = t("خطا در نوشتن فایل", "Error writing file")
+    val noWordMeaningFound = t("برای این کلمه معنایی یافت نشد", "No meaning found for this word")
+    val noMeaningToSave = t("معنایی برای ذخیره پیدا نشد", "No meaning found to save")
+    fun wordAddedToLeitner(word: String) = t("«$word» به جعبه لایتنر اضافه شد", "\"$word\" added to the Leitner box")
+    fun wordUpdatedInLeitner(word: String) = t("معنای «$word» در جعبه لایتنر به‌روزرسانی شد", "The meaning of \"$word\" was updated in the Leitner box")
+    val leitnerBoxEmpty = t("جعبه لایتنر خالی است", "The Leitner box is empty")
+    fun ankiExportSaved(path: String) = t("✅ خروجی Anki ذخیره شد: $path", "✅ Anki export saved: $path")
+
+    // ── Donate popup / About dialog ──
+    val socialTitle = t("ارتباط با ما", "Connect with us")
+
+	val socialDescription = t(
+	    "برای خبرها، پیشنهادها و پشتیبانی ما را دنبال کنید.",
+	    "Follow us for news, suggestions, and support."
+	)
+	
+	val telegramLabel = "Telegram"
+	val telegramTopicLabel = "Telegram Topic"
+	val githubLabel = "GitHub"
+    val donateInfoBannerText = t(
+        "این برنامه کاملاً رایگانه، ولی اگر خواستید می‌توانید از پروژه حمایت کنید",
+        "This app is completely free, but if you'd like, you can donate to support the project"
+    )
+    val donateLinkInvalidError = t("لینک معتبر نیست", "The link isn't valid")
+    fun addressCopiedToast(title: String) = t("آدرس $title کپی شد", "$title address copied")
+    val openLinkCd = t("باز کردن لینک", "Open link")
+    val copyAddressCd = t("کپی آدرس", "Copy address")
+    val donateCloseBtn = t("بستن", "Close")
+    val donateDontShowAgainBtn = t("دیگر نمایش نده", "Don't show again")
+    val aboutDialogTitle = t("درباره", "About")
+    fun aboutVersionLabel(version: String) = t("نسخه $version", "Version $version")
+    val bitcoinTitle = t("بیت‌کوین (Bitcoin)", "Bitcoin")
+    val tetherTitle = t("تتر (USDT)", "Tether (USDT)")
+    val tonTitle = t("تون (TON)", "TON")
+}
