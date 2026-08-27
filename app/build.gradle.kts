@@ -14,8 +14,8 @@ android {
     applicationId = "com.langosphere"
     minSdk = 24
     targetSdk = 36
-    versionCode = 9
-    versionName = "1.0.9"
+    versionCode = 1
+    versionName = "0.0.1"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -119,7 +119,7 @@ dependencies {
 }
 
 tasks.register<Copy>("copyApkToApksDir") {
-    from(layout.buildDirectory.file("outputs/apk/debug/app-debug.apk"))
+    from(layout.buildDirectory.file("outputs/apk/debug/Langosphere.apk"))
     into(rootProject.file("apks"))
 }
 
