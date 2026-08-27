@@ -42,7 +42,7 @@ I am not a programmer, and my programming knowledge is basically zero. I spent a
 
 1. **Base and Core Structure:** Creation of the project base by **AI Studio**.
 2. **Further Development:** Using a combination of Hermes + 9Router + OpenCode with the **MiMo 2.5 Free** model.
-3. **Advanced Development:** Using Notion's free 6-month plan, I managed to use **GLM 5.2** and **Claude 5 Sonnet** models to complete the project.
+3. **Further Development again:** Using Notion's free 6-month plan, I managed to use **GLM 5.2** and **Claude 5 Sonnet** models to complete the project.
 
 Which still has a long way to go to get better.
 
