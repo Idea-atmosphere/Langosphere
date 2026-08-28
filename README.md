@@ -53,7 +53,7 @@ Which still has a long way to go to get better.
 To stay updated on the latest updates, report issues, or suggest your ideas, you can use the following links:
 
 * **Telegram Channel:** [Idea_atmosphere](https://t.me/Idea_atmosphere)
-* **Telegram Group/Topic:** [Idea_atmosphere_topic](https://t.me/Idea_atmosphere_topic)
+* **Telegram Topic:** [Idea_atmosphere_topic](https://t.me/Idea_atmosphere_topic)
   * **General Section:** General chat
   * **Issues Section:** Report bugs and app problems
   * **Ideas Section:** Send suggestions to make the app better
