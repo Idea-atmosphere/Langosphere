@@ -44,7 +44,7 @@ package com.example.ui.components
  */
 object DonateInfo {
     // Opened in the browser when the user taps the top row.
-    const val SUPPORT_LINK_TITLE: String = "دارامت"
+    const val SUPPORT_LINK_TITLE: String = "دارمت"
     const val SUPPORT_LINK_URL: String = "https://daramet.com/Idea_atmosphere"
 
     const val BTC_ADDRESS: String = "Soon or Never"
