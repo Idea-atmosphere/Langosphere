@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
@@ -102,6 +104,11 @@ fun MainScreen(
     val subFaLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let { viewModel.loadSubFa(it) }
     }
+
+    // Add-subtitle chooser: tapping a subtitle button first opens this popup,
+    // where the user either picks a subtitle file or pastes one straight from
+    // the clipboard (copied file contents / a copied .srt file). null = hidden.
+    var subtitleChooserTarget by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(saveMessage) {
         saveMessage?.let {
@@ -285,7 +292,7 @@ fun MainScreen(
                                 }
 
                                 OutlinedButton(
-                                    onClick = { subEnLauncher.launch(arrayOf("*/*")) },
+                                    onClick = { subtitleChooserTarget = 0 },
                                     modifier = Modifier.weight(1f),
                                     shape = MaterialTheme.shapes.medium
                                 ) {
@@ -298,7 +305,7 @@ fun MainScreen(
                                 }
 
                                 OutlinedButton(
-                                    onClick = { subFaLauncher.launch(arrayOf("*/*")) },
+                                    onClick = { subtitleChooserTarget = 1 },
                                     modifier = Modifier.weight(1f),
                                     shape = MaterialTheme.shapes.medium
                                 ) {
@@ -536,6 +543,87 @@ fun MainScreen(
                     }
                 },
                 confirmButton = { TextButton(onClick = { showFileManager = false; viewModel.clearExportResult() }) { Text(strings.close) } }
+            )
+        }
+
+        // Add-subtitle chooser popup: lets the user either pick a subtitle
+        // file from storage or paste a copied subtitle (file contents or a
+        // copied subtitle file) straight from the clipboard.
+        if (subtitleChooserTarget != null) {
+            val isEnglish = subtitleChooserTarget == 0
+            val subtitleLabel = if (isEnglish) strings.subEnLabel else strings.subFaLabel
+            AlertDialog(
+                onDismissRequest = { subtitleChooserTarget = null },
+                title = { Text(strings.addSubtitleTitle(subtitleLabel), fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        Text(
+                            strings.chooseSubtitleSourceTitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Card(
+                            onClick = {
+                                subtitleChooserTarget = null
+                                if (isEnglish) subEnLauncher.launch(arrayOf("*/*"))
+                                else subFaLauncher.launch(arrayOf("*/*"))
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Filled.AttachFile,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(strings.selectSubtitleFileOption, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(strings.selectSubtitleFileDesc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Card(
+                            onClick = {
+                                subtitleChooserTarget = null
+                                if (isEnglish) viewModel.loadSubEnFromClipboard()
+                                else viewModel.loadSubFaFromClipboard()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Filled.ContentPaste,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(strings.pasteFromClipboardOption, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(strings.pasteFromClipboardDesc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { subtitleChooserTarget = null }) { Text(strings.cancel) }
+                }
             )
         }
 
