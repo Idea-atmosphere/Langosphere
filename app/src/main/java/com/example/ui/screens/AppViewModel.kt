@@ -497,6 +497,84 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Loads an English subtitle directly from the clipboard. The clipboard may
+     * hold either the copied contents of a subtitle file (plain text — SRT/VTT
+     * with `-->` cues or LRC-style `[mm:ss.xx]` lines) or a content:// URI of a
+     * subtitle file copied from a file manager. See [loadSubtitleFromClipboard].
+     */
+    fun loadSubEnFromClipboard() {
+        loadSubtitleFromClipboard(isEnglish = true)
+    }
+
+    /** Loads a Persian subtitle directly from the clipboard. See [loadSubEnFromClipboard]. */
+    fun loadSubFaFromClipboard() {
+        loadSubtitleFromClipboard(isEnglish = false)
+    }
+
+    private fun loadSubtitleFromClipboard(isEnglish: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            val s = strings()
+            try {
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = clipboard.primaryClip
+                if (clip == null || clip.itemCount == 0) { _saveMessage.value = s.clipboardEmptyError; return@launch }
+                val item = clip.getItemAt(0)
+
+                var content: String? = null
+                var displayName: String? = null
+
+                // Case 1: a file (e.g. a .srt copied from a file manager) is on
+                // the clipboard as a content URI — read it like a picked file.
+                val uri = item.uri
+                if (uri != null) {
+                    try {
+                        context.contentResolver.openInputStream(uri)?.use { stream ->
+                            content = stream.bufferedReader().use { it.readText() }
+                        }
+                        displayName = getUriDisplayName(context, uri)
+                    } catch (e: Exception) {
+                        content = null
+                    }
+                }
+
+                // Case 2: the subtitle text itself was copied.
+                if (content.isNullOrBlank()) {
+                    val text = try { item.coerceToText(context)?.toString() } catch (e: Exception) { null }
+                    if (!text.isNullOrBlank()) content = text
+                }
+
+                val raw = content
+                if (raw.isNullOrBlank()) { _saveMessage.value = s.clipboardEmptyError; return@launch }
+
+                val parsed = SubtitleParser.parseSubtitleContent(raw, if (isEnglish) "en" else "fa")
+                if (parsed.isEmpty()) { _saveMessage.value = s.clipboardNoSubtitleError; return@launch }
+
+                val fileName = displayName
+                    ?.takeIf { it.isNotBlank() && !it.equals("Unknown", ignoreCase = true) }
+                    ?: if (isEnglish) s.clipboardSubtitleDefaultNameEn else s.clipboardSubtitleDefaultNameFa
+                val savedName = File(context.filesDir, if (isEnglish) "saved_sub_en.srt" else "saved_sub_fa.srt")
+                savedName.writeText(raw)
+                if (isEnglish) {
+                    _subEnOffset.value = 0.0
+                    _subEnList.value = parsed
+                    _subEnFileName.value = fileName
+                    sharedPrefs.edit().putString("sub_en_file_name", fileName).apply()
+                } else {
+                    _subFaOffset.value = 0.0
+                    _subFaList.value = parsed
+                    _subFaFileName.value = fileName
+                    sharedPrefs.edit().putString("sub_fa_file_name", fileName).apply()
+                }
+                _saveMessage.value = s.subtitleLoadedFromClipboard(fileName)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _saveMessage.value = s.errorWithMessage(e.message)
+            }
+        }
+    }
+
     fun lookupWord(word: String, englishContext: String? = null, persianContext: String? = null) {
         val cleanWord = word.trim().lowercase()
         _activeWord.value = cleanWord; _activeEnglishContext.value = englishContext; _activePersianContext.value = persianContext
