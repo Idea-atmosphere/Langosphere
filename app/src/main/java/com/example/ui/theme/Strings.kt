@@ -50,6 +50,19 @@ class AppStrings(lang: AppLanguage) {
     val subEnLabel = t("زیرنویس انگلیسی", "English subtitle")
     val subFaLabel = t("زیرنویس فارسی", "Persian subtitle")
 
+    // Add-subtitle chooser popup (file picker vs. clipboard paste)
+    fun addSubtitleTitle(label: String) = t("افزودن $label", "Add $label")
+    val chooseSubtitleSourceTitle = t("روش افزودن زیرنویس را انتخاب کنید", "Choose how to add the subtitle")
+    val selectSubtitleFileOption = t("📂 انتخاب فایل زیرنویس", "📂 Select subtitle file")
+    val selectSubtitleFileDesc = t("از حافظه دستگاه (SRT، VTT، LRC و...)", "From device storage (SRT, VTT, LRC...)")
+    val pasteFromClipboardOption = t("📋 جای‌گذاری از کلیپ‌بورد", "📋 Paste from clipboard")
+    val pasteFromClipboardDesc = t("اگر متن یا فایل زیرنویس را کپی کرده‌اید", "If you copied subtitle text or a subtitle file")
+    val clipboardSubtitleDefaultNameEn = t("زیرنویس انگلیسی (از کلیپ‌بورد).srt", "English subtitle (clipboard).srt")
+    val clipboardSubtitleDefaultNameFa = t("زیرنویس فارسی (از کلیپ‌بورد).srt", "Persian subtitle (clipboard).srt")
+    val clipboardEmptyError = t("کلیپ‌بورد خالی است؛ ابتدا فایل یا متن زیرنویس را کپی کنید.", "Clipboard is empty; copy a subtitle file or text first.")
+    val clipboardNoSubtitleError = t("محتوای کلیپ‌بورد زیرنویس معتبر (SRT/VTT/LRC) نیست.", "The clipboard content is not a valid subtitle (SRT/VTT/LRC).")
+    fun subtitleLoadedFromClipboard(name: String) = t("✅ زیرنویس از کلیپ‌بورد بارگذاری شد: $name", "✅ Subtitle loaded from clipboard: $name")
+
     // Max words dialog
     val maxWordsDialogTitle = t("تعداد کلمات وارد شده", "Imported word count")
     val maxWordsUnlimitedAll = t("نامحدود (همه کلمات)", "Unlimited (all words)")
