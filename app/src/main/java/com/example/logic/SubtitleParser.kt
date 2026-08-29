@@ -13,6 +13,14 @@ object SubtitleParser {
         parseSubtitleText(text, lang)
     }
 
+    /**
+     * Parses subtitle content already held as a string — used for subtitles
+     * pasted straight from the clipboard (copied file contents or raw SRT/LRC
+     * text). Supports the same SRT/VTT and LRC styles as [parseSubtitle].
+     */
+    fun parseSubtitleContent(text: String, lang: String): List<SubtitleEntry> =
+        parseSubtitleText(text, lang)
+
     private fun parseSubtitleText(text: String, lang: String): List<SubtitleEntry> {
         val lines = text.replace("\r", "").split("\n")
         val subs = mutableListOf<SubtitleEntry>()
