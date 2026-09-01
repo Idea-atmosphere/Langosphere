@@ -2,7 +2,9 @@ package com.example.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -11,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
@@ -57,6 +60,8 @@ private fun contrastingOnColor(color: Color): Color =
     if (color.luminance() > 0.45f) Color(0xFF1A1A1A) else Color.White
 
 // ── Color Schemes ──
+// The app's default palette (Color.kt) — calm, modern blue/teal/violet
+// tones used whenever Material You dynamic colors are unavailable.
 private val LightColors = lightColorScheme(
     primary = LightPrimary,
     onPrimary = LightOnPrimary,
@@ -109,14 +114,25 @@ private val DarkColors = darkColorScheme(
     onErrorContainer = DarkOnErrorContainer,
 )
 
+/**
+ * The app's single theme entry point, built on Material 3 Expressive
+ * (Material You):
+ *  - MaterialExpressiveTheme + MotionScheme.expressive() give every
+ *    Material component the expressive spring-based motion system and the
+ *    expressive shape defaults (pill buttons, softer corners).
+ *  - [dynamicColor] (on by default): on Android 12+ the color scheme comes
+ *    from the user's wallpaper (Material You dynamic colors); on older
+ *    devices — or when disabled — the app falls back to the hand-tuned
+ *    low-glare palette in Color.kt.
+ *  - The user's manual Light / Dark / System mode is respected either way.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MyApplicationTheme(
     themeMode: AppThemeMode = AppThemeMode.SYSTEM,
-    // Defaults to false so the app always uses the hand-tuned, low-glare color
-    // palette defined in Color.kt (comfortable for long reading sessions in
-    // both day and night) instead of the device's wallpaper-based dynamic
-    // colors, which can be highly saturated and inconsistent across devices.
-    dynamicColor: Boolean = false,
+    // Material You dynamic colors are the default (Android 12+); the custom
+    // palette in Color.kt is used on older devices or when this is false.
+    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val isDark = when (themeMode) {
@@ -146,11 +162,16 @@ fun MyApplicationTheme(
         )
     } else baseColorScheme
 
-    CompositionLocalProvider(LocalThemeMode provides themeMode) {
-        MaterialTheme(
+    val motionScheme = remember { MotionScheme.expressive() }
+
+    CompositionLocalProvider(
+        LocalThemeMode provides themeMode
+    ) {
+        MaterialExpressiveTheme(
             colorScheme = colorScheme,
-            typography = Typography,
+            motionScheme = motionScheme,
             shapes = AppShapes,
+            typography = Typography,
             content = content
         )
     }

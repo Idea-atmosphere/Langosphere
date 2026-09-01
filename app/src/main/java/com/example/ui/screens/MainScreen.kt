@@ -32,6 +32,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.components.AboutDialog
 import com.example.ui.components.DictionaryBottomSheet
 import com.example.ui.components.DonatePopupDialog
+import com.example.ui.components.JsonSubtitlePasteDialog
+import com.example.ui.components.SubtitleLearningSheet
 import com.example.ui.components.VideoPlayerScreen
 import com.example.ui.screens.AgentScreen
 import com.example.ui.theme.AppLanguage
@@ -83,6 +85,12 @@ fun MainScreen(
     val subFaFileName by viewModel.subFaFileName.collectAsState()
     val subEnList by viewModel.subEnList.collectAsState()
     val subFaList by viewModel.subFaList.collectAsState()
+    val jsonSubtitles by viewModel.jsonSubtitles.collectAsState()
+    val jsonSubFileName by viewModel.jsonSubFileName.collectAsState()
+    val useDictionaryWithJson by viewModel.useDictionaryWithJson.collectAsState()
+    val learningLevel by viewModel.learningLevel.collectAsState()
+    val learningSheet by viewModel.learningSheet.collectAsState()
+    val activeJsonWord by viewModel.activeJsonWord.collectAsState()
 
     val isTranslatingSingle by viewModel.isTranslatingSingle.collectAsState()
     val translatingIndex by viewModel.translatingIndex.collectAsState()
@@ -95,6 +103,18 @@ fun MainScreen(
 
     var isFullScreen by remember { mutableStateOf(false) }
 
+    // Focus mode (video tab): hides the top bar/tabs, the import section and
+    // the subtitle time-sync cards so only the video + subtitle list remain.
+    var focusMode by remember { mutableStateOf(false) }
+
+    // Collapsible video/subtitle import section — folded up to give the
+    // player and subtitle list more room. The choice is persisted. Besides
+    // the header tap, scrolling the subtitle list up also folds it
+    // (importSectionCollapsedByScroll marks scroll-driven folds so only
+    // those are auto-reopened when the list scrolls back to the top).
+    var isImportSectionExpanded by remember { mutableStateOf(!sharedPrefs.getBoolean("video_import_section_collapsed", false)) }
+    var importSectionCollapsedByScroll by remember { mutableStateOf(false) }
+
     val videoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let { viewModel.setVideo(it) }
     }
@@ -105,9 +125,22 @@ fun MainScreen(
         uri?.let { viewModel.loadSubFa(it) }
     }
 
+    // JSON subtitle-learning file picker + paste dialog + remove confirmation.
+    val jsonSubLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        uri?.let { viewModel.loadJsonSubtitleFromUri(it) }
+    }
+    var showJsonPasteDialog by remember { mutableStateOf(false) }
+    var showRemoveSubsConfirm by remember { mutableStateOf(false) }
+
+    // Settings sections: Theme (main theme mode picker) and
+    // Tutorial & AI Learning (prompts + JSON learning instructions).
+    var showThemeSettings by remember { mutableStateOf(false) }
+    var showTutorialDialog by remember { mutableStateOf(false) }
+
     // Add-subtitle chooser: tapping a subtitle button first opens this popup,
     // where the user either picks a subtitle file or pastes one straight from
     // the clipboard (copied file contents / a copied .srt file). null = hidden.
+    // Targets: 0 = English subtitle, 1 = Persian subtitle, 2 = JSON subtitle.
     var subtitleChooserTarget by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(saveMessage) {
@@ -144,7 +177,10 @@ fun MainScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            if (!isFullScreen || selectedTab != 1) {
+            // The navigation bar is hidden in fullscreen, in focus mode, and
+            // while a learning popup (dictionary / lesson sheet) is open, so
+            // the popup gets the full attention.
+            if ((!isFullScreen || selectedTab != 1) && !focusMode && activeWord == null && learningSheet == null) {
                 // NOTE: Both the TopAppBar and TabRow must be wrapped in a single
                 // Column here. Scaffold's `topBar` slot lays out multiple direct
                 // sibling composables stacked on top of each other (not one below
@@ -222,6 +258,25 @@ fun MainScreen(
                                     }
                                 )
                                 HorizontalDivider()
+                                // Settings ▸ Theme section (main theme mode
+                                // picker).
+                                DropdownMenuItem(
+                                    text = { Text(strings.themeSectionMenu) },
+                                    onClick = {
+                                        showThemeMenu = false
+                                        showThemeSettings = true
+                                    }
+                                )
+                                // Settings ▸ Tutorial & AI Learning section
+                                // (AI prompts + JSON learning instructions).
+                                DropdownMenuItem(
+                                    text = { Text(strings.tutorialMenu) },
+                                    onClick = {
+                                        showThemeMenu = false
+                                        showTutorialDialog = true
+                                    }
+                                )
+                                HorizontalDivider()
                                 DropdownMenuItem(
                                     text = { Text(strings.aboutMenu) },
                                     onClick = {
@@ -270,13 +325,42 @@ fun MainScreen(
                 0 -> ReaderScreen(viewModel = viewModel)
                 1 -> {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        if (!isFullScreen) {
-                            Row(
+                        if (!isFullScreen && !focusMode) {
+                            // Collapsible import section: the user can fold it
+                            // up (with a tap on the header) to give the video
+                            // player and subtitle list more room to focus.
+                            Card(
                                 modifier = Modifier
-                                    .padding(12.dp)
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
                                     .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                                shape = MaterialTheme.shapes.medium
                             ) {
+                                Column {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                isImportSectionExpanded = !isImportSectionExpanded
+                                                // A manual toggle always overrides any scroll-driven fold.
+                                                importSectionCollapsedByScroll = false
+                                                sharedPrefs.edit().putBoolean("video_import_section_collapsed", !isImportSectionExpanded).apply()
+                                            }
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(strings.videoImportSectionTitle, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                        Text(text = if (isImportSectionExpanded) strings.collapseImportSection else strings.expandImportSection, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    androidx.compose.animation.AnimatedVisibility(visible = isImportSectionExpanded) {
+                                        Column {
+                                            Row(
+                                                modifier = Modifier
+                                                    .padding(start = 12.dp, end = 12.dp, bottom = 8.dp)
+                                                    .fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
                                 OutlinedButton(
                                     onClick = { videoLauncher.launch(arrayOf("video/*", "audio/*")) },
                                     modifier = Modifier.weight(1f),
@@ -316,6 +400,50 @@ fun MainScreen(
                                         }
                                     }
                                 }
+
+                                OutlinedButton(
+                                    onClick = { subtitleChooserTarget = 2 },
+                                    modifier = Modifier.weight(1f),
+                                    shape = MaterialTheme.shapes.medium,
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = if (jsonSubtitles != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(strings.subJsonLabel, style = MaterialTheme.typography.labelLarge, fontWeight = if (jsonSubtitles != null) FontWeight.Bold else FontWeight.Normal)
+                                        if (jsonSubFileName.isNotEmpty()) {
+                                            Text(jsonSubFileName, style = MaterialTheme.typography.bodySmall, maxLines = 1, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                }
+                                            }
+
+                                            Text(
+                                                text = strings.importSectionScrollHint,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                                            )
+
+                                            // "Remove Imported Subtitles" — clears English,
+                                            // Persian AND JSON subtitle data in one tap.
+                                            if (subEnFileName.isNotEmpty() || subFaFileName.isNotEmpty() || jsonSubtitles != null) {
+                                                OutlinedButton(
+                                                    onClick = { showRemoveSubsConfirm = true },
+                                                    modifier = Modifier
+                                                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                                                        .fillMaxWidth(),
+                                                    shape = MaterialTheme.shapes.medium,
+                                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                                                ) {
+                                                    Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(strings.removeImportedSubtitlesBtn, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -327,7 +455,22 @@ fun MainScreen(
                                 subFaList = subFaList,
                                 isFullScreen = isFullScreen,
                                 onFullScreenToggle = { isFullScreen = it },
-                                onWordClick = { word, enContext, faContext -> viewModel.lookupWord(word, enContext, faContext) },
+                                // Word-click behavior follows the
+                                // "Use Dictionary When JSON Learning Data
+                                // Exists" setting: with a JSON package loaded
+                                // and the toggle OFF, the JSON learning
+                                // explanation is used instead of the
+                                // dictionary.
+                                onWordClick = { word, enContext, faContext ->
+                                    if (jsonSubtitles != null && !useDictionaryWithJson) {
+                                        viewModel.openWordLesson(word, enContext ?: "", faContext)
+                                    } else {
+                                        viewModel.lookupWord(word, enContext, faContext)
+                                    }
+                                },
+                                onSentenceClick = { sentence, translation ->
+                                    viewModel.openSentenceLesson(sentence, translation)
+                                },
                                 onShiftSubEn = { viewModel.shiftSubEn(it) },
                                 onShiftSubFa = { viewModel.shiftSubFa(it) },
                                 subEnOffset = viewModel.subEnOffset.collectAsState().value,
@@ -347,7 +490,29 @@ fun MainScreen(
                                 translatingIndex = translatingIndex,
                                 singleTranslateError = singleTranslateError,
                                 onStopTranslation = { viewModel.stopTranslation() },
-                                appLanguage = appLanguage
+                                appLanguage = appLanguage,
+                                jsonPackage = jsonSubtitles,
+                                jsonOffset = viewModel.jsonOffset.collectAsState().value,
+                                onShiftJson = { viewModel.shiftJson(it) },
+                                onResetJson = { viewModel.resetJson() },
+                                focusMode = focusMode,
+                                onFocusModeToggle = { focusMode = !focusMode },
+                                // Scrolling the subtitle list up folds the
+                                // import section away; scrolling back to the
+                                // very top brings it back.
+                                onUserScrollCollapse = { shouldCollapse ->
+                                    if (shouldCollapse) {
+                                        if (isImportSectionExpanded) {
+                                            isImportSectionExpanded = false
+                                            importSectionCollapsedByScroll = true
+                                            sharedPrefs.edit().putBoolean("video_import_section_collapsed", true).apply()
+                                        }
+                                    } else if (importSectionCollapsedByScroll) {
+                                        isImportSectionExpanded = true
+                                        importSectionCollapsedByScroll = false
+                                        sharedPrefs.edit().putBoolean("video_import_section_collapsed", false).apply()
+                                    }
+                                }
                             )
                         }
                     }
@@ -390,7 +555,26 @@ fun MainScreen(
                     viewModel.lookupWord(newQuery, activeEnglishContext, activePersianContext)
                 },
                 onDismissRequest = { viewModel.clearActiveWord() },
-                appLanguage = appLanguage
+                appLanguage = appLanguage,
+                // JSON learning data follows the dictionary system: when the
+                // dictionary opens for a word that also exists in the JSON
+                // learning file, the JSON word data is shown on top.
+                jsonWord = activeJsonWord
+            )
+        }
+
+        // Subtitle learning sheet — sentence lesson / word analysis
+        // (opened by sentence clicks and by word clicks while the
+        // dictionary toggle is disabled and a JSON package is loaded).
+        learningSheet?.let { sheet ->
+            SubtitleLearningSheet(
+                state = sheet,
+                strings = strings,
+                learningLevel = learningLevel,
+                onWordClick = { word, sentence, translation ->
+                    viewModel.openWordLesson(word, sentence, translation)
+                },
+                onDismiss = { viewModel.clearLearningSheet() }
             )
         }
 
@@ -548,10 +732,18 @@ fun MainScreen(
 
         // Add-subtitle chooser popup: lets the user either pick a subtitle
         // file from storage or paste a copied subtitle (file contents or a
-        // copied subtitle file) straight from the clipboard.
+        // copied subtitle file) straight from the clipboard. For the JSON
+        // subtitle slot (target 2) the paste option opens a dedicated input
+        // dialog instead of the clipboard.
         if (subtitleChooserTarget != null) {
-            val isEnglish = subtitleChooserTarget == 0
-            val subtitleLabel = if (isEnglish) strings.subEnLabel else strings.subFaLabel
+            val target = subtitleChooserTarget!!
+            val isEnglish = target == 0
+            val isJson = target == 2
+            val subtitleLabel = when {
+                isJson -> strings.subJsonLabel
+                isEnglish -> strings.subEnLabel
+                else -> strings.subFaLabel
+            }
             AlertDialog(
                 onDismissRequest = { subtitleChooserTarget = null },
                 title = { Text(strings.addSubtitleTitle(subtitleLabel), fontWeight = FontWeight.Bold) },
@@ -566,8 +758,11 @@ fun MainScreen(
                         Card(
                             onClick = {
                                 subtitleChooserTarget = null
-                                if (isEnglish) subEnLauncher.launch(arrayOf("*/*"))
-                                else subFaLauncher.launch(arrayOf("*/*"))
+                                when {
+                                    isJson -> jsonSubLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                                    isEnglish -> subEnLauncher.launch(arrayOf("*/*"))
+                                    else -> subFaLauncher.launch(arrayOf("*/*"))
+                                }
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
@@ -585,8 +780,14 @@ fun MainScreen(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(strings.selectSubtitleFileOption, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                    Text(strings.selectSubtitleFileDesc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        if (isJson) strings.selectJsonFileOption else strings.selectSubtitleFileOption,
+                                        style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        if (isJson) strings.selectJsonFileDesc else strings.selectSubtitleFileDesc,
+                                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
                         }
@@ -594,7 +795,8 @@ fun MainScreen(
                         Card(
                             onClick = {
                                 subtitleChooserTarget = null
-                                if (isEnglish) viewModel.loadSubEnFromClipboard()
+                                if (isJson) showJsonPasteDialog = true
+                                else if (isEnglish) viewModel.loadSubEnFromClipboard()
                                 else viewModel.loadSubFaFromClipboard()
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -613,8 +815,14 @@ fun MainScreen(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(strings.pasteFromClipboardOption, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                    Text(strings.pasteFromClipboardDesc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        if (isJson) strings.pasteJsonOption else strings.pasteFromClipboardOption,
+                                        style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        if (isJson) strings.pasteJsonDesc else strings.pasteFromClipboardDesc,
+                                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
                         }
@@ -623,6 +831,36 @@ fun MainScreen(
                 confirmButton = {},
                 dismissButton = {
                     TextButton(onClick = { subtitleChooserTarget = null }) { Text(strings.cancel) }
+                }
+            )
+        }
+
+        // Paste-JSON import dialog (auto-detects the format live and offers
+        // a one-tap sample JSON for testing the import).
+        if (showJsonPasteDialog) {
+            JsonSubtitlePasteDialog(
+                strings = strings,
+                onImport = { text -> viewModel.importJsonSubtitleText(text) },
+                onDismiss = { showJsonPasteDialog = false }
+            )
+        }
+
+        // Confirmation before "Remove Imported Subtitles" clears EN/FA/JSON data.
+        if (showRemoveSubsConfirm) {
+            AlertDialog(
+                onDismissRequest = { showRemoveSubsConfirm = false },
+                title = { Text(strings.removeSubsConfirmTitle, fontWeight = FontWeight.Bold) },
+                text = { Text(strings.removeSubsConfirmDesc) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showRemoveSubsConfirm = false
+                        viewModel.removeAllSubtitles()
+                    }) {
+                        Text(strings.removeImportedSubtitlesBtn, color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRemoveSubsConfirm = false }) { Text(strings.cancel) }
                 }
             )
         }
@@ -646,6 +884,32 @@ fun MainScreen(
                 onDismiss = { showAboutDialog = false },
                 versionName = appVersionName,
                 strings = strings
+            )
+        }
+
+        // Settings ▸ Theme section — main theme mode picker (existing
+        // system) + the independent Beta theme layer toggle.
+        if (showThemeSettings) {
+            ThemeSettingsDialog(
+                strings = strings,
+                currentThemeMode = currentThemeMode,
+                onThemeModeChange = onThemeToggle,
+                onDismiss = { showThemeSettings = false }
+            )
+        }
+
+        // Settings ▸ Tutorial & AI Learning section — learning level,
+        // dictionary-vs-JSON toggle, and the JSON prompt generator with the
+        // three prompt modes (Translation Only / Translation + Learning /
+        // Word Analysis).
+        if (showTutorialDialog) {
+            TutorialAiDialog(
+                strings = strings,
+                learningLevel = learningLevel,
+                useDictionaryWithJson = useDictionaryWithJson,
+                onLearningLevelChange = { viewModel.setLearningLevel(it) },
+                onDictionaryToggleChange = { viewModel.setUseDictionaryWithJson(it) },
+                onDismiss = { showTutorialDialog = false }
             )
         }
     }

@@ -29,7 +29,11 @@ fun ClickableWordText(
     // instead of it being overridden by the accent color.
     highlightColor: Color = MaterialTheme.colorScheme.primary,
     underlineWords: Boolean = true,
-    onWordClick: (String) -> Unit
+    onWordClick: (String) -> Unit,
+    // Optional callback fired when the text itself (outside any word) is
+    // tapped — used to open the sentence's learning lesson. Taps on words
+    // always go to onWordClick and never trigger this.
+    onTextClick: (() -> Unit)? = null
 ) {
     // Basic regex to find english words
     val regex = "\\b[a-zA-Z][a-zA-Z0-9'-]*\\b".toRegex()
@@ -70,12 +74,18 @@ fun ClickableWordText(
         text = annotatedString,
         modifier = modifier.pointerInput(text) {
             detectTapGestures { pos ->
-                layoutResult.value?.let { result ->
+                val result = layoutResult.value
+                if (result != null) {
                     val offset = result.getOffsetForPosition(pos)
-                    annotatedString.getStringAnnotations(tag = "word", start = offset, end = offset)
-                        .firstOrNull()?.let { annotation ->
-                            onWordClick(annotation.item)
-                        }
+                    val annotation = annotatedString.getStringAnnotations(tag = "word", start = offset, end = offset)
+                        .firstOrNull()
+                    if (annotation != null) {
+                        onWordClick(annotation.item)
+                    } else {
+                        onTextClick?.invoke()
+                    }
+                } else {
+                    onTextClick?.invoke()
                 }
             }
         },

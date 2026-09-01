@@ -261,6 +261,36 @@ class AppStrings(lang: AppLanguage) {
     val autoStopCurrentSubtitle = t("توقف خودکار — زیرنویس فعلی", "Auto-stop — current subtitle")
     val resumeCd = t("ادامه", "Resume")
     val playerSettingsCd = t("تنظیمات پخش‌کننده", "Player settings")
+    // Focus mode (video tab): hides the top bar/tabs, the import section and
+    // the time-sync cards so only the video + subtitle list remain.
+    val focusModeCd = t("حالت تمرکز", "Focus mode")
+    // Smart-pause gear panel (persisted options)
+    val smartPauseSettingsCd = t("تنظیمات توقف هوشمند", "Smart pause settings")
+    val smartPausePanelTitle = t("⚙️ تنظیمات توقف هوشمند", "⚙️ Smart pause settings")
+    val pauseDimTitle = t("لایه تیره هنگام توقف", "Dim overlay when paused")
+    val pauseDimDesc = t(
+        "هنگام توقف، لایه سیاه روی فیلم نمایش داده شود",
+        "Show the dark layer over the video while it is paused"
+    )
+    val pauseHideUiTitle = t("مخفی کردن زیرنویس و دکمه‌ها", "Hide subtitles & buttons")
+    val pauseHideUiDesc = t(
+        "هنگام توقف، زیرنویس و دکمه‌های توقف هوشمند مخفی شوند تا فریم فیلم واضح دیده شود (چرخ‌دنده باقی می‌ماند)",
+        "While paused, hide the subtitle text and smart-pause buttons so the video frame can be inspected clearly (the gear stays)"
+    )
+    val pauseRequireContinueTitle = t("ادامه فقط با دکمه «ادامه پلی»", "Resume only via the Continue button")
+    val pauseRequireContinueDesc = t(
+        "لمس هر جای صفحه، پخش را از سر نگیرد؛ برای ادامه حتماً باید دکمه «ادامه پلی» زده شود",
+        "Tapping anywhere does not resume playback; the Continue button must be pressed to resume"
+    )
+    // Audio track selection (dual-language videos — works in normal and
+    // smart-pause modes)
+    val audioTrackTitle = t("🎧 انتخاب صوت فیلم", "🎧 Audio track")
+    val audioTrackDesc = t(
+        "برای فیلم‌های چندزبانه (مثلاً دوبله + زبان اصلی) صوت دلخواه را انتخاب کنید",
+        "For multi-language videos (e.g. dubbed + original) choose the audio track you want"
+    )
+    val audioTrackUnavailable = t("این ویدیو هیچ آهنگ صوتی قابل انتخابی ندارد.", "This video has no selectable audio tracks.")
+    fun audioTrackFallbackName(n: Int) = t("آهنگ $n", "Track $n")
     val audioPlayingHint = t("🎵 در حال پخش است... ضربه روی کلمات برای ترجمه", "🎵 Now playing... tap words to translate")
     val playerSettingsTitle = t("تنظیمات پخش‌کننده و زیرنویس", "Player and subtitle settings")
     val design1Title = t("طراحی ۱ (ظاهر مدرن و جلوه نیمه‌شفاف)", "Design 1 (modern look with glass effect)")
@@ -291,6 +321,13 @@ class AppStrings(lang: AppLanguage) {
     fun shiftValueLabel(offset: String) = t("تغییر: $offset ثانیه", "Shift: $offset sec")
     val langCodeEn = t("انگلیسی (EN)", "English (EN)")
     val langCodeFa = t("فارسی (FA)", "Persian (FA)")
+    // JSON subtitle time sync (same shift feature for the JSON learning file)
+    val jsonSyncRowTitle = t("⏱️ هماهنگ‌سازی زمان JSON (جلو/عقب)", "⏱️ JSON time sync (shift forward/back)")
+    val jsonSyncNoTimings = t(
+        "این فایل JSON زمان‌بندی ندارد؛ همگام‌سازی فقط بر اساس متن انجام می‌شود و جلو/عقب بردن زمان ممکن نیست.",
+        "This JSON has no timing data; sync is text-based only, so time shifting is unavailable."
+    )
+    val jsonResetBtn = t("بازنشانی تغییر زمان", "Reset time shift")
     val exactTimeLabel = t("زمان دقیق (ثانیه)", "Exact time (seconds)")
     val applyBtn = t("اعمال", "Apply")
     val syncHint = t("راهنما: عدد مثبت یعنی زیرنویس جلوتر نمایش داده شود (تأخیر آن جبران شود) و عدد منفی یعنی عقب‌تر.", "Tip: a positive number shows the subtitle earlier (compensating for delay); a negative number shows it later.")
@@ -319,6 +356,149 @@ class AppStrings(lang: AppLanguage) {
     fun matchedTranslationLabel(text: String) = t("ترجمه منطبق: $text", "Matched translation: $text")
     val autoDetectWarning = t("⚠️ تشخیص خودکار — ممکن است اشتباه باشد", "⚠️ Auto-detected — may be inaccurate")
     val noResultsFound = t("واژه‌ای یافت نشد. پسوندها (s, ed, ing) را حذف و مجددا جستجو کنید.", "No word found. Try removing suffixes (s, ed, ing) and search again.")
+
+    // ── Theme settings section ──
+    val themeSectionMenu = t("🎨 تم", "🎨 Theme")
+    val themeSectionTitle = t("🎨 تم", "🎨 Theme")
+    val themeModeTitle = t("حالت تم اصلی", "Main theme mode")
+    val themeModeDesc = t(
+        "روشن، تاریک یا پیروی از سیستم. رنگ‌ها بر اساس Material You (رنگ‌های پویای والپیپر در اندروید ۱۲ و بالاتر) تنظیم می‌شوند.",
+        "Light, dark, or follow the system. Colors follow Material You (dynamic wallpaper colors on Android 12+)."
+    )
+
+    // ── Video import section (collapsible) ──
+    val videoImportSectionTitle = t("🎬 فیلم و زیرنویس", "🎬 Video & subtitles")
+    val collapseImportSection = t("جمع کردن ▲", "Collapse ▲")
+    val expandImportSection = t("باز کردن ▼", "Expand ▼")
+    val importSectionScrollHint = t(
+        "💡 با اسکرول لیست زیرنویس به سمت بالا، این بخش خودکار جمع می‌شود و با برگشت به ابتدای لیست، دوباره باز می‌شود.",
+        "💡 Scroll the subtitle list up to auto-fold this section; scroll back to the top of the list to reopen it."
+    )
+
+    // ── Tutorial & AI Learning section ──
+    val tutorialMenu = t("🧠 آموزش و یادگیری AI", "🧠 Tutorial & AI Learning")
+    val tutorialTitle = t("🧠 آموزش و یادگیری AI", "🧠 Tutorial & AI Learning")
+    val tutorialLearningLevelTitle = t("سطح یادگیری شما", "Your learning level")
+    val tutorialLearningLevelDesc = t(
+        "توضیحات آموزشی، مثال‌ها و پرامپت‌ها بر اساس این سطح تنظیم می‌شوند.",
+        "Learning explanations, examples, and prompts are tuned to this level."
+    )
+    val dictionaryJsonToggleTitle = t("استفاده از دیکشنری هنگام وجود داده یادگیری JSON", "Use Dictionary When JSON Learning Data Exists")
+    val dictionaryJsonToggleDescOn = t(
+        "فعال: دیکشنری عادی حتی وقتی فایل JSON وجود دارد باز می‌شود.",
+        "Enabled: the normal dictionary opens even when a JSON file exists."
+    )
+    val dictionaryJsonToggleDescOff = t(
+        "غیرفعال: با کلیک روی کلمات دیکشنری باز نمی‌شود؛ به‌جای آن توضیح یادگیری JSON نمایش داده می‌شود.",
+        "Disabled: the dictionary does not open on word tap; the JSON learning explanation is shown instead."
+    )
+    val promptGeneratorTitle = t("سازنده پرامپت یادگیری JSON", "JSON Learning Prompt Generator")
+    val promptGeneratorDesc = t(
+        "پرامپت آماده برای مدل‌های AI؛ خروجی، فایل JSON یادگیری سازگار با این برنامه است و مستقیم قابل وارد کردن می‌باشد.",
+        "Ready-to-copy AI prompts. The output is a JSON learning file compatible with this app and directly importable."
+    )
+    val promptLevelLabel = t("سطح پرامپت:", "Prompt level:")
+    val promptModeTitle = t("حالت پرامپت", "Prompt mode")
+    val modeTranslationOnlyTitle = t("فقط ترجمه", "Translation Only")
+    val modeTranslationOnlyDesc = t("فقط جمله اصلی و ترجمه", "Only the original sentence and its translation")
+    val modeTranslationLearningTitle = t("ترجمه + یادگیری", "Translation + Learning")
+    val modeTranslationLearningDesc = t(
+        "ترجمه + توضیح گرامر، واژگان، ساختار جمله و نکات آموزشی متناسب با سطح",
+        "Translation + grammar, vocabulary, sentence-structure explanations, and level-appropriate teaching notes"
+    )
+    val modeWordAnalysisTitle = t("تحلیل کلمه", "Word Analysis")
+    val modeWordAnalysisDesc = t(
+        "ترجمه، نوع کلمه، معنی در جمله، مثال‌ها و توضیح مناسب سطح — برای وقتی روی یک کلمه کلیک می‌کنید",
+        "Translation, word role, meaning in the sentence, examples, and level-appropriate explanation — for when you tap a word"
+    )
+    val promptPreviewTitle = t("متن پرامپت (آماده کپی)", "Prompt text (ready to copy)")
+    val copyPromptBtn = t("📋 کپی پرامپت", "📋 Copy prompt")
+    val promptCopiedToast = t("✅ پرامپت کپی شد", "✅ Prompt copied")
+    fun levelName(code: String): String = when (code.trim().uppercase()) {
+        "A1" -> t("A1 — مبتدی", "A1 — Beginner")
+        "A2" -> t("A2 — مقدماتی", "A2 — Elementary")
+        "B1" -> t("B1 — متوسط", "B1 — Intermediate")
+        "B2" -> t("B2 — فراتر از متوسط", "B2 — Upper Intermediate")
+        "C1" -> t("C1 — پیشرفته", "C1 — Advanced")
+        "C2" -> t("C2 — همانند زبان مادری", "C2 — Native-like")
+        else -> code
+    }
+    fun partOfSpeechName(pos: String?): String = when (pos?.trim()?.lowercase()) {
+        "noun" -> t("اسم", "noun")
+        "verb" -> t("فعل", "verb")
+        "adjective" -> t("صفت", "adjective")
+        "adverb" -> t("قید", "adverb")
+        "pronoun" -> t("ضمیر", "pronoun")
+        "preposition" -> t("حرف اضافه", "preposition")
+        "conjunction" -> t("حرف ربط", "conjunction")
+        "interjection" -> t("شبه‌جمله", "interjection")
+        "phrase" -> t("عبارت", "phrase")
+        "idiom" -> t("اصطلاح", "idiom")
+        "phrasal verb" -> t("فعل عبارتی", "phrasal verb")
+        else -> pos ?: ""
+    }
+
+    // ── JSON subtitle import ──
+    val subJsonLabel = t("زیرنویس JSON", "JSON subtitle")
+    fun addJsonSubtitleTitle(label: String) = t("افزودن $label", "Add $label")
+    val selectJsonFileOption = t("📂 انتخاب فایل JSON", "📂 Select JSON file")
+    val selectJsonFileDesc = t("فایل JSON یادگیری زیرنویس (خروجی AI) از حافظه دستگاه", "A subtitle-learning JSON file (AI output) from device storage")
+    val pasteJsonOption = t("📋 جای‌گذاری محتوای JSON", "📋 Paste JSON content")
+    val pasteJsonDesc = t("متن JSON را مستقیم وارد کنید؛ برنامه خودکار آن را تشخیص می‌دهد", "Enter JSON text directly; the app auto-detects it")
+    val jsonPasteDialogTitle = t("وارد کردن JSON زیرنویس", "Import subtitle JSON")
+    val jsonPastePlaceholder = t("محتوای JSON را اینجا جای‌گذاری کنید...", "Paste the JSON content here...")
+    val jsonImportBtn = t("وارد کردن JSON", "Import JSON")
+    val jsonLoadSampleBtn = t("نمونه JSON", "Sample JSON")
+    val jsonDetectedLabel = t("✅ فرمت JSON یادگیری زیرنویس تشخیص داده شد", "✅ Subtitle-learning JSON format detected")
+    val jsonNotSubtitleJson = t(
+        "محتوا JSON یادگیری زیرنویس معتبر نیست؛ به کلیدهای subtitles / english / translation نیاز دارد.",
+        "Not a valid subtitle-learning JSON; it needs the subtitles / english / translation keys."
+    )
+    fun jsonParseError(msg: String?) = t("خطای JSON: $msg", "JSON error: $msg")
+    val jsonEmptyFileError = t("فایل JSON خالی است", "The JSON file is empty")
+    fun jsonImportedSuccess(name: String, count: Int) = t(
+        "✅ JSON وارد شد: $name ($count زیرنویس)",
+        "✅ JSON imported: $name ($count subtitles)"
+    )
+    val jsonDefaultName = t("زیرنویس یادگیری (JSON).json", "Learning subtitle (JSON).json")
+    val jsonActiveBadge = t("JSON فعال — اولویت بالا", "JSON active — highest priority")
+    val removeImportedSubtitlesBtn = t("🗑 حذف زیرنویس‌های وارد شده", "🗑 Remove imported subtitles")
+    val removeSubsConfirmTitle = t("حذف همه زیرنویس‌های وارد شده؟", "Remove all imported subtitles?")
+    val removeSubsConfirmDesc = t(
+        "زیرنویس انگلیسی، زیرنویس فارسی و زیرنویس JSON حذف می‌شوند.",
+        "English subtitles, Persian subtitles, and JSON subtitles will be removed."
+    )
+    val subtitleRemovedAll = t("همه زیرنویس‌های وارد شده حذف شدند", "All imported subtitles were removed")
+
+    // ── Subtitle learning sheet (sentence lesson / word analysis) ──
+    val lessonSheetTitle = t("🎓 درس زیرنویس", "🎓 Subtitle lesson")
+    val wordLessonSheetTitle = t("📖 یادگیری کلمه", "📖 Word learning")
+    val lessonTranslationLabel = t("ترجمه", "Translation")
+    val lessonGrammarLabel = t("گرامر", "Grammar")
+    val lessonExplanationLabel = t("توضیح", "Explanation")
+    val lessonStructureLabel = t("ساختار جمله", "Sentence structure")
+    val lessonVocabLabel = t("واژگان", "Vocabulary")
+    val lessonNotesLabel = t("یادداشت‌های یادگیری", "Learning notes")
+    val lessonPronunciationLabel = t("تلفظ", "Pronunciation")
+    val lessonDifficultyLabel = t("سختی", "Difficulty")
+    val lessonLevelLabel = t("سطح", "Level")
+    val lessonSentenceLabel = t("جمله", "Sentence")
+    val meaningInContextLabel = t("معنی در این جمله", "Meaning in this sentence")
+    val examplesLabel = t("مثال‌ها", "Examples")
+    val extraExplanationLabel = t("توضیح بیشتر", "Additional explanation")
+    val lessonSentenceLevelNote = t("توضیح بر اساس سطح یادگیری شما", "Explanation based on your learning level")
+    val noJsonLessonFallback = t(
+        "برای این جمله داده یادگیری JSON وجود ندارد؛ ترجمه و واژگان از منابع دیگر نمایش داده می‌شوند.",
+        "No JSON learning data exists for this sentence; translation and vocabulary are shown from other sources."
+    )
+    val noJsonWordData = t(
+        "برای این کلمه داده یادگیری JSON وجود ندارد.",
+        "There is no JSON learning data for this word."
+    )
+    val dictionaryDataLabel = t("داده دیکشنری", "Dictionary data")
+    val jsonLearningDataLabel = t("داده یادگیری JSON", "JSON learning data")
+    val tapWordHint = t("برای دیدن درس هر کلمه، روی آن کلیک کنید", "Tap any word to see its lesson")
+    val closeSheetBtn = t("بستن", "Close")
 
     // ── AppViewModel status/toast messages ──
     val invalidIndexError = t("ایندکس نامعتبر", "Invalid index")

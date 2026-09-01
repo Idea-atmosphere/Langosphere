@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import android.content.res.Configuration
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.input.pointer.pointerInput
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.viewinterop.AndroidView
 
 import com.example.model.DictionaryEntry
+import com.example.model.JsonWord
 import com.example.logic.TranslationDetector
 import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.AppStrings
@@ -54,7 +56,11 @@ fun DictionaryBottomSheet(
     importedFileNames: List<String> = emptyList(),
     onSearchQueryChange: (String) -> Unit,
     onDismissRequest: () -> Unit,
-    appLanguage: AppLanguage = AppLanguage.FA
+    appLanguage: AppLanguage = AppLanguage.FA,
+    // JSON learning data for the searched word (when a JSON learning file
+    // exists). "The dictionary system follows the JSON learning data": this
+    // card is rendered FIRST, above the normal dictionary results.
+    jsonWord: JsonWord? = null
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -118,6 +124,10 @@ fun DictionaryBottomSheet(
                         ContextSection(contextEnglish, searchedWord, queryInput, contextPersian, matchResult, strings) { clickedWord ->
                             queryInput = clickedWord; onSearchQueryChange(clickedWord)
                         }
+                        jsonWord?.let { jw ->
+                            Spacer(modifier = Modifier.height(12.dp))
+                            JsonWordInfoCard(jsonWord = jw, strings = strings)
+                        }
                         if (!results.isNullOrEmpty()) {
                             Spacer(modifier = Modifier.height(12.dp))
                             AddToLeitnerButton(isAdded = isAddedToLeitner, strings = strings, onClick = onAddToLeitner)
@@ -133,22 +143,43 @@ fun DictionaryBottomSheet(
                     }
                 }
             } else {
-                SearchField(queryInput, strings, onSearchQueryChange)
-                Spacer(modifier = Modifier.height(12.dp))
-                ContextSection(contextEnglish, searchedWord, queryInput, contextPersian, matchResult, strings) { clickedWord ->
-                    queryInput = clickedWord; onSearchQueryChange(clickedWord)
+                // The whole sheet content is one scrollable list: the top
+                // sections scroll together with the results and the WebView
+                // keeps its own inner scrolling for long definitions. This
+                // fixes the popup where the content could not scroll at all
+                // and the sheet collapsed / disappeared while scrolling.
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item { SearchField(queryInput, strings, onSearchQueryChange) }
+                    item {
+                        ContextSection(contextEnglish, searchedWord, queryInput, contextPersian, matchResult, strings) { clickedWord ->
+                            queryInput = clickedWord; onSearchQueryChange(clickedWord)
+                        }
+                    }
+                    jsonWord?.let { jw ->
+                        item { JsonWordInfoCard(jsonWord = jw, strings = strings) }
+                    }
+                    if (!results.isNullOrEmpty()) {
+                        item { AddToLeitnerButton(isAdded = isAddedToLeitner, strings = strings, onClick = onAddToLeitner) }
+                    }
+                    if (importedFileNames.size >= 2) {
+                        item { DictionarySourceFilterRow(importedFileNames, selectedSourceFilter, strings) { selectedSourceFilter = it } }
+                    }
+                    if (filteredResults.isNullOrEmpty()) {
+                        item { NoResultsCard(strings) }
+                    } else {
+                        item {
+                            WebViewPart(
+                                results = filteredResults,
+                                isDark = isDark,
+                                modifier = Modifier.fillMaxWidth().fillParentMaxHeight(0.55f)
+                            )
+                        }
+                    }
                 }
-                if (!results.isNullOrEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    AddToLeitnerButton(isAdded = isAddedToLeitner, strings = strings, onClick = onAddToLeitner)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                if (importedFileNames.size >= 2) {
-                    DictionarySourceFilterRow(importedFileNames, selectedSourceFilter, strings) { selectedSourceFilter = it }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                if (filteredResults.isNullOrEmpty()) NoResultsCard(strings)
-                else WebViewPart(results = filteredResults, isDark = isDark, modifier = Modifier.weight(1f))
             }
         }
     }
@@ -179,6 +210,105 @@ private fun DictionarySourceFilterRow(
                 onClick = { onSelect(if (selected == name) null else name) },
                 label = { Text(name, maxLines = 1) }
             )
+        }
+    }
+}
+
+/**
+ * JSON learning data for the searched word, shown FIRST inside the
+ * dictionary sheet whenever a JSON learning file contains an entry for the
+ * word — "the dictionary system follows the JSON learning data". Kept
+ * compact (bounded lines) so the normal dictionary results below always
+ * keep enough room.
+ */
+@Composable
+fun JsonWordInfoCard(jsonWord: JsonWord, strings: AppStrings) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = strings.jsonLearningDataLabel,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = jsonWord.word,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    jsonWord.pronunciation?.takeIf { it.isNotBlank() }?.let { ipa ->
+                        Text(
+                            text = ipa,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    jsonWord.partOfSpeech?.let { pos ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = strings.partOfSpeechName(pos),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+                    jsonWord.translation?.takeIf { it.isNotBlank() }?.let { tr ->
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = tr,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.secondary,
+                            textAlign = TextAlign.Right
+                        )
+                    }
+                }
+            }
+            jsonWord.meaningInContext?.takeIf { it.isNotBlank() }?.let { meaning ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = meaning,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 3
+                )
+            }
+            jsonWord.extraExplanation?.takeIf { it.isNotBlank() }?.let { explanation ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = explanation,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3
+                )
+            }
+            jsonWord.examples.take(2).forEach { example ->
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "• $example",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2
+                )
+            }
         }
     }
 }
@@ -399,8 +529,31 @@ fun WebViewPart(results: List<DictionaryEntry>, isDark: Boolean, modifier: Modif
                 settings.javaScriptEnabled = true
                 settings.defaultTextEncodingName = "utf-8"
                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                var lastTouchY = 0f
                 setOnTouchListener { view, event ->
-                    view.parent?.requestDisallowInterceptTouchEvent(true)
+                    // Only claim the gesture for the WebView while it can
+                    // actually scroll in the drag direction; otherwise hand
+                    // the gesture back to the parent (the bottom sheet /
+                    // list) so the sheet scrolls and dismisses naturally and
+                    // no longer disappears mid-scroll.
+                    when (event.actionMasked) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            lastTouchY = event.y
+                            view.parent?.requestDisallowInterceptTouchEvent(true)
+                        }
+                        android.view.MotionEvent.ACTION_MOVE -> {
+                            val dy = event.y - lastTouchY
+                            lastTouchY = event.y
+                            if ((dy > 0 && view.canScrollVertically(-1)) || (dy < 0 && view.canScrollVertically(1))) {
+                                view.parent?.requestDisallowInterceptTouchEvent(true)
+                            } else {
+                                view.parent?.requestDisallowInterceptTouchEvent(false)
+                            }
+                        }
+                        android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                            view.parent?.requestDisallowInterceptTouchEvent(false)
+                        }
+                    }
                     false
                 }
             }

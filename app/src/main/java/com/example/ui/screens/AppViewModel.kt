@@ -15,13 +15,17 @@ import com.example.logic.LeitnerBoxManager
 import com.example.logic.MdictReader
 import com.example.logic.PdfTextExtractor
 import com.example.logic.SqliteDictParser
+import com.example.logic.SubtitleJsonParser
 import com.example.logic.SubtitleParser
 import com.example.logic.TranslationDetector
 import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.AppStrings
 import com.example.model.DictionaryEntry
+import com.example.model.JsonSubtitlePackage
+import com.example.model.JsonWord
 import com.example.model.LeitnerCard
 import com.example.model.SubtitleEntry
+import com.example.model.SubtitleLearningState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +35,11 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
+
+    companion object {
+        /** Persisted copy of the imported JSON subtitle-learning file (filesDir). */
+        const val JSON_SUBTITLE_FILE = "saved_sub_json.json"
+    }
 
     private val sharedPrefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     private val dbHelper = DictionaryDatabaseHelper(application)
@@ -192,6 +201,92 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val _subFaOffset = MutableStateFlow(0.0)
     val subFaOffset: StateFlow<Double> = _subFaOffset
 
+    // ── JSON subtitle learning package ──
+    // The AI-generated JSON learning file (see model/JsonSubtitleModels.kt
+    // and logic/SubtitleJsonParser.kt). Display priority while a package is
+    // loaded: JSON learning file > imported subtitle files > default
+    // subtitle source (VideoPlayerScreen implements this priority). The raw
+    // JSON is persisted to saved_sub_json.json so it survives restarts.
+    private val _jsonSubtitles = MutableStateFlow<JsonSubtitlePackage?>(null)
+    val jsonSubtitles: StateFlow<JsonSubtitlePackage?> = _jsonSubtitles
+    private val _jsonSubFileName = MutableStateFlow("")
+    val jsonSubFileName: StateFlow<String> = _jsonSubFileName
+
+    // ── JSON subtitle time sync ──
+    // Cumulative time shift applied to the JSON package's timestamps (same
+    // feature as the EN/FA subtitle sync). The shifted timestamps are
+    // persisted back into saved_sub_json.json, so the shift survives app
+    // restarts; the offset itself is in-memory only (it restarts at 0 after
+    // a relaunch, matching the EN/FA offset behavior).
+    private val _jsonOffset = MutableStateFlow(0.0)
+    val jsonOffset: StateFlow<Double> = _jsonOffset
+
+    /** Shifts every timed JSON subtitle line forward/back by [seconds]. */
+    fun shiftJson(seconds: Double) {
+        val pkg = _jsonSubtitles.value ?: return
+        _jsonOffset.value += seconds
+        _jsonSubtitles.value = pkg.copy(
+            subtitles = pkg.subtitles.map { s ->
+                if (s.start == null && s.end == null) s
+                else s.copy(
+                    start = s.start?.let { (it + seconds).coerceAtLeast(0.0) },
+                    end = s.end?.let { (it + seconds).coerceAtLeast(0.0) }
+                )
+            }
+        )
+        persistJsonSubtitle()
+    }
+
+    /** Undoes every JSON time shift applied this session (back to import time). */
+    fun resetJson() {
+        val seconds = -_jsonOffset.value
+        if (seconds == 0.0) return
+        _jsonOffset.value = 0.0
+        _jsonSubtitles.value = _jsonSubtitles.value?.copy(
+            subtitles = _jsonSubtitles.value!!.subtitles.map { s ->
+                if (s.start == null && s.end == null) s
+                else s.copy(
+                    start = s.start?.let { (it + seconds).coerceAtLeast(0.0) },
+                    end = s.end?.let { (it + seconds).coerceAtLeast(0.0) }
+                )
+            }
+        )
+        persistJsonSubtitle()
+    }
+
+    /** Writes the current JSON package (with any time shifts) back to disk. */
+    private fun persistJsonSubtitle() {
+        val pkg = _jsonSubtitles.value ?: return
+        try {
+            val context = getApplication<Application>()
+            File(context.filesDir, JSON_SUBTITLE_FILE).writeText(SubtitleJsonParser.serialize(pkg))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // ── Learning settings ──
+    // "Use Dictionary When JSON Learning Data Exists": when ENABLED the
+    // normal dictionary opens on word tap even with a JSON file loaded
+    // (and shows the JSON word data first); when DISABLED word taps open
+    // the JSON learning sheet instead of the dictionary.
+    private val _useDictionaryWithJson = MutableStateFlow(sharedPrefs.getBoolean("use_dictionary_with_json", true))
+    val useDictionaryWithJson: StateFlow<Boolean> = _useDictionaryWithJson
+
+    /** User's CEFR learning level (A1..C2), used for level-appropriate explanations and prompts. */
+    private val _learningLevel = MutableStateFlow(sharedPrefs.getString("learning_level", "B1") ?: "B1")
+    val learningLevel: StateFlow<String> = _learningLevel
+
+    // ── Subtitle learning sheet state (sentence lesson / word analysis) ──
+    private val _learningSheet = MutableStateFlow<SubtitleLearningState?>(null)
+    val learningSheet: StateFlow<SubtitleLearningState?> = _learningSheet
+
+    // JSON word data for the currently looked-up word (rendered by the
+    // dictionary bottom sheet on top of the normal dictionary results, so
+    // "the dictionary system follows the JSON learning data").
+    private val _activeJsonWord = MutableStateFlow<JsonWord?>(null)
+    val activeJsonWord: StateFlow<JsonWord?> = _activeJsonWord
+
     private val _isTranslatingSingle = MutableStateFlow(false)
     val isTranslatingSingle: StateFlow<Boolean> = _isTranslatingSingle
     private val _singleTranslateError = MutableStateFlow<String?>(null)
@@ -297,7 +392,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshManagedFiles() {
         viewModelScope.launch(Dispatchers.IO) {
             val context = getApplication<Application>(); val filesDir = context.filesDir; val files = mutableListOf<ManagedFileInfo>()
-            listOf("saved_sub_en.srt", "saved_sub_fa.srt", "saved_reader_text.txt", "current_dict.mdx", "current_dict.mdd").forEach { name -> val f = File(filesDir, name); if (f.exists()) files.add(ManagedFileInfo(name, f.length(), f.lastModified())) }
+            listOf("saved_sub_en.srt", "saved_sub_fa.srt", "saved_sub_json.json", "saved_reader_text.txt", "current_dict.mdx", "current_dict.mdd").forEach { name -> val f = File(filesDir, name); if (f.exists()) files.add(ManagedFileInfo(name, f.length(), f.lastModified())) }
             val aiMemoryDir = File(filesDir, "ai_memory")
             if (aiMemoryDir.exists() && aiMemoryDir.isDirectory) aiMemoryDir.listFiles()?.forEach { f -> if (f.isFile) files.add(ManagedFileInfo("ai_memory/${f.name}", f.length(), f.lastModified())) }
             _managedFiles.value = files
@@ -305,7 +400,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun deleteManagedFile(fileName: String) { viewModelScope.launch(Dispatchers.IO) { val f = File(getApplication<Application>().filesDir, fileName); if (f.exists()) f.delete(); refreshManagedFiles() } }
     fun exportToDownloads(fileName: String) { viewModelScope.launch(Dispatchers.IO) { try { val context = getApplication<Application>(); val sf = File(context.filesDir, fileName); if (!sf.exists()) { _exportResult.value = strings().fileNotFoundError; return@launch }; val dn = fileName.substringAfterLast("/"); val path = saveToDownloads(context, dn, sf); _exportResult.value = strings().savedAtPath(path) } catch (e: Exception) { _exportResult.value = strings().errorWithMessage(e.message) } } }
-    fun exportAllToDownloads() { viewModelScope.launch(Dispatchers.IO) { try { val context = getApplication<Application>(); val filesDir = context.filesDir; val names = mutableListOf<String>(); listOf("saved_sub_en.srt", "saved_sub_fa.srt", "saved_reader_text.txt", "current_dict.mdx", "current_dict.mdd").forEach { n -> val f = File(filesDir, n); if (f.exists()) names.add(n) }; val amDir = File(filesDir, "ai_memory"); if (amDir.exists() && amDir.isDirectory) amDir.listFiles()?.forEach { f -> if (f.isFile) names.add("ai_memory/${f.name}") }; if (names.isEmpty()) { _exportResult.value = strings().noFilesToExport; return@launch }; var ok = 0; val savedNames = mutableListOf<String>(); for (n in names) { try { val sf = File(filesDir, n); val dn = n.substringAfterLast("/"); saveToDownloads(context, dn, sf); ok++; savedNames.add(dn) } catch (e: Exception) {} }; _exportResult.value = strings().exportedFilesSummary(ok, names.size, savedNames.joinToString(", ")) } catch (e: Exception) { _exportResult.value = strings().errorWithMessage(e.message) } } }
+    fun exportAllToDownloads() { viewModelScope.launch(Dispatchers.IO) { try { val context = getApplication<Application>(); val filesDir = context.filesDir; val names = mutableListOf<String>(); listOf("saved_sub_en.srt", "saved_sub_fa.srt", "saved_sub_json.json", "saved_reader_text.txt", "current_dict.mdx", "current_dict.mdd").forEach { n -> val f = File(filesDir, n); if (f.exists()) names.add(n) }; val amDir = File(filesDir, "ai_memory"); if (amDir.exists() && amDir.isDirectory) amDir.listFiles()?.forEach { f -> if (f.isFile) names.add("ai_memory/${f.name}") }; if (names.isEmpty()) { _exportResult.value = strings().noFilesToExport; return@launch }; var ok = 0; val savedNames = mutableListOf<String>(); for (n in names) { try { val sf = File(filesDir, n); val dn = n.substringAfterLast("/"); saveToDownloads(context, dn, sf); ok++; savedNames.add(dn) } catch (e: Exception) {} }; _exportResult.value = strings().exportedFilesSummary(ok, names.size, savedNames.joinToString(", ")) } catch (e: Exception) { _exportResult.value = strings().errorWithMessage(e.message) } } }
     fun exportSrtToDownloads() { viewModelScope.launch(Dispatchers.IO) { try { val context = getApplication<Application>(); val faList = _subFaList.value; if (faList.isEmpty()) { _saveMessage.value = strings().noFaSubtitleExists; return@launch }; val srtFile = saveSubFaSrt() ?: throw Exception(strings().srtCreateError); val displayName = if (_subFaFileName.value.isNotEmpty()) _subFaFileName.value else "subtitle_fa.srt"; val path = saveToDownloads(context, displayName, srtFile); _saveMessage.value = strings().savedAtPath(path) } catch (e: Exception) { _saveMessage.value = strings().errorWithMessage(e.message) } } }
     private fun saveToDownloads(context: Context, displayName: String, srcFile: File): String { return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) { val resolver = context.contentResolver; val values = android.content.ContentValues().apply { put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, displayName); put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream"); put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS) }; val uri = resolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: throw Exception(strings().downloadsCreateError); resolver.openOutputStream(uri)?.use { out -> srcFile.inputStream().use { inp -> inp.copyTo(out) } } ?: throw Exception(strings().fileWriteError); "Downloads/$displayName" } else { val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS); if (!downloadsDir.exists()) downloadsDir.mkdirs(); val destFile = File(downloadsDir, displayName); srcFile.copyTo(destFile, overwrite = true); destFile.absolutePath } }
     fun clearExportResult() { _exportResult.value = null }
@@ -384,6 +479,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             if (subEnFile.exists()) { try { subEnFile.inputStream().use { s -> _subEnList.value = SubtitleParser.parseSubtitle(s, "en"); _subEnFileName.value = sharedPrefs.getString("sub_en_file_name", "") ?: "" } } catch (e: Exception) { e.printStackTrace() } }
             val subFaFile = File(context.filesDir, "saved_sub_fa.srt")
             if (subFaFile.exists()) { try { subFaFile.inputStream().use { s -> _subFaList.value = SubtitleParser.parseSubtitle(s, "fa"); _subFaFileName.value = sharedPrefs.getString("sub_fa_file_name", "") ?: "" } } catch (e: Exception) { e.printStackTrace() } }
+            val jsonSubFile = File(context.filesDir, JSON_SUBTITLE_FILE)
+            if (jsonSubFile.exists()) { try { val jsonText = jsonSubFile.readText(); if (SubtitleJsonParser.looksLikeSubtitleJson(jsonText)) { _jsonSubtitles.value = SubtitleJsonParser.parse(jsonText); _jsonSubFileName.value = sharedPrefs.getString("sub_json_file_name", "") ?: "" } } catch (e: Exception) { e.printStackTrace() } }
             var hasEntries = dbHelper.hasEntries()
             if (!hasEntries) { try { context.assets.open("default_dict.txt").use { s -> com.example.logic.DictionaryParser.parseAndSaveToDb(s, dbHelper, true) }; hasEntries = dbHelper.hasEntries() } catch (e: Exception) { e.printStackTrace() } }
             _isDictionaryLoaded.value = hasEntries
@@ -575,9 +672,189 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // ── Learning settings ──
+
+    /** Toggles "Use Dictionary When JSON Learning Data Exists" and persists the choice. */
+    fun setUseDictionaryWithJson(enabled: Boolean) {
+        _useDictionaryWithJson.value = enabled
+        sharedPrefs.edit().putBoolean("use_dictionary_with_json", enabled).apply()
+    }
+
+    /** Sets the user's CEFR learning level (A1..C2) and persists it. */
+    fun setLearningLevel(level: String) {
+        val normalized = level.trim().uppercase()
+        if (normalized.isEmpty()) return
+        _learningLevel.value = normalized
+        sharedPrefs.edit().putString("learning_level", normalized).apply()
+    }
+
+    // ── JSON subtitle import ──
+
+    /**
+     * Imports a JSON subtitle-learning file picked from storage. The content
+     * is auto-detected and validated by [SubtitleJsonParser]; invalid input
+     * produces a user-friendly toast message via [saveMessage].
+     */
+    fun loadJsonSubtitleFromUri(uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            try {
+                val text = context.contentResolver.openInputStream(uri)
+                    ?.bufferedReader()?.use { it.readText() }
+                    ?: throw Exception(strings().jsonEmptyFileError)
+                importJsonSubtitleText(text, getUriDisplayName(context, uri))
+            } catch (e: SubtitleJsonParser.SubtitleJsonParseException) {
+                _saveMessage.value = strings().jsonParseError(e.message)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _saveMessage.value = strings().errorWithMessage(e.message)
+            }
+        }
+    }
+
+    /**
+     * Imports JSON subtitle-learning content from raw text (pasted into the
+     * import dialog). Detects the format, validates it, persists it to
+     * saved_sub_json.json, and makes it the highest-priority subtitle
+     * source. Safe to call from any thread.
+     */
+    fun importJsonSubtitleText(text: String, sourceName: String? = null) {
+        val s = strings()
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) { _saveMessage.value = s.jsonEmptyFileError; return }
+        if (!SubtitleJsonParser.looksLikeSubtitleJson(trimmed)) { _saveMessage.value = s.jsonNotSubtitleJson; return }
+        try {
+            val pkg = SubtitleJsonParser.parse(trimmed)
+            val context = getApplication<Application>()
+            File(context.filesDir, JSON_SUBTITLE_FILE).writeText(trimmed)
+            _jsonSubtitles.value = pkg
+            _jsonOffset.value = 0.0
+            val name = sourceName
+                ?.takeIf { it.isNotBlank() && !it.equals("Unknown", ignoreCase = true) }
+                ?: s.jsonDefaultName
+            _jsonSubFileName.value = name
+            sharedPrefs.edit().putString("sub_json_file_name", name).apply()
+            _saveMessage.value = s.jsonImportedSuccess(name, pkg.subtitles.size)
+        } catch (e: SubtitleJsonParser.SubtitleJsonParseException) {
+            _saveMessage.value = s.jsonParseError(e.message)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _saveMessage.value = s.errorWithMessage(e.message)
+        }
+    }
+
+    /**
+     * "Remove Imported Subtitles": clears ALL imported subtitle data —
+     * English, Persian, and JSON — from memory, disk, and preferences.
+     */
+    fun removeAllSubtitles() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            File(context.filesDir, "saved_sub_en.srt").delete()
+            File(context.filesDir, "saved_sub_fa.srt").delete()
+            File(context.filesDir, JSON_SUBTITLE_FILE).delete()
+            _subEnList.value = emptyList()
+            _subFaList.value = emptyList()
+            _jsonSubtitles.value = null
+            _subEnOffset.value = 0.0
+            _subFaOffset.value = 0.0
+            _jsonOffset.value = 0.0
+            _subEnFileName.value = ""
+            _subFaFileName.value = ""
+            _jsonSubFileName.value = ""
+            sharedPrefs.edit()
+                .remove("sub_en_file_name")
+                .remove("sub_fa_file_name")
+                .remove("sub_json_file_name")
+                .apply()
+            _saveMessage.value = strings().subtitleRemovedAll
+        }
+    }
+
+    // ── Subtitle learning interactions (sentence lesson / word analysis) ──
+
+    /**
+     * Opens the learning sheet for a clicked English sentence. JSON learning
+     * data is used first (matched by sentence text); when the JSON package
+     * has no entry, a fallback view is built from the aligned translation
+     * plus per-word dictionary definitions.
+     */
+    fun openSentenceLesson(sentence: String, translation: String?) {
+        val s = sentence.trim()
+        if (s.isEmpty()) return
+        val jsonSub = findJsonSubtitleForSentence(s)
+        viewModelScope.launch(Dispatchers.IO) {
+            val fallback = if (jsonSub == null) buildFallbackVocabulary(s) else emptyMap()
+            _learningSheet.value = SubtitleLearningState(
+                jsonSubtitle = jsonSub,
+                sentenceEnglish = s,
+                translation = jsonSub?.translation ?: translation,
+                fallbackVocab = fallback
+            )
+        }
+    }
+
+    /**
+     * Opens the learning sheet for a clicked English word (word-analysis
+     * mode). Called when the dictionary toggle is disabled and a JSON
+     * package exists; [jsonWord] is null when the JSON has no entry for
+     * the word and the sheet shows a friendly fallback instead.
+     */
+    fun openWordLesson(word: String, sentence: String, translation: String?) {
+        val w = word.trim()
+        if (w.isEmpty()) return
+        val jsonSub = findJsonSubtitleForSentence(sentence.trim())
+        val jsonWord = jsonSub?.words?.firstOrNull { it.word.equals(w, ignoreCase = true) }
+        _learningSheet.value = SubtitleLearningState(
+            jsonSubtitle = jsonSub,
+            sentenceEnglish = sentence.trim(),
+            translation = jsonSub?.translation ?: translation,
+            targetWord = w,
+            jsonWord = jsonWord
+        )
+    }
+
+    fun clearLearningSheet() { _learningSheet.value = null }
+
+    /** Finds the JSON subtitle whose English text matches the given sentence (trimmed, case-insensitive). */
+    private fun findJsonSubtitleForSentence(sentence: String): com.example.model.JsonSubtitle? {
+        val pkg = _jsonSubtitles.value ?: return null
+        val s = sentence.trim()
+        if (s.isEmpty()) return null
+        return pkg.subtitles.firstOrNull { it.english.trim().equals(s, ignoreCase = true) }
+            ?: pkg.subtitles.firstOrNull { it.english.trim().contains(s, ignoreCase = true) }
+    }
+
+    /** Looks up the matching JSON word entry for a word, preferring the entry inside the given sentence's JSON subtitle. */
+    private fun findJsonWord(word: String, sentence: String?): JsonWord? {
+        val pkg = _jsonSubtitles.value ?: return null
+        val w = word.trim().lowercase()
+        if (w.isEmpty()) return null
+        val sub = sentence?.let { findJsonSubtitleForSentence(it) }
+        val candidates = if (sub != null) listOf(sub) else pkg.subtitles
+        return candidates.asSequence()
+            .flatMap { it.words.asSequence() }
+            .firstOrNull { it.word.trim().lowercase() == w }
+    }
+
+    /** Builds a small word -> dictionary-definition map used as the fallback vocabulary section when no JSON lesson exists. */
+    private fun buildFallbackVocabulary(sentence: String): Map<String, String> {
+        val result = linkedMapOf<String, String>()
+        val wordRegex = Regex("\\b[a-zA-Z][a-zA-Z0-9'-]*\\b")
+        for (word in wordRegex.findAll(sentence).map { it.value }.distinct().take(15)) {
+            val def = dbHelper.getEntriesForWord(word.lowercase()).firstOrNull()?.def?.take(180)
+            if (!def.isNullOrBlank()) result[word] = def
+        }
+        return result
+    }
+
     fun lookupWord(word: String, englishContext: String? = null, persianContext: String? = null) {
         val cleanWord = word.trim().lowercase()
         _activeWord.value = cleanWord; _activeEnglishContext.value = englishContext; _activePersianContext.value = persianContext
+        // JSON learning data follows the dictionary system: attach the
+        // matching JSON word entry (if any) so the dictionary bottom sheet
+        // can show it on top of the normal dictionary results.
+        _activeJsonWord.value = findJsonWord(cleanWord, englishContext)
         viewModelScope.launch(Dispatchers.IO) {
             _isActiveWordInLeitner.value = leitnerHelper.containsWord(cleanWord)
             val reader = mdictReader
@@ -612,7 +889,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     override fun onCleared() { super.onCleared(); mdictReader?.close(); mdictReader = null; translateJob?.cancel(); learnSubsJob?.cancel(); learnDictJob?.cancel() }
-    fun clearActiveWord() { _activeWord.value = null; _dictionaryResults.value = null; _activeEnglishContext.value = null; _activePersianContext.value = null; _isActiveWordInLeitner.value = false }
+    fun clearActiveWord() { _activeWord.value = null; _dictionaryResults.value = null; _activeEnglishContext.value = null; _activePersianContext.value = null; _isActiveWordInLeitner.value = false; _activeJsonWord.value = null }
 
     fun refreshLeitnerCards() {
         viewModelScope.launch(Dispatchers.IO) {
