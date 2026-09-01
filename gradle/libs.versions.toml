@@ -39,6 +39,10 @@ roborazzi = "1.59.0"
 firebaseBom = "34.12.0"
 secretsGradlePlugin = "2.0.1"
 media3 = "1.5.1"
+# Material 3 Expressive (Material You) — the expressive APIs (MaterialExpressiveTheme,
+# MotionScheme.expressive()) are only available on the 1.4.0-alpha track; they were
+# removed from the stable 1.4.0 release and moved to the 1.5.0-alphas.
+material3 = "1.4.0-alpha16"
 jsoup = "1.17.2"
 pdfbox = "2.0.27.0"
 
@@ -65,7 +69,7 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 androidx-core = { group = "androidx.test", name = "core", version.ref = "core" }
 androidx-runner = { group = "androidx.test", name = "runner", version.ref = "runner" }
-androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coilCompose" }
