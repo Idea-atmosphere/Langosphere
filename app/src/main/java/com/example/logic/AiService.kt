@@ -2,8 +2,8 @@ package com.example.logic
 
 import android.content.Context
 import android.util.Log
-import com.example.model.SubtitleEntry
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -16,6 +16,17 @@ import java.util.concurrent.TimeUnit
 object AiService {
 
     private const val TAG = "AiService"
+
+    /**
+     * Default number of subtitle lines per request. The old value was 1,
+     * which meant a 900-line film cost 900 round trips (and 900 copies of
+     * the system prompt). Batching is the single biggest speed and cost win
+     * available here.
+     */
+    const val DEFAULT_LINES_PER_BATCH = 20
+
+    /** How many preceding lines are sent as untranslated context. */
+    private const val CONTEXT_LINES = 2
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
@@ -42,38 +53,128 @@ object AiService {
         val end: Double?
     )
 
+    /** Errors that will never succeed on a retry (bad key, bad request, ...). */
+    class NonRetryableApiException(message: String) : Exception(message)
+
+    private data class BatchItem(val index: Int, val text: String)
+
     suspend fun translateSubtitles(
         config: TranslationConfig,
         sourceTexts: List<String>,
         sourceTimes: List<Pair<Double, Double>?>? = null,
         targetLang: String = "fa",
         systemPrompt: String? = null,
-        linesPerBatch: Int = 1,
-        context: Context? = null
+        linesPerBatch: Int = DEFAULT_LINES_PER_BATCH,
+        context: Context? = null,
+        useCache: Boolean = true,
+        onProgress: ((done: Int, total: Int) -> Unit)? = null
     ): Result<TranslationResult> = withContext(Dispatchers.IO) {
         try {
-            if (sourceTexts.isEmpty()) return@withContext Result.failure(Exception("متنی برای ترجمه وجود ندارد"))
-            val sysPrompt = resolvePrompt(context, systemPrompt, AiMemoryManager.PROMPT_TRANSLATE, targetLang)
-            val allResults = mutableListOf<TranslatedLine>()
-            val rawResponses = mutableListOf<String>()
-            val batches = sourceTexts.chunked(linesPerBatch.coerceAtLeast(1))
-            for ((batchIdx, batch) in batches.withIndex()) {
-                val startIdx = batchIdx * linesPerBatch
-                val userMessage = buildUserMessage(batch, startIdx, sourceTimes)
-                val response = callChatApi(config, sysPrompt, userMessage)
-                val parsed = parseTranslationResponse(response, batch, startIdx, sourceTimes)
-                allResults.addAll(parsed)
-                rawResponses.add(response)
+            if (sourceTexts.isEmpty()) {
+                return@withContext Result.failure(Exception("متنی برای ترجمه وجود ندارد"))
             }
-            Result.success(TranslationResult(allResults, rawResponses.joinToString("\n---\n")))
-        } catch (e: Exception) { Log.e(TAG, "Translation failed: ${e.message}", e); Result.failure(e) }
+
+            // Callers that still ask for one line per request get the sane
+            // default instead; a single-line translation is unaffected
+            // because the list only has one line to begin with.
+            val batchSize = if (linesPerBatch <= 1) DEFAULT_LINES_PER_BATCH else linesPerBatch
+
+            fun timeAt(index: Int): Pair<Double, Double>? = sourceTimes?.getOrNull(index)
+
+            val results = arrayOfNulls<TranslatedLine>(sourceTexts.size)
+
+            // 1) Serve everything already known from the cache for free.
+            val pending = mutableListOf<BatchItem>()
+            val cache = if (useCache && context != null) {
+                AiMemoryManager.loadTranslationCache(context)
+            } else {
+                emptyMap()
+            }
+            var cacheHits = 0
+            for (i in sourceTexts.indices) {
+                val text = sourceTexts[i]
+                if (text.isBlank()) {
+                    results[i] = TranslatedLine(i, text, "", timeAt(i)?.first, timeAt(i)?.second)
+                    continue
+                }
+                val cached = cache[AiMemoryManager.cacheKey(text)]
+                if (cached != null) {
+                    cacheHits++
+                    results[i] = TranslatedLine(i, text, cached, timeAt(i)?.first, timeAt(i)?.second)
+                } else {
+                    pending.add(BatchItem(i, text))
+                }
+            }
+            if (cacheHits > 0) Log.d(TAG, "Cache served $cacheHits/${sourceTexts.size} lines")
+
+            // 2) Only the lines that are actually unknown reach the model,
+            //    and only the memory relevant to THEM is injected.
+            val sysPrompt = resolvePrompt(
+                context = context,
+                explicitPrompt = systemPrompt,
+                promptKey = AiMemoryManager.PROMPT_TRANSLATE,
+                targetLang = targetLang,
+                memorySourceTexts = pending.map { it.text }
+            )
+
+            val rawResponses = mutableListOf<String>()
+            val batches = pending.chunked(batchSize)
+            var done = 0
+            for (batch in batches) {
+                val contextLines = buildContextLines(sourceTexts, batch.first().index)
+                val userMessage = buildUserMessage(batch, sourceTimes, contextLines)
+                val response = callChatApi(config, sysPrompt, userMessage)
+                rawResponses.add(response)
+                for (line in parseBatchResponse(response, batch, sourceTimes)) {
+                    results[line.originalIndex] = line
+                }
+                done += batch.size
+                onProgress?.invoke(done, pending.size)
+            }
+
+            // 3) Anything the model skipped still needs a slot.
+            for (i in sourceTexts.indices) {
+                if (results[i] == null) {
+                    results[i] = TranslatedLine(
+                        i,
+                        sourceTexts[i],
+                        "",
+                        timeAt(i)?.first,
+                        timeAt(i)?.second
+                    )
+                }
+            }
+
+            val all = results.filterNotNull()
+
+            // 4) Remember the fresh work so a re-run is instant.
+            if (useCache && context != null) {
+                val fresh = all
+                    .filter { line -> pending.any { it.index == line.originalIndex } }
+                    .filter { it.translatedText.isNotBlank() }
+                    .map { it.originalText to it.translatedText }
+                if (fresh.isNotEmpty()) {
+                    try {
+                        AiMemoryManager.saveTranslationPairs(context, fresh)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to update cache: ${e.message}")
+                    }
+                }
+            }
+
+            Result.success(TranslationResult(all, rawResponses.joinToString("\n---\n")))
+        } catch (e: Exception) {
+            Log.e(TAG, "Translation failed: ${e.message}", e)
+            Result.failure(e)
+        }
     }
 
     suspend fun chat(
         config: TranslationConfig,
         messages: List<Pair<String, String>>,
         systemPrompt: String? = null,
-        context: Context? = null
+        context: Context? = null,
+        targetLang: String? = null
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             if (context != null) {
@@ -82,71 +183,186 @@ object AiService {
                     return@withContext Result.success("✓ یادداشت/قانون ذخیره شد.")
                 }
             }
-            val sysPrompt = resolvePrompt(context, systemPrompt, AiMemoryManager.PROMPT_CHAT, null)
+            val sysPrompt = resolvePrompt(
+                context = context,
+                explicitPrompt = systemPrompt,
+                promptKey = AiMemoryManager.PROMPT_CHAT,
+                targetLang = targetLang,
+                memorySourceTexts = null
+            )
             val response = callChatApiConversation(config, sysPrompt, messages)
             Result.success(response)
-        } catch (e: Exception) { Result.failure(e) }
-    }
-
-    private fun resolvePrompt(context: Context?, explicitPrompt: String?, promptKey: String, targetLang: String?): String {
-        if (explicitPrompt != null) return injectMemory(context, explicitPrompt)
-        if (context != null) { val prompt = AiMemoryManager.getPrompt(context, promptKey, targetLang); return injectMemory(context, prompt) }
-        val fallback = when (promptKey) {
-            AiMemoryManager.PROMPT_TRANSLATE -> buildDefaultSystemPrompt(targetLang ?: "fa")
-            AiMemoryManager.PROMPT_CHAT -> AiMemoryManager.DEFAULT_PROMPTS[AiMemoryManager.PROMPT_CHAT] ?: "You are a helpful assistant. Answer concisely."
-            else -> ""
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-        return fallback
     }
 
-    private fun injectMemory(context: Context?, basePrompt: String): String {
+    /**
+     * Runs a prompt against a handful of sample lines and returns the raw
+     * model output, so a prompt can be checked in the editor instead of
+     * being discovered as broken halfway through a film.
+     */
+    suspend fun testPrompt(
+        config: TranslationConfig,
+        promptText: String,
+        sampleLines: List<String>,
+        targetLang: String = "fa"
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            if (sampleLines.isEmpty()) {
+                return@withContext Result.failure(Exception("خطی برای تست وجود ندارد"))
+            }
+            val resolved = promptText.replace("{LANG}", AiMemoryManager.resolveLangName(targetLang))
+            val items = sampleLines.mapIndexed { i, text -> BatchItem(i, text) }
+            val response = callChatApi(config, resolved, buildUserMessage(items, null, emptyList()))
+            Result.success(response.trim())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun resolvePrompt(
+        context: Context?,
+        explicitPrompt: String?,
+        promptKey: String,
+        targetLang: String?,
+        memorySourceTexts: List<String>?
+    ): String {
+        val base = when {
+            explicitPrompt != null -> explicitPrompt.replace(
+                "{LANG}",
+                AiMemoryManager.resolveLangName(targetLang ?: "fa")
+            )
+            context != null -> AiMemoryManager.getPrompt(context, promptKey, targetLang)
+            else -> when (promptKey) {
+                AiMemoryManager.PROMPT_TRANSLATE -> buildDefaultSystemPrompt(targetLang ?: "fa")
+                else -> (AiMemoryManager.DEFAULT_PROMPTS[promptKey] ?: "")
+                    .replace("{LANG}", AiMemoryManager.resolveLangName(targetLang ?: "fa"))
+            }
+        }
+        return injectMemory(context, base, memorySourceTexts)
+    }
+
+    /**
+     * Memory injection is now targeted. It used to append the entire memory
+     * (corrections + skills + notes + examples) to EVERY request, which
+     * could easily be more tokens than the subtitles themselves.
+     */
+    private fun injectMemory(
+        context: Context?,
+        basePrompt: String,
+        memorySourceTexts: List<String>?
+    ): String {
         if (context == null) return basePrompt
-        val memoryContext = AiMemoryManager.buildFullContext(context)
+        val memoryContext = try {
+            if (memorySourceTexts != null) {
+                AiMemoryManager.buildRelevantContext(context, memorySourceTexts)
+            } else {
+                AiMemoryManager.buildFullContext(context)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Memory injection skipped: ${e.message}")
+            ""
+        }
         return if (memoryContext.isNotBlank()) "$basePrompt\n\n$memoryContext" else basePrompt
     }
 
     private fun buildDefaultSystemPrompt(targetLang: String): String {
-        val langName = when (targetLang) { "fa" -> "Persian (Farsi)"; "ar" -> "Arabic"; "tr" -> "Turkish"; "fr" -> "French"; "de" -> "German"; "es" -> "Spanish"; "ja" -> "Japanese"; "ko" -> "Korean"; "zh" -> "Chinese"; else -> targetLang }
-        return "You are a professional subtitle translator. Translate each line to $langName. Return JSON array: [{\"idx\": N, \"translated\": \"translation\"}]. Return ONLY the JSON array."
+        val langName = AiMemoryManager.resolveLangName(targetLang)
+        return "You are a professional subtitle translator. Translate each line to $langName. " +
+            "Return JSON array: [{\"idx\": N, \"translated\": \"translation\"}] where idx is the " +
+            "number shown in brackets. Return ONLY the JSON array."
     }
 
-    private fun buildUserMessage(texts: List<String>, startIdx: Int, times: List<Pair<Double, Double>?>?): String {
+    /** The lines just before a batch, as background for pronouns and tone. */
+    private fun buildContextLines(sourceTexts: List<String>, firstIndex: Int): List<String> {
+        if (firstIndex <= 0) return emptyList()
+        val from = (firstIndex - CONTEXT_LINES).coerceAtLeast(0)
+        return sourceTexts.subList(from, firstIndex).filter { it.isNotBlank() }
+    }
+
+    private fun buildUserMessage(
+        items: List<BatchItem>,
+        times: List<Pair<Double, Double>?>?,
+        contextLines: List<String>
+    ): String {
         val sb = StringBuilder()
-        for ((i, text) in texts.withIndex()) {
-            val idx = startIdx + i
-            val timeInfo = times?.getOrNull(idx)
-            if (timeInfo != null) sb.appendLine("[$idx] (${formatTime(timeInfo.first)} -> ${formatTime(timeInfo.second)}): $text")
-            else sb.appendLine("[$idx]: $text")
+        if (contextLines.isNotEmpty()) {
+            sb.appendLine("CONTEXT (previous lines, do NOT translate):")
+            for (line in contextLines) sb.appendLine("- $line")
+            sb.appendLine()
+        }
+        sb.appendLine("LINES TO TRANSLATE:")
+        for (item in items) {
+            val timeInfo = times?.getOrNull(item.index)
+            if (timeInfo != null) {
+                sb.appendLine("[${item.index}] (${formatTime(timeInfo.first)} -> ${formatTime(timeInfo.second)}): ${item.text}")
+            } else {
+                sb.appendLine("[${item.index}]: ${item.text}")
+            }
         }
         return sb.toString()
     }
 
-    private fun formatTime(seconds: Double): String { val mins = (seconds / 60).toInt(); val secs = (seconds % 60); return "%d:%05.2f".format(mins, secs) }
+    private fun formatTime(seconds: Double): String {
+        val mins = (seconds / 60).toInt()
+        val secs = (seconds % 60)
+        return "%d:%05.2f".format(mins, secs)
+    }
 
-    private fun callChatApi(config: TranslationConfig, systemPrompt: String, userMessage: String): String {
+    private suspend fun callChatApi(
+        config: TranslationConfig,
+        systemPrompt: String,
+        userMessage: String
+    ): String {
         val messages = JSONArray().apply {
             put(JSONObject().apply { put("role", "system"); put("content", systemPrompt) })
             put(JSONObject().apply { put("role", "user"); put("content", userMessage) })
         }
-        val body = JSONObject().apply { put("model", config.model); put("messages", messages); put("temperature", 0.3) }
-        return callWithRetry(config) { doCallApi(config, body.toString()) }
+        val body = JSONObject().apply {
+            put("model", config.model)
+            put("messages", messages)
+            put("temperature", 0.3)
+        }
+        return callWithRetry { doCallApi(config, body.toString()) }
     }
 
-    private fun callChatApiConversation(config: TranslationConfig, systemPrompt: String, messages: List<Pair<String, String>>): String {
+    private suspend fun callChatApiConversation(
+        config: TranslationConfig,
+        systemPrompt: String,
+        messages: List<Pair<String, String>>
+    ): String {
         val jsonMessages = JSONArray().apply {
             put(JSONObject().apply { put("role", "system"); put("content", systemPrompt) })
-            for ((role, content) in messages) put(JSONObject().apply { put("role", role); put("content", content) })
+            for ((role, content) in messages) {
+                put(JSONObject().apply { put("role", role); put("content", content) })
+            }
         }
-        val body = JSONObject().apply { put("model", config.model); put("messages", jsonMessages); put("temperature", 0.5) }
-        return callWithRetry(config) { doCallApi(config, body.toString()) }
+        val body = JSONObject().apply {
+            put("model", config.model)
+            put("messages", jsonMessages)
+            put("temperature", 0.5)
+        }
+        return callWithRetry { doCallApi(config, body.toString()) }
     }
 
-    private inline fun callWithRetry(config: TranslationConfig, block: () -> String): String {
+    /**
+     * Retries transient failures only, and waits with a suspending delay.
+     * The old version slept on the calling thread (so cancelling a
+     * translation could not take effect for seconds) and happily retried a
+     * wrong API key three times.
+     */
+    private suspend fun callWithRetry(block: () -> String): String {
         var lastErr: Exception? = null
         for (attempt in 1..3) {
-            try { return block() } catch (e: Exception) {
-                lastErr = e; Log.w(TAG, "API attempt $attempt failed: ${e.message}")
-                if (attempt < 3) Thread.sleep(1000L * (1L shl (attempt - 1)))
+            try {
+                return block()
+            } catch (e: NonRetryableApiException) {
+                throw e
+            } catch (e: Exception) {
+                lastErr = e
+                Log.w(TAG, "API attempt $attempt failed: ${e.message}")
+                if (attempt < 3) delay(1000L * (1L shl (attempt - 1)))
             }
         }
         throw lastErr ?: Exception("Unknown error after 3 attempts")
@@ -161,41 +377,83 @@ object AiService {
             .build()
         Log.d(TAG, "API call to ${config.baseUrl}/chat/completions, model=${config.model}, bodySize=${bodyStr.length}")
         val response = client.newCall(request).execute()
-        val responseBody = response.body?.string() ?: throw Exception("پاسخ خالی از سرور")
-        if (!response.isSuccessful) throw Exception("خطای سرور ${response.code}: $responseBody")
-        return JSONObject(responseBody).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
+        val responseBody = response.body?.string()
+        if (!response.isSuccessful) {
+            val detail = responseBody?.take(400) ?: ""
+            val message = "خطای سرور ${response.code}: $detail"
+            // 401/403 = key problem, 400/404/422 = request problem: retrying
+            // only wastes the user's time.
+            if (response.code in intArrayOf(400, 401, 403, 404, 422)) {
+                throw NonRetryableApiException(message)
+            }
+            throw Exception(message)
+        }
+        if (responseBody == null) throw Exception("پاسخ خالی از سرور")
+        return JSONObject(responseBody)
+            .getJSONArray("choices")
+            .getJSONObject(0)
+            .getJSONObject("message")
+            .getString("content")
     }
 
-    private fun parseTranslationResponse(response: String, batch: List<String>, startIdx: Int, times: List<Pair<Double, Double>?>?): List<TranslatedLine> {
-        val results = mutableListOf<TranslatedLine>()
-        val jsonStr = extractJson(response)
+    /**
+     * Maps a batch response back onto absolute line indices. The previous
+     * implementation coerced the returned idx into the batch range, which
+     * only worked because batches were a single line — with real batches it
+     * would have mixed translations up.
+     */
+    private fun parseBatchResponse(
+        response: String,
+        batch: List<BatchItem>,
+        times: List<Pair<Double, Double>?>?
+    ): List<TranslatedLine> {
+        val byIndex = LinkedHashMap<Int, TranslatedLine>()
+        val firstIndex = batch.first().index
+        val lastIndex = batch.last().index
+
+        fun put(item: BatchItem, translated: String) {
+            if (translated.isBlank()) return
+            val time = times?.getOrNull(item.index)
+            if (!byIndex.containsKey(item.index)) {
+                byIndex[item.index] = TranslatedLine(
+                    item.index,
+                    item.text,
+                    translated.trim(),
+                    time?.first,
+                    time?.second
+                )
+            }
+        }
+
         try {
-            val arr = JSONArray(jsonStr)
+            val arr = JSONArray(extractJson(response))
             for (i in 0 until arr.length()) {
-                val obj = arr.getJSONObject(i)
-                val idx = obj.optInt("idx", startIdx + i)
-                val translated = obj.optString("translated", obj.optString("translation", ""))
-                val origIdx = idx.coerceIn(0, batch.size - 1)
-                val time = times?.getOrNull(startIdx + origIdx)
-                results.add(TranslatedLine(startIdx + origIdx, batch.getOrElse(origIdx) { "" }, translated, time?.first, time?.second))
+                val obj = arr.optJSONObject(i) ?: continue
+                val translated = obj.optString(
+                    "translated",
+                    obj.optString("translation", obj.optString("text", ""))
+                )
+                val rawIdx = if (obj.has("idx")) obj.optInt("idx", -1) else obj.optInt("index", -1)
+                val item = when {
+                    rawIdx in firstIndex..lastIndex -> batch.firstOrNull { it.index == rawIdx }
+                    rawIdx in batch.indices -> batch[rawIdx]
+                    else -> batch.getOrNull(i)
+                } ?: batch.getOrNull(i)
+                if (item != null) put(item, translated)
             }
         } catch (e: Exception) {
-            Log.w(TAG, "JSON parse failed, fallback: ${e.message}")
-            val lines = response.lines().filter { it.isNotBlank() }
+            Log.w(TAG, "JSON parse failed, falling back to line matching: ${e.message}")
+            val lines = response.lines()
+                .map { it.trim() }
+                .filter { it.isNotBlank() && !it.startsWith("```") }
             for ((i, line) in lines.withIndex()) {
-                if (i >= batch.size) break
-                val clean = line.replace(Regex("^\\d+[.\\)]]\\s*"), "").trim()
-                val time = times?.getOrNull(startIdx + i)
-                results.add(TranslatedLine(startIdx + i, batch[i], clean, time?.first, time?.second))
+                val item = batch.getOrNull(i) ?: break
+                val clean = line.replace(Regex("^\\[?\\d+\\]?\\s*[.:)\\-]?\\s*"), "").trim()
+                put(item, clean)
             }
         }
-        for (i in batch.indices) {
-            if (results.none { it.originalIndex == startIdx + i }) {
-                val time = times?.getOrNull(startIdx + i)
-                results.add(TranslatedLine(startIdx + i, batch[i], "", time?.first, time?.second))
-            }
-        }
-        return results
+
+        return byIndex.values.toList()
     }
 
     private fun extractJson(text: String): String {
@@ -204,7 +462,10 @@ object AiService {
         codeBlockRegex.find(raw)?.let { return "[" + it.groupValues[1] + "]" }
         val startIdx = raw.indexOf('[')
         if (startIdx >= 0) {
-            var depth = 0; var inString = false; var escaped = false; var endIdx = -1
+            var depth = 0
+            var inString = false
+            var escaped = false
+            var endIdx = -1
             for (i in startIdx until raw.length) {
                 val c = raw[i]
                 when {
