@@ -678,13 +678,9 @@ class DesignStyleStrings(private val isEn: Boolean) {
         "Four complete, deliberately different designs. This changes far more than colors: shapes, type, buttons, cards, the tab bar, the icons and the way every option is shown all change together."
     )
     val langosphereTitle = t("لنگوسفر", "Langosphere")
-    )
     val material3Title = t("متریال ۳ تب بالا", "M3 top bar")
-    )
     val materialYouTitle = t("متریال ۳ تب پایین", "M3 down bar")
-    )
     val neobrutalismTitle = t("نئوبروتالیسم", "Neubrutalism")
-    )
     val applyNote = t(
         "با انتخاب هر گزینه، کل برنامه فوراً با طراحی جدید ساخته می‌شود و انتخاب شما ذخیره می‌ماند.",
         "Picking an option rebuilds the whole app in that design right away, and your choice is remembered."
