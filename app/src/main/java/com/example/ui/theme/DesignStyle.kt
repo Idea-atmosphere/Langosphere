@@ -679,7 +679,7 @@ class DesignStyleStrings(private val isEn: Boolean) {
     )
     val langosphereTitle = t("لنگوسفر", "Langosphere")
     val material3Title = t("متریال ۳ تب بالا", "M3 top bar")
-    val materialYouTitle = t("متریال ۳ تب پایین", "M3 down bar")
+    val materialYouTitle = t("متریال ۳ تب پایین", "M3 bottom bar")
     val neobrutalismTitle = t("نئوبروتالیسم", "Neubrutalism")
     val applyNote = t(
         "با انتخاب هر گزینه، کل برنامه فوراً با طراحی جدید ساخته می‌شود و انتخاب شما ذخیره می‌ماند.",
