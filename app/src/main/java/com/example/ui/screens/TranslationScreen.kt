@@ -21,11 +21,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.logic.AiService
 import com.example.logic.AiMemoryManager
+import com.example.logic.autoTextDirection
 import com.example.model.SubtitleEntry
 import com.example.ui.theme.AppStrings
 import kotlinx.coroutines.launch
@@ -506,7 +507,10 @@ fun TranslationScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     sub.text,
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        textAlign = TextAlign.Start,
+                                        textDirection = sub.text.autoTextDirection()
+                                    ),
                                     fontSize = 13.sp
                                 )
                                 Text(
@@ -547,7 +551,13 @@ fun TranslationScreen(
                 placeholder = { Text(strings.askAboutSubtitlePlaceholder, fontSize = 13.sp) },
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+                // Typed text follows its own direction: Persian input
+                // right-aligns, English input left-aligns.
+                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Start,
+                    textDirection = chatInput.autoTextDirection()
+                )
             )
 
             IconButton(
@@ -647,7 +657,10 @@ fun TranslationScreen(
                             Text(
                                 text = content,
                                 modifier = Modifier.padding(8.dp),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    textAlign = TextAlign.Start,
+                                    textDirection = content.autoTextDirection()
+                                ),
                                 fontSize = 12.sp
                             )
                         }
@@ -781,10 +794,13 @@ fun TranslationLineCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Original text
+            // Original text (auto RTL/LTR: source subtitle may be FA or EN)
             Text(
                 text = line.originalText,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    textAlign = TextAlign.Start,
+                    textDirection = line.originalText.autoTextDirection()
+                ),
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurface,
                 lineHeight = 18.sp
@@ -792,10 +808,13 @@ fun TranslationLineCard(
 
             Spacer(modifier = Modifier.height(2.dp))
 
-            // Translated text
+            // Translated text (auto RTL/LTR based on the AI output)
             Text(
                 text = line.translatedText,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    textAlign = TextAlign.Start,
+                    textDirection = line.translatedText.autoTextDirection()
+                ),
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.primary,

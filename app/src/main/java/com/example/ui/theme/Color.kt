@@ -3,68 +3,72 @@ package com.example.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ── Default app palette (Material 3 Expressive) ──
-// A calm, modern palette: cool off-whites instead of stark white, muted
-// blue/teal/violet accents, and soft deep-blue charcoal in dark mode.
-// Designed for long sessions: no aggressive saturated colors, WCAG-friendly
-// contrast between text and surfaces in both light and dark variants.
+// A calm but modern palette built on an indigo / teal / violet triad:
+//   • primary   — indigo, used for actions and the brand gradient's start
+//   • secondary — teal, used for "content exists" states
+//   • tertiary  — violet, the brand gradient's counterpart
+// Light mode uses cool off-whites instead of stark white; dark mode uses a
+// near-black blue-tinted charcoal that looks much deeper on OLED panels while
+// keeping WCAG-friendly text contrast. Designed for long reading sessions, so
+// nothing is fully saturated.
 // This is the app's DEFAULT color layer. On Android 12+ the theme switches
 // to the device's Material You dynamic colors (wallpaper-based) by default;
 // these palettes remain the fallback for older devices (and whenever the
 // dynamic color option is off), so both variants are kept in sync.
-val LightPrimary = Color(0xFF315FA0)
+val LightPrimary = Color(0xFF3A5AD4)
 val LightOnPrimary = Color(0xFFFFFFFF)
-val LightPrimaryContainer = Color(0xFFD7E5F8)
-val LightOnPrimaryContainer = Color(0xFF0F2D54)
-val LightSecondary = Color(0xFF3F7D6E)
+val LightPrimaryContainer = Color(0xFFDDE3FF)
+val LightOnPrimaryContainer = Color(0xFF101C4F)
+val LightSecondary = Color(0xFF2F7D6B)
 val LightOnSecondary = Color(0xFFFFFFFF)
-val LightSecondaryContainer = Color(0xFFD5EFE8)
-val LightOnSecondaryContainer = Color(0xFF12382F)
-val LightTertiary = Color(0xFF6F5AA8)
+val LightSecondaryContainer = Color(0xFFCFF0E6)
+val LightOnSecondaryContainer = Color(0xFF0A342A)
+val LightTertiary = Color(0xFF7A4FD1)
 val LightOnTertiary = Color(0xFFFFFFFF)
-val LightTertiaryContainer = Color(0xFFE9E0F6)
-val LightOnTertiaryContainer = Color(0xFF2A1B4A)
-val LightBackground = Color(0xFFF3F6FA)
-val LightOnBackground = Color(0xFF1C2430)
-val LightSurface = Color(0xFFFAFCFF)
-val LightOnSurface = Color(0xFF1C2430)
-val LightSurfaceVariant = Color(0xFFE3E9F2)
-val LightOnSurfaceVariant = Color(0xFF4A5568)
-val LightOutline = Color(0xFF8B97A8)
-val LightError = Color(0xFFBE4B3F)
+val LightTertiaryContainer = Color(0xFFEBE0FF)
+val LightOnTertiaryContainer = Color(0xFF2A1360)
+val LightBackground = Color(0xFFF4F6FC)
+val LightOnBackground = Color(0xFF181B26)
+val LightSurface = Color(0xFFFBFCFF)
+val LightOnSurface = Color(0xFF181B26)
+val LightSurfaceVariant = Color(0xFFE4E8F5)
+val LightOnSurfaceVariant = Color(0xFF474F63)
+val LightOutline = Color(0xFF8A93A8)
+val LightError = Color(0xFFC0463A)
 val LightOnError = Color(0xFFFFFFFF)
-val LightErrorContainer = Color(0xFFFBE3DF)
-val LightOnErrorContainer = Color(0xFF3E100A)
+val LightErrorContainer = Color(0xFFFFE3DE)
+val LightOnErrorContainer = Color(0xFF3E0F09)
 
-val DarkPrimary = Color(0xFF9DB8F2)
-val DarkOnPrimary = Color(0xFF10274E)
-val DarkPrimaryContainer = Color(0xFF274B80)
-val DarkOnPrimaryContainer = Color(0xFFD6E3FF)
-val DarkSecondary = Color(0xFF8CD3BE)
-val DarkOnSecondary = Color(0xFF0E352C)
-val DarkSecondaryContainer = Color(0xFF2C5549)
-val DarkOnSecondaryContainer = Color(0xFFC0EFE2)
-val DarkTertiary = Color(0xFFC3ACEA)
-val DarkOnTertiary = Color(0xFF2E1B52)
-val DarkTertiaryContainer = Color(0xFF4A3672)
-val DarkOnTertiaryContainer = Color(0xFFE7DDFF)
-val DarkBackground = Color(0xFF10141C)
-val DarkOnBackground = Color(0xFFE7EBF3)
-val DarkSurface = Color(0xFF161B26)
-val DarkOnSurface = Color(0xFFE7EBF3)
-val DarkSurfaceVariant = Color(0xFF232A38)
-val DarkOnSurfaceVariant = Color(0xFFB9C2D2)
-val DarkOutline = Color(0xFF7E8AA0)
-val DarkError = Color(0xFFF2B8B2)
-val DarkOnError = Color(0xFF601410)
-val DarkErrorContainer = Color(0xFF5C2B28)
-val DarkOnErrorContainer = Color(0xFFFFDAD6)
+val DarkPrimary = Color(0xFFAFC1FF)
+val DarkOnPrimary = Color(0xFF13224F)
+val DarkPrimaryContainer = Color(0xFF2B4181)
+val DarkOnPrimaryContainer = Color(0xFFDDE3FF)
+val DarkSecondary = Color(0xFF82D8C0)
+val DarkOnSecondary = Color(0xFF00382C)
+val DarkSecondaryContainer = Color(0xFF23594A)
+val DarkOnSecondaryContainer = Color(0xFFC5F3E5)
+val DarkTertiary = Color(0xFFCDB4FF)
+val DarkOnTertiary = Color(0xFF321269)
+val DarkTertiaryContainer = Color(0xFF4B3186)
+val DarkOnTertiaryContainer = Color(0xFFEBE0FF)
+val DarkBackground = Color(0xFF0B0E15)
+val DarkOnBackground = Color(0xFFE6E9F5)
+val DarkSurface = Color(0xFF12161F)
+val DarkOnSurface = Color(0xFFE6E9F5)
+val DarkSurfaceVariant = Color(0xFF1F2532)
+val DarkOnSurfaceVariant = Color(0xFFBAC2D6)
+val DarkOutline = Color(0xFF7C879F)
+val DarkError = Color(0xFFF4B4AC)
+val DarkOnError = Color(0xFF5A120C)
+val DarkErrorContainer = Color(0xFF5E2A25)
+val DarkOnErrorContainer = Color(0xFFFFDAD5)
 
 // ── Shared Accent Colors — desaturated versions of common signal colors so long reading/viewing sessions feel less harsh on the eyes ──
-val AccentGreen = Color(0xFF5FA777)
-val AccentRed = Color(0xFFD97A6C)
-val AccentCyan = Color(0xFF4FB3BF)
-val AccentIndigo = Color(0xFF7B87D6)
-val AccentAmber = Color(0xFFE0A85A)
+val AccentGreen = Color(0xFF52A87A)
+val AccentRed = Color(0xFFDD7A6C)
+val AccentCyan = Color(0xFF43B4C2)
+val AccentIndigo = Color(0xFF7B8AE8)
+val AccentAmber = Color(0xFFE1A855)
 
 // ── Subtitle text colors for LIGHT surfaces ──
 // The video overlay always sits on a black backdrop, so it keeps using

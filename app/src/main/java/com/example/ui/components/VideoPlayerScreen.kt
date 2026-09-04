@@ -5,98 +5,127 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.border
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
-import kotlin.math.roundToInt
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
-import com.example.ui.theme.AccentAmber
-import com.example.ui.theme.AccentCyan
-import com.example.ui.theme.AccentGreen
-import com.example.ui.theme.AccentIndigo
-import com.example.ui.theme.AccentRed
-import com.example.ui.theme.AppAccentColorState
-import com.example.ui.theme.SubtitleColorState
-import com.example.ui.theme.SubtitleEnOnLight
-import com.example.ui.theme.SubtitleFaOnLight
-import com.example.ui.theme.AppLanguage
-import com.example.ui.theme.AppStrings
+import com.example.logic.KnownWordsStore
+import com.example.logic.TtsSpeaker
+import com.example.logic.autoTextDirection
 import com.example.model.JsonSubtitle
 import com.example.model.JsonSubtitlePackage
 import com.example.model.SubtitleEntry
-import java.io.File
-import kotlinx.coroutines.Dispatchers
+import com.example.ui.theme.AccentAmber
+import com.example.ui.theme.AppLanguage
+import com.example.ui.theme.AppStrings
+import com.example.ui.theme.SubtitleColorState
+import com.example.ui.theme.isNeobrutalismDesign
+import com.example.ui.theme.SubtitleEnOnLight
+import com.example.ui.theme.SubtitleFaOnLight
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 fun Context.findActivity(): Activity? {
     var context = this
@@ -158,22 +187,30 @@ fun VideoPlayerScreen(
 ) {
     val context = LocalContext.current
     val strings = remember(appLanguage) { AppStrings(appLanguage) }
+    val prefs = rememberPlayerPrefs()
+
+    // Locale.US matters here: with the Persian locale the default
+    // String.format produces Persian digits, which then could not be parsed
+    // back by toDoubleOrNull() in the "exact time" field.
     fun offsetText(v: Double): String {
-        val formatted = String.format("%.2f", v)
+        val formatted = String.format(Locale.US, "%.2f", v)
         return if (strings.isEn) formatted else formatted.replace("-", "منفی ")
     }
-    val sharedPrefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
-    var isGlassmorphismEnabled by remember { mutableStateOf(sharedPrefs.getBoolean("glassmorphism_enabled", true)) }
-    var currentTime by remember { mutableStateOf(0.0) }
+
     val videoStateKey = remember(videoUri) { "video_state_${videoUri?.hashCode() ?: 0}" }
-    var hasRestoredPosition by remember { mutableStateOf(false) }
+
+    // ── Playback clock ──
+    var currentTime by remember { mutableStateOf(0.0) }
+    var positionMs by remember { mutableStateOf(0L) }
+    var durationMs by remember { mutableStateOf(0L) }
+    var bufferedMs by remember { mutableStateOf(0L) }
 
     val isAudio = remember(videoUri, videoFileName) {
         val name = videoFileName.lowercase()
         val uriStr = videoUri?.toString()?.lowercase() ?: ""
         name.endsWith(".mp3") || name.endsWith(".m4a") || name.endsWith(".wav") || name.endsWith(".aac") || name.endsWith(".ogg") || name.endsWith(".flac") ||
-        uriStr.endsWith(".mp3") || uriStr.endsWith(".m4a") || uriStr.endsWith(".wav") || uriStr.endsWith(".aac") || uriStr.endsWith(".ogg") || uriStr.endsWith(".flac") ||
-        uriStr.contains("audio")
+            uriStr.endsWith(".mp3") || uriStr.endsWith(".m4a") || uriStr.endsWith(".wav") || uriStr.endsWith(".aac") || uriStr.endsWith(".ogg") || uriStr.endsWith(".flac") ||
+            uriStr.contains("audio")
     }
     var albumArtBitmap by remember(videoUri) { mutableStateOf<android.graphics.Bitmap?>(null) }
 
@@ -185,93 +222,75 @@ fun VideoPlayerScreen(
                     retriever = android.media.MediaMetadataRetriever()
                     retriever.setDataSource(context, videoUri)
                     val artBytes = retriever.embeddedPicture
-                    if (artBytes != null) { albumArtBitmap = android.graphics.BitmapFactory.decodeByteArray(artBytes, 0, artBytes.size) } else { albumArtBitmap = null }
-                } catch (e: Exception) { e.printStackTrace(); albumArtBitmap = null } finally { try { retriever?.release() } catch (e: Exception) { e.printStackTrace() } }
+                    albumArtBitmap = if (artBytes != null) {
+                        android.graphics.BitmapFactory.decodeByteArray(artBytes, 0, artBytes.size)
+                    } else null
+                } catch (e: Exception) {
+                    e.printStackTrace(); albumArtBitmap = null
+                } finally {
+                    try { retriever?.release() } catch (e: Exception) { e.printStackTrace() }
+                }
             }
-        } else { albumArtBitmap = null }
+        } else albumArtBitmap = null
     }
 
-    var subtitleFontSizeFactor by remember { mutableStateOf(sharedPrefs.getFloat("subtitle_font_size_factor", 1.0f)) }
-    var subtitleBottomPadding by remember { mutableStateOf(sharedPrefs.getFloat("subtitle_bottom_padding", 64f)) }
-    // Backed by a process-wide singleton (ui/theme/Theme.kt) instead of a
-    // per-composable `remember`, matching the same proven mechanism already
-    // used for the app accent color, so subtitle colors reliably update live
-    // and survive this screen being disposed/recreated on tab switches.
-    //
-    // ── Subtitle color resolution (light/dark/beta themes) ──
-    // Two sets of defaults are kept on purpose:
-    //  • Overlay colors (on the video / audio backdrop, which is always
-    //    dark): bright white + amber, with a soft text shadow for contrast.
-    //  • List colors (on the THEME background below the player): adaptive —
-    //    dark slate/gold on light themes, white/amber on dark themes — so
-    //    subtitles stay readable in LIGHT mode too (previously the white
-    //    text nearly disappeared against the light background). The user's
-    //    custom SubtitleColorState choice always overrides both.
+    // ── Subtitle color resolution (light/dark themes) ──
+    // Two sets of defaults on purpose:
+    //  • Overlay colors (on the video / audio backdrop, always dark):
+    //    bright white + amber with a soft shadow for contrast.
+    //  • List colors (on the THEME background below the player): adaptive,
+    //    so subtitles stay readable in light mode too. A custom
+    //    SubtitleColorState choice always overrides both.
     val isDarkUi = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val subtitleOverlayColorEn = SubtitleColorState.colorEn ?: Color.White
     val subtitleOverlayColorFa = SubtitleColorState.colorFa ?: AccentAmber
     val subtitleListColorEn = SubtitleColorState.colorEn ?: if (isDarkUi) Color.White else SubtitleEnOnLight
     val subtitleListColorFa = SubtitleColorState.colorFa ?: if (isDarkUi) AccentAmber else SubtitleFaOnLight
-    val overlayTextShadow = androidx.compose.ui.graphics.Shadow(
-        color = Color.Black.copy(alpha = 0.6f), offset = androidx.compose.ui.geometry.Offset(0f, 1.5f), blurRadius = 6f
+    val overlayTextShadow = Shadow(
+        color = Color.Black.copy(alpha = 0.6f),
+        offset = Offset(0f, 1.5f),
+        blurRadius = 6f
     )
-    val listTextShadow = androidx.compose.ui.graphics.Shadow(
+    val listTextShadow = Shadow(
         color = if (isDarkUi) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.85f),
-        offset = androidx.compose.ui.geometry.Offset(0f, 1f), blurRadius = 4f
+        offset = Offset(0f, 1f),
+        blurRadius = 4f
     )
-    var subtitleFontEn by remember { mutableStateOf(sharedPrefs.getString("subtitle_font_en", "default") ?: "default") }
-    var subtitleFontFa by remember { mutableStateOf(sharedPrefs.getString("subtitle_font_fa", "default") ?: "default") }
-    var customFontPathEn by remember { mutableStateOf(sharedPrefs.getString("subtitle_custom_font_path_en", null)) }
-    var customFontPathFa by remember { mutableStateOf(sharedPrefs.getString("subtitle_custom_font_path_fa", null)) }
-    val customFontFamilyEn = remember(customFontPathEn) { customFontPathEn?.let { path -> try { if (File(path).exists()) FontFamily(Font(File(path))) else null } catch (e: Exception) { null } } }
-    val customFontFamilyFa = remember(customFontPathFa) { customFontPathFa?.let { path -> try { if (File(path).exists()) FontFamily(Font(File(path))) else null } catch (e: Exception) { null } } }
-    val fontImportScope = rememberCoroutineScope()
-    fun importCustomFont(uri: Uri, isEnglish: Boolean) {
-        fontImportScope.launch(Dispatchers.IO) {
-            try {
-                val destFile = File(context.filesDir, if (isEnglish) "custom_subtitle_font_en.ttf" else "custom_subtitle_font_fa.ttf")
-                context.contentResolver.openInputStream(uri)?.use { input -> destFile.outputStream().use { output -> input.copyTo(output) } }
-                withContext(Dispatchers.Main) {
-                    if (isEnglish) {
-                        customFontPathEn = destFile.absolutePath; subtitleFontEn = "custom"
-                        sharedPrefs.edit().putString("subtitle_custom_font_path_en", destFile.absolutePath).putString("subtitle_font_en", "custom").apply()
-                    } else {
-                        customFontPathFa = destFile.absolutePath; subtitleFontFa = "custom"
-                        sharedPrefs.edit().putString("subtitle_custom_font_path_fa", destFile.absolutePath).putString("subtitle_font_fa", "custom").apply()
-                    }
-                }
-            } catch (e: Exception) { e.printStackTrace() }
-        }
-    }
-    val customFontLauncherEn = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? -> uri?.let { importCustomFont(it, true) } }
-    val customFontLauncherFa = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? -> uri?.let { importCustomFont(it, false) } }
-    var manualShiftEnText by remember { mutableStateOf("") }
-    var manualShiftFaText by remember { mutableStateOf("") }
-    fun fontFamilyFor(key: String, customFamily: FontFamily? = null): FontFamily = when (key) {
-        "serif" -> FontFamily.Serif
-        "sansserif" -> FontFamily.SansSerif
-        "monospace" -> FontFamily.Monospace
-        "cursive" -> FontFamily.Cursive
-        "custom" -> customFamily ?: FontFamily.Default
-        else -> FontFamily.Default
-    }
-    var isSubtitlesEnabled by remember { mutableStateOf(sharedPrefs.getBoolean("subtitles_enabled", true)) }
+    val customFontFamilyEn = rememberCustomFontFamily(prefs.customFontPathEn)
+    val customFontFamilyFa = rememberCustomFontFamily(prefs.customFontPathFa)
+    val subtitleFamilyEn = fontFamilyFor(prefs.fontEn, customFontFamilyEn)
+    val subtitleFamilyFa = fontFamilyFor(prefs.fontFa, customFontFamilyFa)
+
     var showSubtitleSettings by remember { mutableStateOf(false) }
     var isSyncExpanded by remember { mutableStateOf(false) }
     var isJsonSyncExpanded by remember { mutableStateOf(false) }
-    var useSmartPauseControls by remember { mutableStateOf(sharedPrefs.getBoolean("smart_pause_enabled", true)) }
-    // Smart-pause gear panel options (all persisted):
-    //  • pauseDimEnabled: the black layer over the video while paused.
-    //  • pauseHideUiEnabled: while paused, hide the subtitle text and the
-    //    smart-pause buttons so the frame can be inspected precisely — the
-    //    gear itself is NEVER hidden.
-    //  • pauseRequireContinue: tapping the video no longer resumes playback;
-    //    only the Continue button does.
-    var pauseDimEnabled by remember { mutableStateOf(sharedPrefs.getBoolean("smart_pause_dim_enabled", true)) }
-    var pauseHideUiEnabled by remember { mutableStateOf(sharedPrefs.getBoolean("smart_pause_hide_ui_enabled", false)) }
-    var pauseRequireContinue by remember { mutableStateOf(sharedPrefs.getBoolean("smart_pause_require_continue", false)) }
-    var skipSeconds by remember { mutableStateOf(sharedPrefs.getInt("skip_seconds", 10)) }
     var containerWidth by remember { mutableStateOf(0) }
+    var containerHeightPx by remember { mutableStateOf(1f) }
+    var isSplitDragging by remember { mutableStateOf(false) }
+
+    // ── Chrome visibility ──
+    var controlsVisible by remember { mutableStateOf(true) }
+    var skipBadgeNonce by remember { mutableStateOf(0) }
+    var skipBadgeVisible by remember { mutableStateOf(false) }
+    var skipBadgeForward by remember { mutableStateOf(true) }
+    // Everything that is not needed on every single tap now hides behind
+    // one button instead of lining up eight icons over the picture.
+    var showToolCluster by remember { mutableStateOf(false) }
+
+    // ── Playback speed & A-B repeat ──
+    // The loop markers are per-file on purpose (a range from the previous
+    // video means nothing in the next one), so they reset with videoUri.
+    var showSpeedPanel by remember { mutableStateOf(false) }
+    var loopStartMs by remember(videoUri) { mutableStateOf<Long?>(null) }
+    var loopEndMs by remember(videoUri) { mutableStateOf<Long?>(null) }
+
+    // ── Listen mode ──
+    // Reading along is comfortable but it is not listening practice: in
+    // listen mode the subtitles stay hidden and are revealed one line at a
+    // time, only when the learner asks. The choice is remembered.
+    var listenMode by remember { mutableStateOf(prefs.raw.getBoolean("listen_mode", false)) }
+    var revealCurrent by remember { mutableStateOf(false) }
+
     val listState = rememberLazyListState()
     // ── User-scroll detection (for the collapsible import section) ──
     // The player auto-scrolls the list to follow the active subtitle line;
@@ -279,14 +298,22 @@ fun VideoPlayerScreen(
     // scrolls are tracked with isAutoScrolling and excluded here.
     var isAutoScrolling by remember { mutableStateOf(false) }
     var isUserScrolling by remember { mutableStateOf(false) }
+    // Timestamp of the last manual scroll: auto-follow backs off for a few
+    // seconds afterwards instead of yanking the list back immediately.
+    var lastUserScrollAt by remember { mutableStateOf(0L) }
+
     LaunchedEffect(listState) {
         snapshotFlow { listState.isScrollInProgress }
-            .collect { inProgress -> isUserScrolling = inProgress && !isAutoScrolling }
+            .collect { inProgress ->
+                isUserScrolling = inProgress && !isAutoScrolling
+                if (isUserScrolling) lastUserScrollAt = System.currentTimeMillis()
+            }
     }
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
             .map { (index, offset) ->
                 if (isUserScrolling) {
+                    lastUserScrollAt = System.currentTimeMillis()
                     when {
                         index > 0 || offset > 100 -> true   // scrolled away from the top
                         index == 0 && offset == 0 -> false  // back at the very top
@@ -297,69 +324,209 @@ fun VideoPlayerScreen(
             .distinctUntilChanged()
             .collect { collapse -> collapse?.let(onUserScrollCollapse) }
     }
+
     var autoPauseAtTime by remember { mutableStateOf<Double?>(null) }
     var skipNextAutoScroll by remember { mutableStateOf(false) }
 
+    // ── Free-form overlay buttons (positions persisted) ──
     data class ButtonTransform(var x: Float, var y: Float, var scale: Float, var rotation: Float)
     fun loadTransform(key: String, defaultX: Float, defaultY: Float): ButtonTransform {
-        val raw = sharedPrefs.getString("overlay_$key", null)
-        if (raw != null) { val parts = raw.split("|"); if (parts.size == 4) { return ButtonTransform(parts[0].toFloatOrNull() ?: defaultX, parts[1].toFloatOrNull() ?: defaultY, parts[2].toFloatOrNull() ?: 1f, parts[3].toFloatOrNull() ?: 0f) } }
+        val raw = prefs.raw.getString("overlay_$key", null)
+        if (raw != null) {
+            val parts = raw.split("|")
+            if (parts.size == 4) {
+                return ButtonTransform(
+                    parts[0].toFloatOrNull() ?: defaultX,
+                    parts[1].toFloatOrNull() ?: defaultY,
+                    parts[2].toFloatOrNull() ?: 1f,
+                    parts[3].toFloatOrNull() ?: 0f
+                )
+            }
+        }
         return ButtonTransform(defaultX, defaultY, 1f, 0f)
     }
-    fun saveTransform(key: String, t: ButtonTransform) { sharedPrefs.edit().putString("overlay_$key", "${t.x}|${t.y}|${t.scale}|${t.rotation}").apply() }
+    fun saveTransform(key: String, t: ButtonTransform) {
+        prefs.raw.edit().putString("overlay_$key", "${t.x}|${t.y}|${t.scale}|${t.rotation}").apply()
+    }
     var showOverlaySettings by remember { mutableStateOf(false) }
     val continueTransform = remember { mutableStateOf(loadTransform("continue", 0f, -80f)) }
     val autoPrevTransform = remember { mutableStateOf(loadTransform("auto_prev", 0f, 0f)) }
     val autoCurrentTransform = remember { mutableStateOf(loadTransform("auto_current", 0f, 80f)) }
-    // The smart-pause gear is movable like the other overlay buttons.
     val smartPauseGearTransform = remember { mutableStateOf(loadTransform("smart_pause_gear", 0f, 0f)) }
+
     val subtitleAlignmentMap = remember(subEnList, subFaList) { alignSubtitles(subEnList, subFaList) }
     val exoPlayer = remember { ExoPlayer.Builder(context).build().apply { playWhenReady = true } }
     var isPlaying by remember { mutableStateOf(false) }
     var audioTrackGroups by remember { mutableStateOf<List<Tracks.Group>>(emptyList()) }
 
+    fun performSkip(deltaSeconds: Int) {
+        val target = (exoPlayer.currentPosition + deltaSeconds * 1000L).coerceAtLeast(0L)
+        exoPlayer.seekTo(target)
+        positionMs = target
+        skipBadgeForward = deltaSeconds > 0
+        skipBadgeNonce += 1
+        controlsVisible = true
+    }
+
+    fun togglePlayback() {
+        if (exoPlayer.isPlaying) exoPlayer.pause()
+        else if (!prefs.pauseRequireContinue || !prefs.smartPause) exoPlayer.play()
+    }
+
+    /**
+     * Three-state A-B repeat, driven by a single button:
+     * nothing set → drop marker A → drop marker B (and start looping) → clear.
+     * A B that lands too close to A just moves A instead of creating a
+     * useless quarter-second loop.
+     */
+    fun cycleAbRepeat() {
+        val start = loopStartMs
+        val end = loopEndMs
+        when {
+            start == null -> {
+                loopStartMs = exoPlayer.currentPosition.coerceAtLeast(0L)
+                loopEndMs = null
+            }
+            end == null -> {
+                val candidate = exoPlayer.currentPosition
+                if (candidate > start + 700L) {
+                    loopEndMs = candidate
+                    exoPlayer.seekTo(start)
+                    exoPlayer.play()
+                } else {
+                    loopStartMs = candidate.coerceAtLeast(0L)
+                }
+            }
+            else -> {
+                loopStartMs = null
+                loopEndMs = null
+            }
+        }
+        controlsVisible = true
+    }
+
+    // Speed is a player-level parameter: applied once here and re-applied
+    // whenever the stored value changes. ExoPlayer keeps the pitch intact,
+    // so 0.75x sounds slower without sounding lower.
+    LaunchedEffect(exoPlayer, prefs.playbackSpeed) {
+        try {
+            exoPlayer.setPlaybackSpeed(prefs.playbackSpeed)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // Known words and the speech engine are both shared singletons: they
+    // are prepared once here and torn down politely when the player leaves.
+    LaunchedEffect(Unit) {
+        KnownWordsStore.ensureLoaded(context)
+        TtsSpeaker.ensureInit(context)
+    }
+    DisposableEffect(Unit) {
+        onDispose { TtsSpeaker.stop() }
+    }
+
+    LaunchedEffect(skipBadgeNonce) {
+        if (skipBadgeNonce > 0) {
+            skipBadgeVisible = true
+            delay(750)
+            skipBadgeVisible = false
+        }
+    }
+    LaunchedEffect(controlsVisible, isPlaying) {
+        if (controlsVisible && isPlaying) {
+            delay(3800)
+            controlsVisible = false
+        }
+    }
+
     DisposableEffect(exoPlayer) {
         val listener = object : androidx.media3.common.Player.Listener {
-            override fun onIsPlayingChanged(isPlayingChange: Boolean) { isPlaying = isPlayingChange }
-            override fun onTracksChanged(tracks: Tracks) { audioTrackGroups = tracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO } }
+            override fun onIsPlayingChanged(isPlayingChange: Boolean) {
+                isPlaying = isPlayingChange
+                if (!isPlayingChange) controlsVisible = true
+            }
+
+            override fun onTracksChanged(tracks: Tracks) {
+                audioTrackGroups = tracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO }
+            }
         }
-        exoPlayer.addListener(listener); isPlaying = exoPlayer.isPlaying
+        exoPlayer.addListener(listener)
+        isPlaying = exoPlayer.isPlaying
         audioTrackGroups = exoPlayer.currentTracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO }
         onDispose { exoPlayer.removeListener(listener) }
     }
+
     LaunchedEffect(videoUri) {
         videoUri?.let {
             exoPlayer.setMediaItem(MediaItem.fromUri(it))
-            val savedPos = sharedPrefs.getLong("${videoStateKey}_position", 0L)
-            val wasPlaying = sharedPrefs.getBoolean("${videoStateKey}_was_playing", true)
+            val savedPos = prefs.savedPosition(videoStateKey)
+            val wasPlaying = prefs.savedWasPlaying(videoStateKey)
             val readyListener = object : androidx.media3.common.Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == androidx.media3.common.Player.STATE_READY) { if (savedPos > 0) exoPlayer.seekTo(savedPos); exoPlayer.playWhenReady = wasPlaying; exoPlayer.removeListener(this) }
+                    if (playbackState == androidx.media3.common.Player.STATE_READY) {
+                        if (savedPos > 0) exoPlayer.seekTo(savedPos)
+                        exoPlayer.playWhenReady = wasPlaying
+                        exoPlayer.removeListener(this)
+                    }
+                }
+
+                // Without this the listener leaked forever whenever a file
+                // failed to open (it was only removed on STATE_READY).
+                override fun onPlayerError(error: PlaybackException) {
+                    exoPlayer.removeListener(this)
                 }
             }
-            exoPlayer.addListener(readyListener); exoPlayer.prepare()
+            exoPlayer.addListener(readyListener)
+            exoPlayer.prepare()
+            try {
+                exoPlayer.setPlaybackSpeed(prefs.playbackSpeed)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
-    DisposableEffect(Unit) {
-        onDispose { if (videoUri != null) { val editor = sharedPrefs.edit(); editor.putLong("${videoStateKey}_position", exoPlayer.currentPosition); editor.putBoolean("${videoStateKey}_was_playing", isPlaying); editor.apply() } }
-    }
+
     val activity = remember { context.findActivity() }
     DisposableEffect(isFullScreen) {
         val controller = activity?.let { WindowCompat.getInsetsController(it.window, it.window.decorView) }
-        if (isFullScreen) { activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE; controller?.let { it.hide(WindowInsetsCompat.Type.systemBars()); it.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE } }
-        else { activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED; controller?.let { it.show(WindowInsetsCompat.Type.navigationBars()); it.hide(WindowInsetsCompat.Type.statusBars()) } }
-        onDispose { activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED; controller?.let { it.show(WindowInsetsCompat.Type.navigationBars()); it.hide(WindowInsetsCompat.Type.statusBars()) } }
+        if (isFullScreen) {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            controller?.let {
+                it.hide(WindowInsetsCompat.Type.systemBars())
+                it.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            controller?.let {
+                it.show(WindowInsetsCompat.Type.navigationBars())
+                it.hide(WindowInsetsCompat.Type.statusBars())
+            }
+        }
+        onDispose {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            controller?.let {
+                it.show(WindowInsetsCompat.Type.navigationBars())
+                it.hide(WindowInsetsCompat.Type.statusBars())
+            }
+        }
     }
-    LaunchedEffect(exoPlayer, autoPauseAtTime) {
+
+    // ── Playback ticker ──
+    LaunchedEffect(exoPlayer, autoPauseAtTime, videoUri) {
         // `armed` only becomes true once the position has been seen BEFORE
         // the target. Right after seekTo() ExoPlayer may briefly still
-        // report the OLD position (which is already past the target when
-        // jumping BACK to the previous subtitle); without this guard the
-        // player paused instantly and the previous-subtitle button never
-        // actually got there.
+        // report the OLD position (already past the target when jumping
+        // BACK to the previous subtitle); without this guard the player
+        // paused instantly and the previous-subtitle button never arrived.
         var armed = false
+        var lastSaveAt = 0L
         while (isActive) {
-            currentTime = exoPlayer.currentPosition / 1000.0
+            val pos = exoPlayer.currentPosition
+            positionMs = pos
+            bufferedMs = exoPlayer.bufferedPosition
+            durationMs = if (exoPlayer.duration > 0) exoPlayer.duration else 0L
+            currentTime = pos / 1000.0
             autoPauseAtTime?.let { target ->
                 if (currentTime < target) armed = true
                 if (armed && exoPlayer.isPlaying && currentTime >= target) {
@@ -368,38 +535,104 @@ fun VideoPlayerScreen(
                     skipNextAutoScroll = true
                 }
             }
+            // A-B repeat: jump back to A shortly before B so the loop is
+            // seamless. Only while playing — pausing inside the range must
+            // not fight the user by seeking under their finger.
+            val loopFrom = loopStartMs
+            val loopTo = loopEndMs
+            if (loopFrom != null && loopTo != null && loopTo > loopFrom &&
+                exoPlayer.isPlaying && pos >= loopTo - 80L
+            ) {
+                exoPlayer.seekTo(loopFrom)
+                positionMs = loopFrom
+            }
+            // Periodic save so the resume point survives the process being
+            // killed in the background (onDispose never runs on a kill).
+            val now = System.currentTimeMillis()
+            if (videoUri != null && now - lastSaveAt > 4000L) {
+                lastSaveAt = now
+                prefs.savePlayback(videoStateKey, pos, exoPlayer.isPlaying)
+            }
             delay(200)
         }
     }
-    val activeIndex = remember(subEnList, currentTime) { subEnList.indexOfFirst { it.start <= currentTime && it.end >= currentTime } }
-    val activeJsonIndex = remember(jsonPackage, currentTime) {
-        jsonPackage?.subtitles?.indexOfFirst { s -> s.start != null && s.end != null && s.start!! <= currentTime && currentTime <= s.end!! } ?: -1
+
+    val activeIndex = remember(subEnList, currentTime) {
+        subEnList.indexOfFirst { it.start <= currentTime && it.end >= currentTime }
     }
-    val jsonModeActive = jsonPackage != null && jsonPackage!!.subtitles.isNotEmpty()
+    val activeJsonIndex = remember(jsonPackage, currentTime) {
+        jsonPackage?.subtitles?.indexOfFirst { s ->
+            s.start != null && s.end != null && s.start!! <= currentTime && currentTime <= s.end!!
+        } ?: -1
+    }
+    val jsonModeActive = jsonPackage != null && jsonPackage.subtitles.isNotEmpty()
     val isAutoStoppingActive = autoPauseAtTime != null
+
+    // A revealed line stays revealed only until the next one starts.
+    LaunchedEffect(activeIndex, activeJsonIndex) {
+        if (revealCurrent) revealCurrent = false
+    }
+
+    // ── Coverage report ──
+    // "How much of this film can I already follow?" is the most motivating
+    // number in language learning, and it also ranks what to learn next.
+    val coverageTexts = remember(subEnList, jsonPackage) {
+        val jsonTexts = jsonPackage?.subtitles?.map { it.english }?.filter { it.isNotBlank() } ?: emptyList()
+        if (jsonTexts.isNotEmpty()) jsonTexts else subEnList.map { it.text }
+    }
+    val knownWords = KnownWordsStore.words
+    val coverage = remember(coverageTexts, knownWords) {
+        KnownWordsStore.computeCoverage(coverageTexts)
+    }
+
     LaunchedEffect(activeIndex, activeJsonIndex, jsonModeActive, isAutoStoppingActive) {
-        if (!isAutoStoppingActive) {
-            // isAutoScrolling marks these programmatic scrolls so the
-            // user-scroll detection above never folds the import section
-            // because of the auto-follow behavior.
-            if (jsonModeActive && activeJsonIndex >= 0) {
-                if (skipNextAutoScroll) skipNextAutoScroll = false
-                else { isAutoScrolling = true; listState.animateScrollToItem(activeJsonIndex); isAutoScrolling = false }
-            } else if (activeIndex >= 0 && subEnList.isNotEmpty()) {
-                if (skipNextAutoScroll) skipNextAutoScroll = false
-                else { isAutoScrolling = true; listState.animateScrollToItem(activeIndex); isAutoScrolling = false }
+        if (isAutoStoppingActive) return@LaunchedEffect
+        // Never fight the user: skip auto-follow while a drag is in progress
+        // or within a few seconds of a manual scroll.
+        if (listState.isScrollInProgress && !isAutoScrolling) return@LaunchedEffect
+        if (System.currentTimeMillis() - lastUserScrollAt < 4000L) return@LaunchedEffect
+
+        val target = if (jsonModeActive && activeJsonIndex >= 0) activeJsonIndex
+        else if (activeIndex >= 0 && subEnList.isNotEmpty()) activeIndex
+        else -1
+        if (target < 0) return@LaunchedEffect
+        if (skipNextAutoScroll) {
+            skipNextAutoScroll = false
+            return@LaunchedEffect
+        }
+        isAutoScrolling = true
+        listState.animateScrollToItem(target)
+        isAutoScrolling = false
+    }
+
+    // ── Lifecycle ──
+    // Previously the player was released BOTH by the lifecycle observer
+    // (ON_DESTROY) and by onDispose, and a separate DisposableEffect read
+    // exoPlayer.currentPosition after the release to save the resume
+    // position — so the position was regularly lost. Now everything happens
+    // exactly once, in the right order: save, then release.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, exoPlayer, videoStateKey) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                if (videoUri != null) {
+                    prefs.savePlayback(videoStateKey, exoPlayer.currentPosition, exoPlayer.isPlaying)
+                }
+                exoPlayer.pause()
             }
         }
-    }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_PAUSE) exoPlayer.pause() else if (event == Lifecycle.Event.ON_DESTROY) exoPlayer.release() }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer); exoPlayer.release() }
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            if (videoUri != null) {
+                prefs.savePlayback(videoStateKey, exoPlayer.currentPosition, exoPlayer.isPlaying)
+            }
+            exoPlayer.release()
+        }
     }
+
     val currentEn = subEnList.find { it.start <= currentTime && it.end >= currentTime }
-    val effectiveFaList = subFaList
-    val currentFa = effectiveFaList.find { it.start <= currentTime && it.end >= currentTime }
+    val currentFa = subFaList.find { it.start <= currentTime && it.end >= currentTime }
 
     // ── JSON subtitle resolution (priority: JSON > imported files) ──
     // Synchronized by TIMESTAMP first, then by matching English text, then
@@ -414,7 +647,7 @@ fun VideoPlayerScreen(
             } ?: if (activeIndex >= 0) {
                 pkg.subtitles.firstOrNull { s -> s.id != null && s.id == (activeIndex + 1).toString() }
             } else null
-            ?: pkg.subtitles.getOrNull(activeIndex)
+                ?: pkg.subtitles.getOrNull(activeIndex)
         }
     }
 
@@ -424,489 +657,941 @@ fun VideoPlayerScreen(
     val prevJsonPaused = jsonPackage?.subtitles?.getOrNull(currentJsonDisplayIndex - 1)
     val currentJsonPaused = currentJson
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxWidth().weight(if (isFullScreen) 1f else 0.38f).background(Color.Black).onGloballyPositioned { containerWidth = it.size.width }) {
-            AndroidView(modifier = Modifier.fillMaxSize(), factory = { PlayerView(context).apply { player = exoPlayer; useController = !useSmartPauseControls; resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT; subtitleView?.visibility = android.view.View.GONE } }, update = { playerView -> playerView.useController = !useSmartPauseControls })
-            if (useSmartPauseControls && !isAudio && videoUri != null) {
-                Box(modifier = Modifier.fillMaxSize().pointerInput(containerWidth, isPlaying, skipSeconds, pauseRequireContinue) { detectTapGestures(onTap = { if (isPlaying) exoPlayer.pause() else if (!pauseRequireContinue) exoPlayer.play() }, onDoubleTap = { offset -> val isLeft = offset.x < (containerWidth / 2); if (isLeft) exoPlayer.seekTo((exoPlayer.currentPosition - skipSeconds * 1000).coerceAtLeast(0)) else exoPlayer.seekTo(exoPlayer.currentPosition + skipSeconds * 1000) }) })
-            }
+    // Whatever English line is on screen right now can be spoken aloud.
+    val speakText = (currentJson?.english?.takeIf { it.isNotBlank() } ?: currentEn?.text)
+        ?.takeIf { it.isNotBlank() }
+
+    val smartPause = prefs.smartPause
+    val showChrome = controlsVisible || !isPlaying
+    // Smart pause is meant to be a BARE frame you can study: no transport
+    // bar, no progress line, nothing across the bottom of the picture. The
+    // clock is kept (as a small floating pill) because knowing where you
+    // are in the file is not visual noise. The normal mode keeps the full
+    // seek bar.
+    val showTransportBar = !smartPause
+
+    // In listen mode nothing is shown until the learner asks for the line.
+    val subtitlesHiddenForListen = listenMode && !revealCurrent
+
+    // The cluster folds itself away with the chrome, so it never reappears
+    // expanded on the next tap.
+    LaunchedEffect(showChrome) {
+        if (!showChrome) showToolCluster = false
+    }
+
+    // ── "Loop this line" ──
+    // The most useful loop for a learner is the sentence they are hearing
+    // right now, so it gets a one-tap shortcut instead of two manual
+    // markers. Resolved from the JSON package first, then the EN track.
+    val loopLineRange: Pair<Double, Double>? = currentJson?.let { j ->
+        j.start?.let { s -> j.end?.let { e -> s to e } }
+    } ?: currentEn?.let { it.start to it.end }
+
+    fun loopCurrentLine() {
+        val range = loopLineRange ?: return
+        val startMs = (range.first * 1000).toLong().coerceAtLeast(0L)
+        val endMs = (range.second * 1000).toLong()
+        if (endMs <= startMs) return
+        loopStartMs = startMs
+        loopEndMs = endMs
+        exoPlayer.seekTo(startMs)
+        exoPlayer.play()
+        controlsVisible = true
+    }
+
+    val loopBannerText = when {
+        loopStartMs != null && loopEndMs != null ->
+            "A " + formatClock(loopStartMs ?: 0L) + "  →  B " + formatClock(loopEndMs ?: 0L)
+        loopStartMs != null -> "A " + formatClock(loopStartMs ?: 0L) + "  →  B ?"
+        else -> ""
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { containerHeightPx = it.size.height.toFloat().coerceAtLeast(1f) }
+    ) {
+        // The video surface itself (gestures, seek bar, overlay buttons) stays
+        // LTR so raw x offsets and drag gestures never fight an RTL mirror.
+        // The list below inherits the page's RTL when the app language is FA.
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(if (isFullScreen) 1f else prefs.videoWeight)
+                    .background(Color.Black)
+                    .onGloballyPositioned { containerWidth = it.size.width }
+            ) {
+            // The built-in ExoPlayer controller is always off now: the app
+            // draws its own controls, so the experience (and the seek bar)
+            // is identical in smart-pause and normal mode. Before, the
+            // smart-pause mode had no timeline at all.
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = {
+                    PlayerView(context).apply {
+                        player = exoPlayer
+                        useController = false
+                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                        subtitleView?.visibility = android.view.View.GONE
+                    }
+                },
+                update = { playerView -> playerView.useController = false }
+            )
+
             if (isAudio && videoUri != null) {
-                Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.radialGradient(colors = listOf(Color(0xFF1E1B4B), Color(0xFF03001C)), radius = 900f)).pointerInput(containerWidth, isPlaying, skipSeconds, pauseRequireContinue) { detectTapGestures(onTap = { if (isPlaying) exoPlayer.pause() else if (!pauseRequireContinue) exoPlayer.play() }, onDoubleTap = { offset -> val isLeft = offset.x < (containerWidth / 2); if (isLeft) exoPlayer.seekTo((exoPlayer.currentPosition - skipSeconds * 1000).coerceAtLeast(0)) else exoPlayer.seekTo(exoPlayer.currentPosition + skipSeconds * 1000) }) }, contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center, modifier = Modifier.padding(16.dp)) {
-                        val infiniteTransition = rememberInfiniteTransition(label = "record_rotation")
-                        val rotationAngle by infiniteTransition.animateFloat(initialValue = 0f, targetValue = 360f, animationSpec = infiniteRepeatable(animation = tween(15000, easing = LinearEasing), repeatMode = RepeatMode.Restart), label = "rotation")
-                        val currentRotation = if (isPlaying) rotationAngle else 0f
-                        Box(modifier = Modifier.size(if (isFullScreen) 170.dp else 115.dp).align(Alignment.CenterHorizontally), contentAlignment = Alignment.Center) {
-                            Box(modifier = Modifier.fillMaxSize().border(width = 3.dp, brush = androidx.compose.ui.graphics.Brush.sweepGradient(colors = listOf(AccentIndigo, AccentRed, AccentCyan, AccentIndigo)), shape = RoundedCornerShape(100.dp)).graphicsLayer { rotationZ = currentRotation })
-                            if (albumArtBitmap != null) { Image(bitmap = albumArtBitmap!!.asImageBitmap(), contentDescription = "Cover", modifier = Modifier.size(if (isFullScreen) 152.dp else 102.dp).graphicsLayer { rotationZ = if (isPlaying) rotationAngle * 0.3f else 0f }.clip(RoundedCornerShape(100.dp)).border(2.dp, Color.Black, RoundedCornerShape(100.dp)), contentScale = ContentScale.Crop) }
-                            else { Image(painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.img_rhythm_cover), contentDescription = "Cover", modifier = Modifier.size(if (isFullScreen) 152.dp else 102.dp).graphicsLayer { rotationZ = if (isPlaying) rotationAngle * 0.3f else 0f }.clip(RoundedCornerShape(100.dp)).border(2.dp, Color.Black, RoundedCornerShape(100.dp)), contentScale = ContentScale.Crop) }
-                            Box(modifier = Modifier.size(24.dp).background(Color.Black, RoundedCornerShape(100.dp)).border(2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(100.dp)))
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        if (videoFileName.isNotEmpty()) { Text(text = videoFileName, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f), textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 24.dp), maxLines = 1) }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Box(modifier = Modifier.fillMaxWidth().height(if (isFullScreen) 150.dp else 95.dp).background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(14.dp)).padding(vertical = 8.dp, horizontal = 12.dp), contentAlignment = Alignment.Center) {
-                            val jsonCurrent = currentJson
-                            if (jsonCurrent != null && (jsonCurrent.english.isNotBlank() || !jsonCurrent.translation.isNullOrBlank())) {
-                                // JSON priority in audio mode too.
-                                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                                    if (jsonCurrent.english.isNotBlank()) {
-                                        ClickableWordText(text = jsonCurrent.english, style = MaterialTheme.typography.titleLarge.copy(color = subtitleOverlayColorEn, shadow = overlayTextShadow, fontFamily = fontFamilyFor(subtitleFontEn, customFontFamilyEn), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, fontSize = MaterialTheme.typography.titleLarge.fontSize * 1.1f), highlightColor = subtitleOverlayColorEn, onWordClick = { word -> exoPlayer.pause(); onWordClick(word, jsonCurrent.english, jsonCurrent.translation) }, onTextClick = { exoPlayer.pause(); onSentenceClick(jsonCurrent.english, jsonCurrent.translation) })
-                                    }
-                                    jsonCurrent.translation?.takeIf { it.isNotBlank() }?.let { translation ->
-                                        if (jsonCurrent.english.isNotBlank()) Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = translation, color = subtitleOverlayColorFa, style = MaterialTheme.typography.titleMedium.copy(shadow = overlayTextShadow, fontFamily = fontFamilyFor(subtitleFontFa, customFontFamilyFa), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center))
-                                    }
+                AudioArtworkStage(
+                    albumArt = albumArtBitmap,
+                    isPlaying = isPlaying,
+                    isFullScreen = isFullScreen,
+                    fileName = videoFileName
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(if (isFullScreen) 140.dp else 92.dp)
+                            .padding(horizontal = 12.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Color.Black.copy(alpha = 0.32f))
+                            .padding(vertical = 8.dp, horizontal = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val jsonCurrent = currentJson
+                        if (subtitlesHiddenForListen && (jsonCurrent != null || currentEn != null || currentFa != null)) {
+                            PlayerTextPill(
+                                text = if (strings.isEn) "Reveal the line" else "نمایش جمله",
+                                contentDescription = null,
+                                onClick = { revealCurrent = true },
+                                active = true,
+                                height = 34.dp
+                            )
+                        } else if (jsonCurrent != null && (jsonCurrent.english.isNotBlank() || !jsonCurrent.translation.isNullOrBlank())) {
+                            SubtitleOverlayContent(
+                                english = jsonCurrent.english,
+                                translation = jsonCurrent.translation,
+                                enColor = subtitleOverlayColorEn,
+                                faColor = subtitleOverlayColorFa,
+                                shadow = overlayTextShadow,
+                                enFont = subtitleFamilyEn,
+                                faFont = subtitleFamilyFa,
+                                fontScale = 1.05f,
+                                onWordClick = { word ->
+                                    exoPlayer.pause()
+                                    onWordClick(word, jsonCurrent.english, jsonCurrent.translation)
+                                },
+                                onSentenceClick = {
+                                    exoPlayer.pause()
+                                    onSentenceClick(jsonCurrent.english, jsonCurrent.translation)
                                 }
-                            } else if (currentEn != null || currentFa != null) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                                    currentEn?.let { enSub -> ClickableWordText(text = enSub.text, style = MaterialTheme.typography.titleLarge.copy(color = subtitleOverlayColorEn, shadow = overlayTextShadow, fontFamily = fontFamilyFor(subtitleFontEn, customFontFamilyEn), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, fontSize = MaterialTheme.typography.titleLarge.fontSize * 1.1f), highlightColor = subtitleOverlayColorEn, onWordClick = { word -> exoPlayer.pause(); onWordClick(word, enSub.text, currentFa?.text) }, onTextClick = { exoPlayer.pause(); onSentenceClick(enSub.text, currentFa?.text) }) }
-                                    if (currentEn != null && currentFa != null) Spacer(modifier = Modifier.height(4.dp))
-                                    currentFa?.let { faSub -> Text(text = faSub.text, color = subtitleOverlayColorFa, style = MaterialTheme.typography.titleMedium.copy(shadow = overlayTextShadow, fontFamily = fontFamilyFor(subtitleFontFa, customFontFamilyFa), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)) }
+                            )
+                        } else if (currentEn != null || currentFa != null) {
+                            SubtitleOverlayContent(
+                                english = currentEn?.text,
+                                translation = currentFa?.text,
+                                enColor = subtitleOverlayColorEn,
+                                faColor = subtitleOverlayColorFa,
+                                shadow = overlayTextShadow,
+                                enFont = subtitleFamilyEn,
+                                faFont = subtitleFamilyFa,
+                                fontScale = 1.05f,
+                                onWordClick = { word ->
+                                    exoPlayer.pause()
+                                    onWordClick(word, currentEn?.text, currentFa?.text)
+                                },
+                                onSentenceClick = {
+                                    exoPlayer.pause()
+                                    currentEn?.let { onSentenceClick(it.text, currentFa?.text) }
                                 }
-                            } else { Text(text = strings.audioPlayingHint, color = Color.White.copy(alpha = 0.45f), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center) }
+                            )
+                        } else {
+                            Text(
+                                text = strings.audioPlayingHint,
+                                color = Color.White.copy(alpha = 0.45f),
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }
             }
-            if (!isPlaying && videoUri != null && useSmartPauseControls) {
+
+            // ── Gesture layer ──
+            // Single tap: pause/resume in smart-pause mode (unchanged
+            // behavior), otherwise reveal/hide the controls.
+            // Double tap on the left/right half: skip by the configured
+            // amount, now with a visible badge.
+            if (videoUri != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .then(if (pauseDimEnabled) Modifier.background(Color.Black.copy(alpha = 0.55f)) else Modifier)
-                        .then(if (!pauseRequireContinue) Modifier.clickable { exoPlayer.play() } else Modifier),
+                        .pointerInput(containerWidth, smartPause, prefs.skipSeconds, prefs.pauseRequireContinue) {
+                            detectTapGestures(
+                                onTap = {
+                                    if (smartPause) togglePlayback() else controlsVisible = !controlsVisible
+                                },
+                                onDoubleTap = { offset ->
+                                    val isLeft = offset.x < (containerWidth / 2)
+                                    performSkip(if (isLeft) -prefs.skipSeconds else prefs.skipSeconds)
+                                }
+                            )
+                        }
+                )
+            }
+
+            // Dim layer while paused in smart-pause mode.
+            if (!isPlaying && videoUri != null && smartPause) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(if (prefs.pauseDim) Modifier.background(Color.Black.copy(alpha = 0.55f)) else Modifier)
+                        .then(if (!prefs.pauseRequireContinue) Modifier.clickable { exoPlayer.play() } else Modifier),
                     contentAlignment = Alignment.Center
                 ) {
                     @Composable
-                    fun FreeFormButton(transformState: MutableState<ButtonTransform>, saveKey: String, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+                    fun FreeFormButton(
+                        transformState: MutableState<ButtonTransform>,
+                        saveKey: String,
+                        modifier: Modifier = Modifier,
+                        content: @Composable () -> Unit
+                    ) {
                         var transform by transformState
-                        Box(modifier = modifier.offset { IntOffset(transform.x.roundToInt(), transform.y.roundToInt()) }.graphicsLayer { scaleX = transform.scale; scaleY = transform.scale; rotationZ = transform.rotation }.pointerInput(Unit) { detectTransformGestures { _, pan, zoom, rotation -> transform = transform.copy(x = transform.x + pan.x, y = transform.y + pan.y, scale = (transform.scale * zoom).coerceIn(0.4f, 2.5f), rotation = transform.rotation + rotation) } }.pointerInput(Unit) { detectDragGestures(onDragEnd = { transformState.value = transform; saveTransform(saveKey, transform) }, onDrag = { change, dragAmount -> change.consume(); transform = transform.copy(x = transform.x + dragAmount.x, y = transform.y + dragAmount.y) }) }) { content() }
+                        Box(
+                            modifier = modifier
+                                .offset { IntOffset(transform.x.roundToInt(), transform.y.roundToInt()) }
+                                .graphicsLayer {
+                                    scaleX = transform.scale
+                                    scaleY = transform.scale
+                                    rotationZ = transform.rotation
+                                }
+                                .pointerInput(Unit) {
+                                    detectTransformGestures { _, pan, zoom, rotation ->
+                                        transform = transform.copy(
+                                            x = transform.x + pan.x,
+                                            y = transform.y + pan.y,
+                                            scale = (transform.scale * zoom).coerceIn(0.4f, 2.5f),
+                                            rotation = transform.rotation + rotation
+                                        )
+                                    }
+                                }
+                                .pointerInput(Unit) {
+                                    detectDragGestures(
+                                        onDragEnd = {
+                                            transformState.value = transform
+                                            saveTransform(saveKey, transform)
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            change.consume()
+                                            transform = transform.copy(
+                                                x = transform.x + dragAmount.x,
+                                                y = transform.y + dragAmount.y
+                                            )
+                                        }
+                                    )
+                                }
+                        ) { content() }
                     }
 
                     // The smart-pause gear is movable like the other overlay
-                    // buttons (transform persisted) and is NEVER hidden by the
-                    // "hide subtitles & buttons" option — it is the way back
-                    // into the settings panel.
+                    // buttons and is NEVER hidden by the "hide subtitles &
+                    // buttons" option — it is the way back into the panel.
                     FreeFormButton(smartPauseGearTransform, "smart_pause_gear", modifier = Modifier.align(Alignment.TopCenter)) {
-                        IconButton(onClick = { showOverlaySettings = !showOverlaySettings }, modifier = Modifier.padding(top = 8.dp).background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp)).size(36.dp)) { Icon(Icons.Default.Settings, contentDescription = strings.smartPauseSettingsCd, tint = Color.White, modifier = Modifier.size(18.dp)) }
+                        PlayerGlassButton(
+                            icon = Icons.Default.Settings,
+                            contentDescription = strings.smartPauseSettingsCd,
+                            onClick = { showOverlaySettings = !showOverlaySettings },
+                            modifier = Modifier.padding(top = 10.dp),
+                            size = 38.dp
+                        )
                     }
 
-                    // Smart-pause buttons (Continue + previous/current subtitle).
-                    // The targets follow the JSON learning package when it is
-                    // active, otherwise the imported EN/FA subtitles.
                     val prevSubEn = if (activeIndex > 0) subEnList[activeIndex - 1] else null
                     val prevFaText = prevSubEn?.let { subtitleAlignmentMap[it]?.text }
-                    val prevStartEnd: Pair<Double, Double>? = prevJsonPaused?.let { j -> j.start?.let { s -> j.end?.let { e -> s to e } } } ?: prevSubEn?.let { it.start to it.end }
-                    val currentStartEnd: Pair<Double, Double>? = currentJsonPaused?.let { j -> j.start?.let { s -> j.end?.let { e -> s to e } } } ?: currentEn?.let { it.start to it.end }
-                    val prevLineText = prevJsonPaused?.let { it.translation?.takeIf { t -> t.isNotBlank() } ?: it.english } ?: (prevFaText ?: prevSubEn?.text ?: "")
-                    val currentLineText = currentJsonPaused?.let { it.translation?.takeIf { t -> t.isNotBlank() } ?: it.english } ?: (currentFa?.text ?: currentEn?.text ?: "")
-                    // With the hide-UI option ON the buttons and the subtitle
-                    // text disappear, but the Continue button must stay when
-                    // tap-to-resume is off, otherwise playback could never be
-                    // resumed again.
-                    val showSmartButtons = !pauseHideUiEnabled || pauseRequireContinue
-                    if (showSmartButtons && isFullScreen && (currentEn != null || currentJsonPaused != null)) {
-                        FreeFormButton(continueTransform, "continue") { Button(onClick = { exoPlayer.play() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f), contentColor = Color.White), shape = RoundedCornerShape(14.dp), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)) { Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(6.dp)); Text(strings.resumePlayBtn, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) } }
-                        if (!pauseHideUiEnabled && prevStartEnd != null) {
-                            val (prevStart, prevEnd) = prevStartEnd
-                            FreeFormButton(autoPrevTransform, "auto_prev") { OutlinedButton(onClick = { autoPauseAtTime = prevEnd; exoPlayer.seekTo((prevStart * 1000).toLong()); exoPlayer.play() }, colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White), border = BorderStroke(1.dp, Color.White.copy(alpha = 0.4f)), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(strings.autoStopPrevSubtitle, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold); Text(prevLineText, style = MaterialTheme.typography.bodySmall, color = if (prevFaText != null) AccentAmber else Color.White.copy(alpha = 0.6f), textAlign = TextAlign.Center, maxLines = 1) } } }
-                        }
-                        if (!pauseHideUiEnabled && currentStartEnd != null) {
-                            val (currentStart, currentEnd) = currentStartEnd
-                            FreeFormButton(autoCurrentTransform, "auto_current") { OutlinedButton(onClick = { autoPauseAtTime = currentEnd; exoPlayer.seekTo((currentStart * 1000).toLong()); exoPlayer.play() }, colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White), border = BorderStroke(1.dp, Color.White.copy(alpha = 0.4f)), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(strings.autoStopCurrentSubtitle, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold); Text(currentLineText, style = MaterialTheme.typography.bodySmall, color = if (currentFa != null) AccentAmber else Color.White.copy(alpha = 0.6f), textAlign = TextAlign.Center, maxLines = 1) } } }
-                        }
-                    } else if (showSmartButtons) {
-                        Box(modifier = Modifier.size(68.dp).background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(100.dp)).clickable { exoPlayer.play() }, contentAlignment = Alignment.Center) { Icon(imageVector = Icons.Default.PlayArrow, contentDescription = strings.resumeCd, tint = Color.White, modifier = Modifier.size(36.dp)) }
-                    }
-                }
+                    val prevStartEnd: Pair<Double, Double>? = prevJsonPaused?.let { j ->
+                        j.start?.let { s -> j.end?.let { e -> s to e } }
+                    } ?: prevSubEn?.let { it.start to it.end }
+                    val currentStartEnd: Pair<Double, Double>? = currentJsonPaused?.let { j ->
+                        j.start?.let { s -> j.end?.let { e -> s to e } }
+                    } ?: currentEn?.let { it.start to it.end }
+                    val prevLineText = prevJsonPaused?.let {
+                        it.translation?.takeIf { t -> t.isNotBlank() } ?: it.english
+                    } ?: (prevFaText ?: prevSubEn?.text ?: "")
+                    val currentLineText = currentJsonPaused?.let {
+                        it.translation?.takeIf { t -> t.isNotBlank() } ?: it.english
+                    } ?: (currentFa?.text ?: currentEn?.text ?: "")
+                    // With hide-UI ON the buttons and subtitle text
+                    // disappear, but Continue must stay when tap-to-resume is
+                    // off, otherwise playback could never be resumed.
+                    val showSmartButtons = !prefs.pauseHideUi || prefs.pauseRequireContinue
 
-                // Gear settings panel: button-position reset + the pause-UI
-                // options (dim layer / hide subtitles & buttons /
-                // continue-only resume). Shown as a dialog so it works in
-                // both fullscreen and normal (split) mode.
-                if (showOverlaySettings) {
-                    Dialog(onDismissRequest = { showOverlaySettings = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-                        Card(modifier = Modifier.padding(16.dp).fillMaxWidth(0.94f), colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E)), shape = RoundedCornerShape(18.dp), elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)) {
-                            Column(modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Text(strings.smartPausePanelTitle, color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                    IconButton(onClick = { showOverlaySettings = false }, modifier = Modifier.size(32.dp)) { Icon(Icons.Filled.Close, contentDescription = strings.close, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(18.dp)) }
-                                }
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Column(modifier = Modifier.weight(1f)) { Text(strings.resetPositionsTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold) }
-                                    Button(onClick = { continueTransform.value = ButtonTransform(0f, -80f, 1f, 0f); autoPrevTransform.value = ButtonTransform(0f, 0f, 1f, 0f); autoCurrentTransform.value = ButtonTransform(0f, 80f, 1f, 0f); smartPauseGearTransform.value = ButtonTransform(0f, 0f, 1f, 0f); saveTransform("continue", continueTransform.value); saveTransform("auto_prev", autoPrevTransform.value); saveTransform("auto_current", autoCurrentTransform.value); saveTransform("smart_pause_gear", smartPauseGearTransform.value); showOverlaySettings = false }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error), shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)) { Text(strings.resetBtn, color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold) }
-                                }
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.White.copy(alpha = 0.12f))
-                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1f)) { Text(strings.pauseDimTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold); Text(strings.pauseDimDesc, color = Color.White.copy(alpha = 0.55f), style = MaterialTheme.typography.labelSmall) }; Switch(checked = pauseDimEnabled, onCheckedChange = { pauseDimEnabled = it; sharedPrefs.edit().putBoolean("smart_pause_dim_enabled", it).apply() }) }
-                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1f)) { Text(strings.pauseHideUiTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold); Text(strings.pauseHideUiDesc, color = Color.White.copy(alpha = 0.55f), style = MaterialTheme.typography.labelSmall) }; Switch(checked = pauseHideUiEnabled, onCheckedChange = { pauseHideUiEnabled = it; sharedPrefs.edit().putBoolean("smart_pause_hide_ui_enabled", it).apply() }) }
-                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1f)) { Text(strings.pauseRequireContinueTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold); Text(strings.pauseRequireContinueDesc, color = Color.White.copy(alpha = 0.55f), style = MaterialTheme.typography.labelSmall) }; Switch(checked = pauseRequireContinue, onCheckedChange = { pauseRequireContinue = it; sharedPrefs.edit().putBoolean("smart_pause_require_continue", it).apply() }) }
-                            }
-                        }
-                    }
-                }
-            }
-            Row(modifier = Modifier.align(Alignment.TopEnd).padding(horizontal = 12.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Focus mode toggle: hides the top bar/tabs, the import
-                // section and the time-sync cards (see MainScreen).
-                IconButton(onClick = onFocusModeToggle, modifier = Modifier.background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))) { Icon(imageVector = if (focusMode) Icons.Default.VisibilityOff else Icons.Default.Visibility, contentDescription = strings.focusModeCd, tint = if (focusMode) MaterialTheme.colorScheme.primary else Color.White) }
-                IconButton(onClick = { onFullScreenToggle(!isFullScreen) }, modifier = Modifier.background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))) { Icon(imageVector = if (isFullScreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen, contentDescription = if (isFullScreen) strings.exitFullscreenCd else strings.fullscreenCd, tint = Color.White) }
-            }
-            IconButton(onClick = { showSubtitleSettings = !showSubtitleSettings }, modifier = Modifier.align(Alignment.TopStart).padding(12.dp).background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))) { Icon(imageVector = Icons.Default.Settings, contentDescription = strings.playerSettingsCd, tint = Color.White) }
-            // Overlay subtitles. The box always keeps a dark backdrop so the
-            // bright overlay colors stay readable in every theme; the text
-            // also carries a soft shadow for extra contrast on bright scenes.
-            // With the smart-pause "hide subtitles & buttons" option ON the
-            // overlay text is hidden while paused so the frame can be
-            // inspected precisely.
-            if (isSubtitlesEnabled && !isAudio && !(pauseHideUiEnabled && !isPlaying)) {
-                val jsonCurrent = currentJson
-                if (jsonCurrent != null && (jsonCurrent.english.isNotBlank() || !jsonCurrent.translation.isNullOrBlank())) {
-                    // JSON priority rendering: when a JSON learning package
-                    // is loaded its data replaces the normal EN/FA lines
-                    // (no duplicated subtitle rendering).
-                    Column(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = subtitleBottomPadding.dp, start = 24.dp, end = 24.dp).background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(12.dp)).clickable { if (isPlaying) exoPlayer.pause() else if (!pauseRequireContinue) exoPlayer.play() }.padding(vertical = 10.dp, horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (jsonCurrent.english.isNotBlank()) {
-                            ClickableWordText(
-                                text = jsonCurrent.english,
-                                style = MaterialTheme.typography.titleLarge.copy(color = subtitleOverlayColorEn, shadow = overlayTextShadow, fontFamily = fontFamilyFor(subtitleFontEn, customFontFamilyEn), textAlign = TextAlign.Center, fontSize = MaterialTheme.typography.titleLarge.fontSize * subtitleFontSizeFactor),
-                                highlightColor = subtitleOverlayColorEn,
-                                onWordClick = { word -> exoPlayer.pause(); onWordClick(word, jsonCurrent.english, jsonCurrent.translation) },
-                                onTextClick = { exoPlayer.pause(); onSentenceClick(jsonCurrent.english, jsonCurrent.translation) },
-                                modifier = Modifier.padding(bottom = 4.dp)
+                    if (showSmartButtons && isFullScreen && (currentEn != null || currentJsonPaused != null)) {
+                        FreeFormButton(continueTransform, "continue") {
+                            GradientButton(
+                                text = strings.resumePlayBtn,
+                                onClick = { exoPlayer.play() },
+                                icon = Icons.Default.PlayArrow
                             )
                         }
-                        jsonCurrent.translation?.takeIf { it.isNotBlank() }?.let { translation ->
-                            Text(text = translation, color = subtitleOverlayColorFa, style = MaterialTheme.typography.titleMedium.copy(shadow = overlayTextShadow, fontFamily = fontFamilyFor(subtitleFontFa, customFontFamilyFa), fontWeight = FontWeight.Medium, fontSize = MaterialTheme.typography.titleMedium.fontSize * subtitleFontSizeFactor), textAlign = TextAlign.Center)
+                        if (!prefs.pauseHideUi && prevStartEnd != null) {
+                            val (prevStart, prevEnd) = prevStartEnd
+                            FreeFormButton(autoPrevTransform, "auto_prev") {
+                                SmartPauseChip(
+                                    title = strings.autoStopPrevSubtitle,
+                                    subtitle = prevLineText,
+                                    subtitleColor = if (prevFaText != null) AccentAmber else Color.White.copy(alpha = 0.65f),
+                                    onClick = {
+                                        autoPauseAtTime = prevEnd
+                                        exoPlayer.seekTo((prevStart * 1000).toLong())
+                                        exoPlayer.play()
+                                    }
+                                )
+                            }
                         }
-                    }
-                } else if (currentEn != null || currentFa != null) {
-                    Column(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = subtitleBottomPadding.dp, start = 24.dp, end = 24.dp).background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(12.dp)).clickable { if (isPlaying) exoPlayer.pause() else if (!pauseRequireContinue) exoPlayer.play() }.padding(vertical = 10.dp, horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        currentEn?.let { enSub -> ClickableWordText(text = enSub.text, style = MaterialTheme.typography.titleLarge.copy(color = subtitleOverlayColorEn, shadow = overlayTextShadow, fontFamily = fontFamilyFor(subtitleFontEn, customFontFamilyEn), textAlign = TextAlign.Center, fontSize = MaterialTheme.typography.titleLarge.fontSize * subtitleFontSizeFactor), highlightColor = subtitleOverlayColorEn, onWordClick = { word -> exoPlayer.pause(); onWordClick(word, enSub.text, currentFa?.text) }, onTextClick = { exoPlayer.pause(); onSentenceClick(enSub.text, currentFa?.text) }, modifier = Modifier.padding(bottom = 4.dp)) }
-                        currentFa?.let { Text(text = it.text, color = subtitleOverlayColorFa, style = MaterialTheme.typography.titleMedium.copy(shadow = overlayTextShadow, fontFamily = fontFamilyFor(subtitleFontFa, customFontFamilyFa), fontWeight = FontWeight.Medium, fontSize = MaterialTheme.typography.titleMedium.fontSize * subtitleFontSizeFactor), textAlign = TextAlign.Center) }
+                        if (!prefs.pauseHideUi && currentStartEnd != null) {
+                            val (currentStart, currentEnd) = currentStartEnd
+                            FreeFormButton(autoCurrentTransform, "auto_current") {
+                                SmartPauseChip(
+                                    title = strings.autoStopCurrentSubtitle,
+                                    subtitle = currentLineText,
+                                    subtitleColor = if (currentFa != null) AccentAmber else Color.White.copy(alpha = 0.65f),
+                                    onClick = {
+                                        autoPauseAtTime = currentEnd
+                                        exoPlayer.seekTo((currentStart * 1000).toLong())
+                                        exoPlayer.play()
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }
-            if (showSubtitleSettings) {
-                Dialog(onDismissRequest = { showSubtitleSettings = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-                Card(modifier = Modifier.padding(16.dp).fillMaxWidth(0.96f).fillMaxHeight(0.9f).let { m -> if (isGlassmorphismEnabled) m.border(width = 1.dp, brush = androidx.compose.ui.graphics.Brush.linearGradient(colors = listOf(Color.White.copy(alpha = 0.25f), Color.White.copy(alpha = 0.05f))), shape = RoundedCornerShape(24.dp)) else m }, colors = CardDefaults.cardColors(containerColor = if (isGlassmorphismEnabled) Color(0xFF1C1C1E).copy(alpha = 0.97f) else Color(0xFE1A1A1A)), shape = RoundedCornerShape(24.dp), elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)) {
-                    Column(modifier = Modifier.padding(22.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.padding(bottom = 14.dp)) { Icon(imageVector = Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp)); Spacer(modifier = Modifier.width(8.dp)); Text(text = strings.playerSettingsTitle, color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1f)) { Text(strings.design1Title, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold); Text(strings.design1Desc, color = Color.White.copy(alpha = 0.55f), style = MaterialTheme.typography.labelSmall) }; Switch(checked = isGlassmorphismEnabled, onCheckedChange = { isGlassmorphismEnabled = it; sharedPrefs.edit().putBoolean("glassmorphism_enabled", it).apply() }) }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.White.copy(alpha = 0.12f))
-                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                            Text(strings.appAccentColorTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Text(strings.appAccentColorDesc, color = Color.White.copy(alpha = 0.55f), style = MaterialTheme.typography.labelSmall)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            val appAccentOptions = remember { listOf<Color?>(null, Color(0xFF3D6E63), AccentAmber, AccentCyan, AccentGreen, AccentRed, AccentIndigo, Color(0xFFE91E8C), Color(0xFF5C6BC0), Color(0xFFFF7043)) }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-                                appAccentOptions.forEach { swatch ->
-                                    val isSelected = AppAccentColorState.color == swatch
-                                    if (swatch == null) {
-                                        Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(100.dp)).background(Color.White.copy(alpha = 0.1f)).border(width = if (isSelected) 2.dp else 1.dp, color = if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.3f), shape = RoundedCornerShape(100.dp)).clickable { AppAccentColorState.color = null; sharedPrefs.edit().remove("app_accent_color").apply() }, contentAlignment = Alignment.Center) { Icon(Icons.Filled.Close, contentDescription = strings.defaultCd, tint = Color.White.copy(alpha = 0.75f), modifier = Modifier.size(14.dp)) }
-                                    } else {
-                                        Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(100.dp)).background(swatch).border(width = if (isSelected) 2.dp else 1.dp, color = if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.3f), shape = RoundedCornerShape(100.dp)).clickable { AppAccentColorState.color = swatch; sharedPrefs.edit().putInt("app_accent_color", swatch.toArgb()).apply() })
-                                    }
-                                }
+
+            // ── Overlay subtitles ──
+            // The box keeps a dark backdrop so bright overlay colors stay
+            // readable in every theme; the text also carries a soft shadow.
+            // With hide-UI ON the overlay text is hidden while paused so the
+            // frame can be inspected precisely, and in listen mode it is
+            // hidden until the learner reveals it.
+            if (prefs.subtitlesEnabled && !isAudio && !(prefs.pauseHideUi && !isPlaying) && !subtitlesHiddenForListen) {
+                val jsonCurrent = currentJson
+                val overlayEnglish: String?
+                val overlayTranslation: String?
+                if (jsonCurrent != null && (jsonCurrent.english.isNotBlank() || !jsonCurrent.translation.isNullOrBlank())) {
+                    overlayEnglish = jsonCurrent.english
+                    overlayTranslation = jsonCurrent.translation
+                } else {
+                    overlayEnglish = currentEn?.text
+                    overlayTranslation = currentFa?.text
+                }
+                if (!overlayEnglish.isNullOrBlank() || !overlayTranslation.isNullOrBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(
+                                // No bar in smart pause, so the subtitles sit
+                                // low on the frame instead of leaving a gap
+                                // for controls that are never drawn.
+                                bottom = (prefs.bottomPadding + if (showChrome && showTransportBar) 74f else 12f).dp,
+                                start = 20.dp,
+                                end = 20.dp
+                            )
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Color.Black.copy(alpha = 0.66f))
+                            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(18.dp))
+                            .clickable { togglePlayback() }
+                            .padding(vertical = 10.dp, horizontal = 16.dp)
+                    ) {
+                        SubtitleOverlayContent(
+                            english = overlayEnglish,
+                            translation = overlayTranslation,
+                            enColor = subtitleOverlayColorEn,
+                            faColor = subtitleOverlayColorFa,
+                            shadow = overlayTextShadow,
+                            enFont = subtitleFamilyEn,
+                            faFont = subtitleFamilyFa,
+                            fontScale = prefs.fontSizeFactor,
+                            onWordClick = { word ->
+                                exoPlayer.pause()
+                                onWordClick(word, overlayEnglish, overlayTranslation)
+                            },
+                            onSentenceClick = {
+                                exoPlayer.pause()
+                                overlayEnglish?.let { onSentenceClick(it, overlayTranslation) }
                             }
-                        }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.White.copy(alpha = 0.12f))
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1f)) { Text(strings.showSubtitlesTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold); Text(strings.showSubtitlesDesc, color = Color.White.copy(alpha = 0.55f), style = MaterialTheme.typography.labelSmall) }; Switch(checked = isSubtitlesEnabled, onCheckedChange = { isSubtitlesEnabled = it; sharedPrefs.edit().putBoolean("subtitles_enabled", it).apply() }) }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.White.copy(alpha = 0.12f))
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1f)) { Text(strings.smartPauseTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold); Text(strings.smartPauseDesc, color = Color.White.copy(alpha = 0.55f), style = MaterialTheme.typography.labelSmall) }; Switch(checked = useSmartPauseControls, onCheckedChange = { useSmartPauseControls = it; sharedPrefs.edit().putBoolean("smart_pause_enabled", it).apply() }) }
-                        if (useSmartPauseControls) { HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.White.copy(alpha = 0.12f)); Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(strings.doubleTapSkipTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold); Text(strings.secondsLabel(skipSeconds), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold) }; Spacer(modifier = Modifier.height(6.dp)); Slider(value = skipSeconds.toFloat(), onValueChange = { skipSeconds = it.toInt(); sharedPrefs.edit().putInt("skip_seconds", it.toInt()).apply() }, valueRange = 2f..30f, steps = 28, colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = Color.White.copy(alpha = 0.24f))) } }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.White.copy(alpha = 0.12f))
-                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                            Text(strings.audioTrackTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Text(strings.audioTrackDesc, color = Color.White.copy(alpha = 0.55f), style = MaterialTheme.typography.labelSmall)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            if (audioTrackGroups.isEmpty()) {
-                                Text(strings.audioTrackUnavailable, color = Color.White.copy(alpha = 0.5f), style = MaterialTheme.typography.labelSmall)
-                            } else {
-                                // List every audio track of the video (e.g.
-                                // dubbed + original language) and switch on
-                                // tap. Works in normal and smart-pause modes.
-                                audioTrackGroups.forEach { group ->
-                                    for (trackIndex in 0 until group.length) {
-                                        val format = group.getTrackFormat(trackIndex)
-                                        val label = format.label?.toString()?.trim()?.takeIf { it.isNotEmpty() } ?: strings.audioTrackFallbackName(trackIndex + 1)
-                                        val language = format.language?.takeIf { it.isNotBlank() }
-                                        val selected = group.isTrackSelected(trackIndex)
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().clickable {
-                                                try {
-                                                    // Force-select this audio track via the stable
-                                                    // Player.trackSelectionParameters API.
-                                                    exoPlayer.trackSelectionParameters =
-                                                        exoPlayer.trackSelectionParameters
-                                                            .buildUpon()
-                                                            .clearOverridesOfType(C.TRACK_TYPE_AUDIO)
-                                                            .addOverride(TrackSelectionOverride(group.mediaTrackGroup, trackIndex))
-                                                            .build()
-                                                } catch (e: Exception) { e.printStackTrace() }
-                                            }.padding(vertical = 2.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            RadioButton(selected = selected, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary, unselectedColor = Color.White.copy(alpha = 0.5f)))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Column {
-                                                Text(text = label, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
-                                                language?.let { Text(text = it, color = Color.White.copy(alpha = 0.5f), style = MaterialTheme.typography.labelSmall) }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.White.copy(alpha = 0.12f))
-                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(strings.subtitleFontSizeTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold); Text("${(subtitleFontSizeFactor * 100).toInt()}%", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold) }; Spacer(modifier = Modifier.height(6.dp)); Slider(value = subtitleFontSizeFactor, onValueChange = { subtitleFontSizeFactor = it; sharedPrefs.edit().putFloat("subtitle_font_size_factor", it).apply() }, valueRange = 0.6f..2.0f, colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = Color.White.copy(alpha = 0.24f))) }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.White.copy(alpha = 0.12f))
-                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(strings.subtitlePositionTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold); Text("${subtitleBottomPadding.toInt()}dp", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold) }; Spacer(modifier = Modifier.height(6.dp)); Slider(value = subtitleBottomPadding, onValueChange = { subtitleBottomPadding = it; sharedPrefs.edit().putFloat("subtitle_bottom_padding", it).apply() }, valueRange = 16f..250f, colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = Color.White.copy(alpha = 0.24f))) }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.White.copy(alpha = 0.12f))
-                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                            Text(strings.subtitleColorTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            val subtitleColorOptions = remember { listOf(Color.White, AccentAmber, AccentCyan, AccentGreen, AccentRed, AccentIndigo, Color(0xFFFFD54F), Color(0xFF64B5F6)) }
-                            Text(strings.subEnParenLabel, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                subtitleColorOptions.forEach { swatch ->
-                                    Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(100.dp)).background(swatch).border(width = if (SubtitleColorState.colorEn == swatch) 2.dp else 1.dp, color = if (SubtitleColorState.colorEn == swatch) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.3f), shape = RoundedCornerShape(100.dp)).clickable { SubtitleColorState.colorEn = swatch; sharedPrefs.edit().putInt("subtitle_color_en", swatch.toArgb()).apply() })
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(strings.subFaParenLabel, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                subtitleColorOptions.forEach { swatch ->
-                                    Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(100.dp)).background(swatch).border(width = if (SubtitleColorState.colorFa == swatch) 2.dp else 1.dp, color = if (SubtitleColorState.colorFa == swatch) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.3f), shape = RoundedCornerShape(100.dp)).clickable { SubtitleColorState.colorFa = swatch; sharedPrefs.edit().putInt("subtitle_color_fa", swatch.toArgb()).apply() })
-                                }
-                            }
-                        }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.White.copy(alpha = 0.12f))
-                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                            Text(strings.subtitleFontTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Text(strings.subtitleFontDesc, color = Color.White.copy(alpha = 0.55f), style = MaterialTheme.typography.labelSmall)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            val fontOptions = remember(strings) { listOf("default" to strings.fontDefault, "serif" to "Serif", "sansserif" to "Sans", "monospace" to "Mono", "cursive" to "Cursive") }
-                            Text(strings.fontEnLabel, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-                                fontOptions.forEach { (key, label) ->
-                                    val selected = subtitleFontEn == key
-                                    Surface(color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.08f), shape = RoundedCornerShape(8.dp), modifier = Modifier.clickable { subtitleFontEn = key; sharedPrefs.edit().putString("subtitle_font_en", key).apply() }) {
-                                        Text(label, color = if (selected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelSmall.copy(fontFamily = fontFamilyFor(key)), fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
-                                    }
-                                }
-                                if (customFontPathEn != null) {
-                                    val selected = subtitleFontEn == "custom"
-                                    Surface(color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.08f), shape = RoundedCornerShape(8.dp), modifier = Modifier.clickable { subtitleFontEn = "custom"; sharedPrefs.edit().putString("subtitle_font_en", "custom").apply() }) {
-                                        Text(strings.fontCustomLabel, color = if (selected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelSmall.copy(fontFamily = customFontFamilyEn ?: FontFamily.Default), fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                OutlinedButton(onClick = { customFontLauncherEn.launch("*/*") }, colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White), border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)), shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) { Text(strings.importCustomFontBtn, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                if (customFontPathEn != null) { TextButton(onClick = { customFontPathEn = null; if (subtitleFontEn == "custom") { subtitleFontEn = "default"; sharedPrefs.edit().putString("subtitle_font_en", "default").apply() }; sharedPrefs.edit().remove("subtitle_custom_font_path_en").apply() }) { Text(strings.removeCustomFontBtn, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) } }
-                            }
-                            Spacer(modifier = Modifier.height(14.dp))
-                            Text(strings.fontFaLabel, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-                                fontOptions.forEach { (key, label) ->
-                                    val selected = subtitleFontFa == key
-                                    Surface(color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.08f), shape = RoundedCornerShape(8.dp), modifier = Modifier.clickable { subtitleFontFa = key; sharedPrefs.edit().putString("subtitle_font_fa", key).apply() }) {
-                                        Text(label, color = if (selected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelSmall.copy(fontFamily = fontFamilyFor(key)), fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
-                                    }
-                                }
-                                if (customFontPathFa != null) {
-                                    val selected = subtitleFontFa == "custom"
-                                    Surface(color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.08f), shape = RoundedCornerShape(8.dp), modifier = Modifier.clickable { subtitleFontFa = "custom"; sharedPrefs.edit().putString("subtitle_font_fa", "custom").apply() }) {
-                                        Text(strings.fontCustomLabel, color = if (selected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelSmall.copy(fontFamily = customFontFamilyFa ?: FontFamily.Default), fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                OutlinedButton(onClick = { customFontLauncherFa.launch("*/*") }, colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White), border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)), shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) { Text(strings.importCustomFontBtn, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                if (customFontPathFa != null) { TextButton(onClick = { customFontPathFa = null; if (subtitleFontFa == "custom") { subtitleFontFa = "default"; sharedPrefs.edit().putString("subtitle_font_fa", "default").apply() }; sharedPrefs.edit().remove("subtitle_custom_font_path_fa").apply() }) { Text(strings.removeCustomFontBtn, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) } }
-                            }
-                        }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.White.copy(alpha = 0.12f))
-                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                            Text(strings.syncTitle, color = Color.White, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(strings.syncCurrentOffset(strings.langCodeEn, offsetText(subEnOffset)), color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.labelSmall)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                TextButton(onClick = { onShiftSubEn(-0.5) }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.onErrorContainer), shape = RoundedCornerShape(6.dp)) { Text("-0.5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                TextButton(onClick = { onShiftSubEn(-0.1) }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f), contentColor = MaterialTheme.colorScheme.onErrorContainer), shape = RoundedCornerShape(6.dp)) { Text("-0.1", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                TextButton(onClick = { onShiftSubEn(0.1) }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.onPrimaryContainer), shape = RoundedCornerShape(6.dp)) { Text("+0.1", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                TextButton(onClick = { onShiftSubEn(0.5) }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), contentColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(6.dp)) { Text("+0.5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                OutlinedTextField(value = manualShiftEnText, onValueChange = { manualShiftEnText = it }, label = { Text(strings.exactTimeLabel, style = MaterialTheme.typography.labelSmall) }, singleLine = true, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedBorderColor = Color.White.copy(alpha = 0.3f), focusedLabelColor = MaterialTheme.colorScheme.primary, unfocusedLabelColor = Color.White.copy(alpha = 0.5f)))
-                                Button(onClick = { val target = manualShiftEnText.toDoubleOrNull(); if (target != null) { onShiftSubEn(target - subEnOffset) } }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(8.dp)) { Text(strings.applyBtn, fontWeight = FontWeight.Bold) }
-                            }
-                            Spacer(modifier = Modifier.height(14.dp))
-                            Text(strings.syncCurrentOffset(strings.langCodeFa, offsetText(subFaOffset)), color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.labelSmall)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                TextButton(onClick = { onShiftSubFa(-0.5) }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.onErrorContainer), shape = RoundedCornerShape(6.dp)) { Text("-0.5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                TextButton(onClick = { onShiftSubFa(-0.1) }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f), contentColor = MaterialTheme.colorScheme.onErrorContainer), shape = RoundedCornerShape(6.dp)) { Text("-0.1", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                TextButton(onClick = { onShiftSubFa(0.1) }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.onPrimaryContainer), shape = RoundedCornerShape(6.dp)) { Text("+0.1", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                TextButton(onClick = { onShiftSubFa(0.5) }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), contentColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(6.dp)) { Text("+0.5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                OutlinedTextField(value = manualShiftFaText, onValueChange = { manualShiftFaText = it }, label = { Text(strings.exactTimeLabel, style = MaterialTheme.typography.labelSmall) }, singleLine = true, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedBorderColor = Color.White.copy(alpha = 0.3f), focusedLabelColor = MaterialTheme.colorScheme.primary, unfocusedLabelColor = Color.White.copy(alpha = 0.5f)))
-                                Button(onClick = { val target = manualShiftFaText.toDoubleOrNull(); if (target != null) { onShiftSubFa(target - subFaOffset) } }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(8.dp)) { Text(strings.applyBtn, fontWeight = FontWeight.Bold) }
-                            }
-                            Text(strings.syncHint, color = Color.White.copy(alpha = 0.5f), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 8.dp))
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(onClick = { onSaveSrt() }, enabled = subFaList.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(46.dp)) { Text(strings.saveSrtBtn, color = Color.White, fontWeight = FontWeight.Bold) }
-                        if (subFaList.isEmpty()) { Text(strings.noFaSubtitleToSave, color = Color.White.copy(alpha = 0.5f), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp)) }
-                        Spacer(modifier = Modifier.height(18.dp))
-                        Button(onClick = { showSubtitleSettings = false }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(46.dp)) { Text(strings.confirmReturnBtn, color = Color.White, fontWeight = FontWeight.Bold) }
+                        )
                     }
                 }
+            }
+
+            // Listen mode: one button to reveal the line you just heard.
+            // It sits where the subtitle would be, so the eye does not have
+            // to hunt for it.
+            if (videoUri != null && !isAudio && prefs.subtitlesEnabled && subtitlesHiddenForListen &&
+                (currentEn != null || currentJson != null || currentFa != null)
+            ) {
+                PlayerTextPill(
+                    text = if (strings.isEn) "Reveal the line" else "نمایش جمله",
+                    contentDescription = null,
+                    onClick = { revealCurrent = true },
+                    active = true,
+                    height = 34.dp,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(
+                            bottom = (prefs.bottomPadding + if (showChrome && showTransportBar) 74f else 12f).dp
+                        )
+                )
+            }
+
+            // ── Top chrome ──
+            // ChromeFade instead of AnimatedVisibility on purpose: inside a
+            // Box nested in a Column, Kotlin resolves the ColumnScope
+            // overload of AnimatedVisibility, which the layout DSL marker
+            // then rejects.
+            ChromeFade(
+                visible = showChrome,
+                modifier = Modifier.align(Alignment.TopCenter)
+            ) {
+                PlayerScrim(fromTop = true, height = 88.dp)
+            }
+            ChromeFade(
+                visible = showChrome,
+                modifier = Modifier.align(Alignment.TopEnd)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Only two things stay permanently on the picture: the
+                    // speed / study pill, which is what a learner touches
+                    // most, and one button that unfolds everything else.
+                    PlayerTextPill(
+                        text = formatSpeedLabel(prefs.playbackSpeed),
+                        contentDescription = if (strings.isEn) "Study tools" else "ابزارهای یادگیری",
+                        onClick = {
+                            showSpeedPanel = !showSpeedPanel
+                            controlsVisible = true
+                        },
+                        active = showSpeedPanel || abs(prefs.playbackSpeed - 1f) > 0.01f || listenMode
+                    )
+                    PlayerToolCluster(
+                        expanded = showToolCluster,
+                        onToggle = {
+                            showToolCluster = !showToolCluster
+                            controlsVisible = true
+                        },
+                        toggleDescription = if (strings.isEn) "More controls" else "ابزارهای بیشتر",
+                        actions = listOf(
+                            PlayerToolAction(
+                                icon = Icons.Default.Settings,
+                                contentDescription = strings.playerSettingsCd,
+                                onClick = {
+                                    showSubtitleSettings = true
+                                    showToolCluster = false
+                                },
+                                active = showSubtitleSettings
+                            ),
+                            PlayerToolAction(
+                                icon = Icons.Default.Refresh,
+                                contentDescription = if (strings.isEn) "A-B repeat" else "تکرار A-B",
+                                onClick = { cycleAbRepeat() },
+                                active = loopStartMs != null
+                            ),
+                            PlayerToolAction(
+                                icon = Icons.Default.Subtitles,
+                                contentDescription = strings.showSubtitlesTitle,
+                                onClick = { prefs.subtitlesEnabled = !prefs.subtitlesEnabled },
+                                active = prefs.subtitlesEnabled
+                            ),
+                            // Focus mode hides the top bar/tabs, the import
+                            // section and the time-sync cards (MainScreen).
+                            PlayerToolAction(
+                                icon = if (focusMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = strings.focusModeCd,
+                                onClick = onFocusModeToggle,
+                                active = focusMode
+                            ),
+                            PlayerToolAction(
+                                icon = if (isFullScreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                                contentDescription = if (isFullScreen) strings.exitFullscreenCd else strings.fullscreenCd,
+                                onClick = { onFullScreenToggle(!isFullScreen) },
+                                active = isFullScreen
+                            )
+                        )
+                    )
                 }
+            }
+
+            // Study drawer, opened from the speed pill.
+            if (videoUri != null) {
+                ChromeFade(
+                    visible = showChrome && showSpeedPanel,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                ) {
+                    StudyPanel(
+                        currentSpeed = prefs.playbackSpeed,
+                        isEn = strings.isEn,
+                        canLoopLine = loopLineRange != null,
+                        listenMode = listenMode,
+                        coverage = coverage,
+                        onSelectSpeed = { value ->
+                            prefs.playbackSpeed = value
+                            controlsVisible = true
+                        },
+                        onLoopLine = {
+                            loopCurrentLine()
+                            showSpeedPanel = false
+                        },
+                        onToggleListen = {
+                            listenMode = !listenMode
+                            prefs.raw.edit().putBoolean("listen_mode", listenMode).apply()
+                            revealCurrent = false
+                            controlsVisible = true
+                        },
+                        onMarkKnown = { word -> KnownWordsStore.markKnown(context, word) },
+                        canSpeak = speakText != null,
+                        onSpeak = { speakText?.let { TtsSpeaker.speak(context, it) } },
+                        onSpeakSlow = { speakText?.let { TtsSpeaker.speak(context, it, slow = true) } },
+                        modifier = Modifier.padding(top = 62.dp, end = 12.dp)
+                    )
+                }
+                // Live A-B state, and the fastest way out of it. The top-left
+                // corner is free now that the gear moved into the cluster.
+                ChromeFade(
+                    visible = showChrome && loopStartMs != null,
+                    modifier = Modifier.align(Alignment.TopStart)
+                ) {
+                    PlayerTextPill(
+                        text = loopBannerText,
+                        contentDescription = if (strings.isEn) "Clear A-B loop" else "پاک کردن حلقه A-B",
+                        onClick = {
+                            loopStartMs = null
+                            loopEndMs = null
+                            controlsVisible = true
+                        },
+                        active = true,
+                        height = 32.dp,
+                        modifier = Modifier.padding(top = 14.dp, start = 12.dp)
+                    )
+                }
+            }
+
+            // Smart pause keeps the time — and only the time.
+            if (videoUri != null && !showTransportBar) {
+                ChromeFade(
+                    visible = showChrome,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                ) {
+                    SmartPauseClock(positionMs = positionMs, durationMs = durationMs)
+                }
+            }
+
+            // ── Bottom chrome: transport controls (normal mode only) ──
+            if (videoUri != null && showTransportBar) {
+                ChromeFade(
+                    visible = showChrome,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                ) {
+                    Box(contentAlignment = Alignment.BottomCenter) {
+                        PlayerScrim(fromTop = false, height = 132.dp)
+                        PlayerControls(
+                            isPlaying = isPlaying,
+                            positionMs = positionMs,
+                            durationMs = durationMs,
+                            bufferedMs = bufferedMs,
+                            skipSeconds = prefs.skipSeconds,
+                            playPauseDescription = strings.resumeCd,
+                            loopStartMs = loopStartMs,
+                            loopEndMs = loopEndMs,
+                            onPlayPause = {
+                                if (isPlaying) exoPlayer.pause() else exoPlayer.play()
+                                controlsVisible = true
+                            },
+                            onSkip = { delta -> performSkip(delta) },
+                            onSeek = { target ->
+                                exoPlayer.seekTo(target)
+                                positionMs = target
+                                controlsVisible = true
+                            }
+                        )
+                    }
+                }
+                // Thin progress line while the chrome is hidden, so the
+                // position is always visible without covering the frame.
+                if (!showChrome && durationMs > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .background(Color.White.copy(alpha = 0.14f))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth((positionMs.toFloat() / durationMs).coerceIn(0.002f, 1f))
+                                .fillMaxHeight()
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(
+                                            MaterialTheme.colorScheme.tertiary,
+                                            MaterialTheme.colorScheme.primary
+                                        )
+                                    )
+                                )
+                        )
+                    }
+                }
+            }
+
+            // The skip badge is feedback for a gesture, not chrome, so it
+            // stays available in smart pause too.
+            if (videoUri != null) {
+                SeekPulseBadge(
+                    visible = skipBadgeVisible,
+                    forward = skipBadgeForward,
+                    seconds = prefs.skipSeconds,
+                    modifier = Modifier.align(
+                        if (skipBadgeForward) Alignment.CenterEnd else Alignment.CenterStart
+                    )
+                )
+            }
+
+            // ── Smart-pause gear panel ──
+            if (showOverlaySettings) {
+                Dialog(
+                    onDismissRequest = { showOverlaySettings = false },
+                    properties = DialogProperties(usePlatformDefaultWidth = false)
+                ) {
+                    Surface(
+                        modifier = Modifier.padding(18.dp).fillMaxWidth(0.94f),
+                        shape = if (isNeobrutalismDesign()) {
+                            RoundedCornerShape(0.dp)
+                        } else {
+                            RoundedCornerShape(26.dp)
+                        },
+                        color = MaterialTheme.colorScheme.surface,
+                        tonalElevation = if (isNeobrutalismDesign()) 0.dp else 6.dp,
+                        border = if (isNeobrutalismDesign()) {
+                            BorderStroke(2.dp, MaterialTheme.colorScheme.outline)
+                        } else {
+                            null
+                        }
+                    ) {
+                        Column(modifier = Modifier.padding(18.dp).verticalScroll(rememberScrollState())) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = strings.smartPausePanelTitle,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                SoftIconButton(
+                                    icon = Icons.Default.Close,
+                                    contentDescription = strings.close,
+                                    onClick = { showOverlaySettings = false },
+                                    size = 34.dp
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = strings.resetPositionsTitle,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                GradientButton(
+                                    text = strings.resetBtn,
+                                    icon = Icons.Default.Refresh,
+                                    onClick = {
+                                        continueTransform.value = ButtonTransform(0f, -80f, 1f, 0f)
+                                        autoPrevTransform.value = ButtonTransform(0f, 0f, 1f, 0f)
+                                        autoCurrentTransform.value = ButtonTransform(0f, 80f, 1f, 0f)
+                                        smartPauseGearTransform.value = ButtonTransform(0f, 0f, 1f, 0f)
+                                        saveTransform("continue", continueTransform.value)
+                                        saveTransform("auto_prev", autoPrevTransform.value)
+                                        saveTransform("auto_current", autoCurrentTransform.value)
+                                        saveTransform("smart_pause_gear", smartPauseGearTransform.value)
+                                        showOverlaySettings = false
+                                    }
+                                )
+                            }
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 14.dp),
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
+                            )
+                            PanelToggle(
+                                title = strings.pauseDimTitle,
+                                description = strings.pauseDimDesc,
+                                checked = prefs.pauseDim,
+                                onCheckedChange = { prefs.pauseDim = it }
+                            )
+                            PanelToggle(
+                                title = strings.pauseHideUiTitle,
+                                description = strings.pauseHideUiDesc,
+                                checked = prefs.pauseHideUi,
+                                onCheckedChange = { prefs.pauseHideUi = it }
+                            )
+                            PanelToggle(
+                                title = strings.pauseRequireContinueTitle,
+                                description = strings.pauseRequireContinueDesc,
+                                checked = prefs.pauseRequireContinue,
+                                onCheckedChange = { prefs.pauseRequireContinue = it }
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (showSubtitleSettings) {
+                PlayerSettingsSheet(
+                    prefs = prefs,
+                    strings = strings,
+                    audioTracks = audioTrackGroups,
+                    onSelectAudioTrack = { group, trackIndex ->
+                        try {
+                            // Force-select this audio track via the stable
+                            // Player.trackSelectionParameters API.
+                            exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
+                                .buildUpon()
+                                .clearOverridesOfType(C.TRACK_TYPE_AUDIO)
+                                .addOverride(TrackSelectionOverride(group.mediaTrackGroup, trackIndex))
+                                .build()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    },
+                    subEnOffset = subEnOffset,
+                    subFaOffset = subFaOffset,
+                    onShiftSubEn = onShiftSubEn,
+                    onShiftSubFa = onShiftSubFa,
+                    offsetText = { value -> offsetText(value) },
+                    canSaveSrt = subFaList.isNotEmpty(),
+                    onSaveSrt = onSaveSrt,
+                    onDismiss = { showSubtitleSettings = false }
+                )
+            }
             }
         }
+
         if (!isFullScreen) {
-            Column(modifier = Modifier.weight(0.62f).fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(top = 8.dp)) {
-                Text(text = strings.allSubtitlesListTitle, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                if (singleTranslateError != null) { Text(text = singleTranslateError!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) }
+            // Draggable divider: the video/list ratio is now up to the user
+            // (and remembered), instead of a hardcoded 38/62 split.
+            SplitDragHandle(
+                active = isSplitDragging,
+                modifier = Modifier.draggable(
+                    orientation = Orientation.Vertical,
+                    state = rememberDraggableState { delta ->
+                        prefs.videoWeight = prefs.videoWeight + delta / containerHeightPx
+                    },
+                    onDragStarted = { isSplitDragging = true },
+                    onDragStopped = { isSplitDragging = false }
+                )
+            )
+
+            Column(
+                modifier = Modifier
+                    .weight(1f - prefs.videoWeight)
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
                 val jsonList = jsonPackage?.subtitles
-                if (jsonList != null && jsonList.isNotEmpty()) {
-                    // JSON priority rendering: when a JSON learning package is
-                    // loaded, its subtitles replace the normal EN/FA list
-                    // (no duplicated rendering). The EN/FA lists stay intact
-                    // in memory as a fallback for when the JSON is removed.
-                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = "📦 ${strings.jsonActiveBadge}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    }
-                    // ── JSON time sync (shift forward/back) ──
-                    // Hidden in focus mode together with the other chrome.
-                    if (!focusMode) {
-                    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)), shape = RoundedCornerShape(14.dp)) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Row(modifier = Modifier.fillMaxWidth().clickable { isJsonSyncExpanded = !isJsonSyncExpanded }, horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("⏱️", style = MaterialTheme.typography.bodyMedium)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(text = strings.jsonSyncRowTitle, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                }
-                                Text(text = if (isJsonSyncExpanded) strings.collapseSync else strings.expandSync, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = if (isJsonSyncExpanded) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary.copy(alpha = 0.85f))
+                SectionHeader(
+                    title = strings.allSubtitlesListTitle,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    trailing = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // Coverage at a glance, without opening a panel.
+                            if (coverage.totalTokens > 0) {
+                                StatusPill(
+                                    text = if (strings.isEn) "Known ${coverage.percent}%" else "بلدی ٪${coverage.percent}",
+                                    tone = if (coverage.percent >= 90) PillTone.Positive else PillTone.Neutral
+                                )
                             }
-                            androidx.compose.animation.AnimatedVisibility(visible = isJsonSyncExpanded) {
-                                Column {
-                                    Spacer(modifier = Modifier.height(10.dp))
-                                    if (jsonList.any { it.start != null && it.end != null }) {
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                            Column(modifier = Modifier.weight(1.1f)) {
-                                                Text(strings.subJsonLabel, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                                Text(strings.shiftValueLabel(offsetText(jsonOffset)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-                                            }
-                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(2f, fill = false)) {
-                                                TextButton(onClick = { onShiftJson(-0.5) }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp), modifier = Modifier.height(28.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.onErrorContainer), shape = RoundedCornerShape(6.dp)) { Text("-0.5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                                TextButton(onClick = { onShiftJson(-0.1) }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp), modifier = Modifier.height(28.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f), contentColor = MaterialTheme.colorScheme.onErrorContainer), shape = RoundedCornerShape(6.dp)) { Text("-0.1", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                                TextButton(onClick = { onShiftJson(0.1) }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp), modifier = Modifier.height(28.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.onPrimaryContainer), shape = RoundedCornerShape(6.dp)) { Text("+0.1", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                                TextButton(onClick = { onShiftJson(0.5) }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp), modifier = Modifier.height(28.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), contentColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(6.dp)) { Text("+0.5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        TextButton(onClick = onResetJson, enabled = jsonOffset != 0.0, colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.onErrorContainer), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                            Text(text = strings.jsonResetBtn, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                                        }
-                                    } else {
-                                        Text(text = strings.jsonSyncNoTimings, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
+                            if (listenMode) {
+                                StatusPill(
+                                    text = if (strings.isEn) "Listen" else "گوش کن",
+                                    tone = PillTone.Warning
+                                )
+                            }
+                            if (jsonList != null && jsonList.isNotEmpty()) {
+                                StatusPill(text = strings.jsonActiveBadge, tone = PillTone.Accent)
                             }
                         }
                     }
+                )
+                singleTranslateError?.let { error ->
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                    )
+                }
+
+                if (jsonList != null && jsonList.isNotEmpty()) {
+                    // JSON priority rendering: when a JSON learning package
+                    // is loaded its subtitles replace the normal EN/FA list
+                    // (no duplicated rendering). The EN/FA lists stay in
+                    // memory as a fallback for when the JSON is removed.
+                    if (!focusMode) {
+                        SyncPanel(
+                            title = strings.jsonSyncRowTitle,
+                            expanded = isJsonSyncExpanded,
+                            expandLabel = if (isJsonSyncExpanded) strings.collapseSync else strings.expandSync,
+                            onToggle = { isJsonSyncExpanded = !isJsonSyncExpanded }
+                        ) {
+                            if (jsonList.any { it.start != null && it.end != null }) {
+                                SubtitleShiftControls(
+                                    title = strings.subJsonLabel,
+                                    offsetLabel = strings.shiftValueLabel(offsetText(jsonOffset)),
+                                    currentOffset = jsonOffset,
+                                    onShift = onShiftJson,
+                                    footer = {
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
+                                            contentColor = MaterialTheme.colorScheme.error,
+                                            shape = RoundedCornerShape(12.dp),
+                                            modifier = Modifier.fillMaxWidth(),
+                                            enabled = jsonOffset != 0.0,
+                                            onClick = onResetJson
+                                        ) {
+                                            Text(
+                                                text = strings.jsonResetBtn,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.padding(vertical = 10.dp)
+                                            )
+                                        }
+                                    }
+                                )
+                            } else {
+                                Text(
+                                    text = strings.jsonSyncNoTimings,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
-                    LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
-                        items(jsonList) { jsonSub ->
-                            JsonSubtitleListItem(
-                                jsonSub = jsonSub,
-                                isActive = jsonSub.start != null && jsonSub.end != null && jsonSub.start!! <= currentTime && currentTime <= jsonSub.end!!,
-                                isGlassmorphismEnabled = isGlassmorphismEnabled,
-                                subtitleEnColor = subtitleListColorEn,
-                                subtitleFaColor = subtitleListColorFa,
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize().fadingEdges(),
+                        contentPadding = PaddingValues(top = 4.dp, bottom = 20.dp)
+                    ) {
+                        items(jsonList) { jsonSub: JsonSubtitle ->
+                            JsonSubtitleRow(
+                                timeLabel = jsonSub.start?.let { formatTime(it) },
+                                idLabel = jsonSub.id?.let { "ID $it" },
+                                level = jsonSub.level,
+                                difficulty = jsonSub.difficulty,
+                                englishText = jsonSub.english,
+                                translationText = jsonSub.translation,
+                                isActive = jsonSub.start != null && jsonSub.end != null &&
+                                    jsonSub.start!! <= currentTime && currentTime <= jsonSub.end!!,
+                                glass = prefs.glassmorphism,
+                                enColor = subtitleListColorEn,
+                                faColor = subtitleListColorFa,
                                 textShadow = listTextShadow,
-                                fontFamilyFor = { key -> fontFamilyFor(key) },
-                                subtitleFontEn = subtitleFontEn,
-                                subtitleFontFa = subtitleFontFa,
+                                enFont = subtitleFamilyEn,
+                                faFont = subtitleFamilyFa,
                                 strings = strings,
-                                onSeek = { jsonSub.start?.let { start -> exoPlayer.seekTo((start * 1000).toLong()); exoPlayer.play() } },
-                                onWordClick = { w -> exoPlayer.pause(); onWordClick(w, jsonSub.english, jsonSub.translation) },
+                                onSeek = {
+                                    jsonSub.start?.let { start ->
+                                        exoPlayer.seekTo((start * 1000).toLong())
+                                        exoPlayer.play()
+                                    }
+                                },
+                                onWordClick = { word ->
+                                    exoPlayer.pause()
+                                    onWordClick(word, jsonSub.english, jsonSub.translation)
+                                },
                                 onSentenceClick = { onSentenceClick(jsonSub.english, jsonSub.translation) }
                             )
                         }
                     }
                 } else if (subEnList.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(strings.loadSubtitleHint, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center) }
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        EmptyState(
+                            icon = Icons.Default.Subtitles,
+                            title = strings.loadSubtitleHint
+                        )
+                    }
                 } else {
-                    // The EN/FA time-sync card is hidden in focus mode too.
-                    if (subEnList.isNotEmpty() && !focusMode) {
-                        Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp).let { m -> if (isGlassmorphismEnabled) m.border(width = 1.dp, brush = androidx.compose.ui.graphics.Brush.linearGradient(colors = listOf(Color.White.copy(alpha = 0.18f), Color.White.copy(alpha = 0.04f))), shape = RoundedCornerShape(14.dp)) else m }, colors = CardDefaults.cardColors(containerColor = if (isGlassmorphismEnabled) MaterialTheme.colorScheme.surface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)), shape = RoundedCornerShape(14.dp)) {
-                            Column(modifier = Modifier.padding(10.dp)) {
-                                Row(modifier = Modifier.fillMaxWidth().clickable { isSyncExpanded = !isSyncExpanded }, horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Row(verticalAlignment = Alignment.CenterVertically) { Text("⏱️", style = MaterialTheme.typography.bodyMedium); Spacer(modifier = Modifier.width(6.dp)); Text(text = strings.syncSettingsRowTitle, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }; Text(text = if (isSyncExpanded) strings.collapseSync else strings.expandSync, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = if (isSyncExpanded) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)) }
-                                androidx.compose.animation.AnimatedVisibility(visible = isSyncExpanded) {
-                                    Column {
-                                        Spacer(modifier = Modifier.height(10.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1.1f)) { Text(strings.langCodeEn, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface); Text(strings.shiftValueLabel(offsetText(subEnOffset)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary) }; Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(2f, fill = false)) { TextButton(onClick = { onShiftSubEn(-0.5) }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp), modifier = Modifier.height(28.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.onErrorContainer), shape = RoundedCornerShape(6.dp)) { Text("-0.5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }; TextButton(onClick = { onShiftSubEn(-0.1) }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp), modifier = Modifier.height(28.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f), contentColor = MaterialTheme.colorScheme.onErrorContainer), shape = RoundedCornerShape(6.dp)) { Text("-0.1", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }; TextButton(onClick = { onShiftSubEn(0.1) }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp), modifier = Modifier.height(28.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.onPrimaryContainer), shape = RoundedCornerShape(6.dp)) { Text("+0.1", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }; TextButton(onClick = { onShiftSubEn(0.5) }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp), modifier = Modifier.height(28.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), contentColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(6.dp)) { Text("+0.5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) } } }
-                                        Spacer(modifier = Modifier.height(6.dp)); HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)); Spacer(modifier = Modifier.height(4.dp))
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1.1f)) { Text(strings.langCodeFa, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface); Text(strings.shiftValueLabel(offsetText(subFaOffset)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary) }; Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(2f, fill = false)) { TextButton(onClick = { onShiftSubFa(-0.5) }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp), modifier = Modifier.height(28.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.onErrorContainer), shape = RoundedCornerShape(6.dp)) { Text("-0.5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }; TextButton(onClick = { onShiftSubFa(-0.1) }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp), modifier = Modifier.height(28.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f), contentColor = MaterialTheme.colorScheme.onErrorContainer), shape = RoundedCornerShape(6.dp)) { Text("-0.1", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }; TextButton(onClick = { onShiftSubFa(0.1) }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp), modifier = Modifier.height(28.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.onPrimaryContainer), shape = RoundedCornerShape(6.dp)) { Text("+0.1", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }; TextButton(onClick = { onShiftSubFa(0.5) }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp), modifier = Modifier.height(28.dp), colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), contentColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(6.dp)) { Text("+0.5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) } } }
-                                    }
-                                }
-                            }
+                    if (!focusMode) {
+                        SyncPanel(
+                            title = strings.syncSettingsRowTitle,
+                            expanded = isSyncExpanded,
+                            expandLabel = if (isSyncExpanded) strings.collapseSync else strings.expandSync,
+                            onToggle = { isSyncExpanded = !isSyncExpanded }
+                        ) {
+                            SubtitleShiftControls(
+                                title = strings.langCodeEn,
+                                offsetLabel = strings.shiftValueLabel(offsetText(subEnOffset)),
+                                currentOffset = subEnOffset,
+                                onShift = onShiftSubEn
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            SubtitleShiftControls(
+                                title = strings.langCodeFa,
+                                offsetLabel = strings.shiftValueLabel(offsetText(subFaOffset)),
+                                currentOffset = subFaOffset,
+                                onShift = onShiftSubFa
+                            )
                         }
                     }
-                    LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize().fadingEdges(),
+                        contentPadding = PaddingValues(top = 4.dp, bottom = 20.dp)
+                    ) {
                         itemsIndexed(subEnList) { index, enSub ->
                             val faMatch = subtitleAlignmentMap[enSub]
-                            val isActive = enSub.start <= currentTime && enSub.end >= currentTime
-                            val glowingBorderModifier = if (isGlassmorphismEnabled) Modifier.border(width = 1.dp, brush = androidx.compose.ui.graphics.Brush.linearGradient(colors = if (isActive) listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), Color.Transparent) else listOf(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), MaterialTheme.colorScheme.outline.copy(alpha = 0.03f))), shape = RoundedCornerShape(12.dp)) else Modifier
-                            Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).then(glowingBorderModifier), onClick = { exoPlayer.seekTo((enSub.start * 1000).toLong()); exoPlayer.play() }, colors = CardDefaults.cardColors(containerColor = if (isGlassmorphismEnabled) { if (isActive) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) } else { if (isActive) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) }), shape = RoundedCornerShape(12.dp)) {
-                                Column(modifier = Modifier.padding(14.dp)) {
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(text = "⏱️ ${formatTime(enSub.start)}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary); if (isActive) { Text(text = strings.playingLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold) } }
-                                    Spacer(Modifier.height(8.dp))
-                                    // List colors adapt to the current theme
-                                    // (light/dark/beta) so subtitles stay
-                                    // readable on the light background; the
-                                    // soft shadow adds extra contrast.
-                                    ClickableWordText(text = enSub.text, style = MaterialTheme.typography.bodyLarge.copy(color = subtitleListColorEn, shadow = listTextShadow, fontFamily = fontFamilyFor(subtitleFontEn, customFontFamilyEn)), highlightColor = subtitleListColorEn, onWordClick = { w -> exoPlayer.pause(); onWordClick(w, enSub.text, faMatch?.text) }, onTextClick = { exoPlayer.pause(); onSentenceClick(enSub.text, faMatch?.text) })
-                                    faMatch?.let { Spacer(Modifier.height(8.dp)); Text(text = it.text, style = MaterialTheme.typography.bodyMedium.copy(color = subtitleListColorFa, shadow = listTextShadow, fontFamily = fontFamilyFor(subtitleFontFa, customFontFamilyFa)), textAlign = TextAlign.Right, modifier = Modifier.fillMaxWidth()) }
-                                    Spacer(Modifier.height(10.dp))
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        TextButton(onClick = { autoPauseAtTime = null; exoPlayer.seekTo((enSub.start * 1000).toLong()); exoPlayer.play() }, colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1.3f)) { Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary); Spacer(modifier = Modifier.width(4.dp)); Text(text = strings.playFromStartBtn, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) } }
-                                        TextButton(onClick = { autoPauseAtTime = enSub.end; exoPlayer.seekTo((enSub.start * 1000).toLong()); exoPlayer.play() }, colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1.7f)) { Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { Row(modifier = Modifier.size(12.dp), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(MaterialTheme.colorScheme.secondary, RoundedCornerShape(0.5.dp))); Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(MaterialTheme.colorScheme.secondary, RoundedCornerShape(0.5.dp))) }; Spacer(modifier = Modifier.width(6.dp)); Text(text = strings.playAutoStopBtn, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold) } }
-                                    }
-                                    Spacer(Modifier.height(6.dp))
-                                    if (isTranslatingSingle && translatingIndex == index) {
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            Surface(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), shape = RoundedCornerShape(8.dp)) {
-                                                Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.tertiary)
-                                                    Spacer(modifier = Modifier.width(4.dp))
-                                                    Text(strings.translatingLabel, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                                                }
-                                            }
-                                            IconButton(onClick = onStopTranslation, modifier = Modifier.size(36.dp).background(MaterialTheme.colorScheme.error.copy(alpha = 0.12f), RoundedCornerShape(8.dp))) {
-                                                Icon(Icons.Filled.Close, strings.stopCd, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
-                                            }
-                                        }
-                                    } else {
-                                        TextButton(onClick = { onTranslateSubtitle(index) }, enabled = !isTranslatingSingle, colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f), contentColor = MaterialTheme.colorScheme.tertiary), shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) { Text(text = strings.aiTranslateBtn, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                                    }
-                                }
-                            }
+                            SubtitleLineRow(
+                                timeLabel = formatTime(enSub.start),
+                                englishText = enSub.text,
+                                translationText = faMatch?.text,
+                                isActive = enSub.start <= currentTime && enSub.end >= currentTime,
+                                glass = prefs.glassmorphism,
+                                enColor = subtitleListColorEn,
+                                faColor = subtitleListColorFa,
+                                textShadow = listTextShadow,
+                                enFont = subtitleFamilyEn,
+                                faFont = subtitleFamilyFa,
+                                strings = strings,
+                                isTranslating = isTranslatingSingle && translatingIndex == index,
+                                translateEnabled = !isTranslatingSingle,
+                                onSeek = {
+                                    autoPauseAtTime = null
+                                    exoPlayer.seekTo((enSub.start * 1000).toLong())
+                                    exoPlayer.play()
+                                },
+                                onPlayWithAutoStop = {
+                                    autoPauseAtTime = enSub.end
+                                    exoPlayer.seekTo((enSub.start * 1000).toLong())
+                                    exoPlayer.play()
+                                },
+                                onWordClick = { word ->
+                                    exoPlayer.pause()
+                                    onWordClick(word, enSub.text, faMatch?.text)
+                                },
+                                onSentenceClick = {
+                                    exoPlayer.pause()
+                                    onSentenceClick(enSub.text, faMatch?.text)
+                                },
+                                onTranslate = { onTranslateSubtitle(index) },
+                                onStopTranslation = onStopTranslation
+                            )
                         }
                     }
                 }
@@ -915,114 +1600,229 @@ fun VideoPlayerScreen(
     }
 }
 
-fun formatTime(seconds: Double): String {
-    val mins = (seconds / 60).toLong()
-    val secs = (seconds % 60).toLong()
-    return String.format("%02d:%02d", mins, secs)
-}
-
 /**
- * One list entry for a JSON subtitle-learning package line (highest-priority
- * subtitle source). Shows the original line, its translation, level /
- * difficulty / ID chips, and a lesson button; words are tappable (word
- * analysis) and the sentence itself opens the lesson.
+ * The only piece of chrome smart pause keeps across the picture: a small
+ * floating clock, so you always know where you are without a control bar.
  */
 @Composable
-private fun JsonSubtitleListItem(
-    jsonSub: JsonSubtitle,
-    isActive: Boolean,
-    isGlassmorphismEnabled: Boolean,
-    subtitleEnColor: Color,
-    subtitleFaColor: Color,
-    textShadow: androidx.compose.ui.graphics.Shadow,
-    fontFamilyFor: (String) -> FontFamily,
-    subtitleFontEn: String,
-    subtitleFontFa: String,
-    strings: AppStrings,
-    onSeek: () -> Unit,
+private fun SmartPauseClock(positionMs: Long, durationMs: Long) {
+    Box(
+        modifier = Modifier
+            .padding(top = 18.dp)
+            .clip(RoundedCornerShape(40.dp))
+            .background(Color.Black.copy(alpha = 0.42f))
+            .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(40.dp))
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = formatClock(positionMs),
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
+            if (durationMs > 0) {
+                Text(
+                    text = "  /  " + formatClock(durationMs),
+                    color = Color.White.copy(alpha = 0.55f),
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+        }
+    }
+}
+
+/** Overlay subtitle text (video overlay and audio backdrop share this). */
+@Composable
+private fun SubtitleOverlayContent(
+    english: String?,
+    translation: String?,
+    enColor: Color,
+    faColor: Color,
+    shadow: Shadow,
+    enFont: FontFamily,
+    faFont: FontFamily,
+    fontScale: Float,
     onWordClick: (String) -> Unit,
     onSentenceClick: () -> Unit
 ) {
-    val glowingBorderModifier = if (isGlassmorphismEnabled) Modifier.border(width = 1.dp, brush = androidx.compose.ui.graphics.Brush.linearGradient(colors = if (isActive) listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), Color.Transparent) else listOf(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), MaterialTheme.colorScheme.outline.copy(alpha = 0.03f))), shape = RoundedCornerShape(12.dp)) else Modifier
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).then(glowingBorderModifier),
-        onClick = onSeek,
-        colors = CardDefaults.cardColors(containerColor = if (isGlassmorphismEnabled) { if (isActive) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) } else { if (isActive) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) }),
-        shape = RoundedCornerShape(12.dp)
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        if (!english.isNullOrBlank()) {
+            ClickableWordText(
+                text = english,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    color = enColor,
+                    shadow = shadow,
+                    fontFamily = enFont,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    fontSize = MaterialTheme.typography.titleLarge.fontSize * fontScale
+                ),
+                highlightColor = enColor,
+                onWordClick = onWordClick,
+                onTextClick = onSentenceClick,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
+        if (!translation.isNullOrBlank()) {
+            Text(
+                text = translation,
+                color = faColor,
+                // Centered on the video, but the paragraph direction still
+                // must follow the translation's own script.
+                style = MaterialTheme.typography.titleMedium.copy(
+                    shadow = shadow,
+                    fontFamily = faFont,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = MaterialTheme.typography.titleMedium.fontSize * fontScale,
+                    textDirection = translation.autoTextDirection()
+                ),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/** Overlay chip for the smart-pause "replay previous/current line" buttons. */
+@Composable
+private fun SmartPauseChip(
+    title: String,
+    subtitle: String,
+    subtitleColor: Color,
+    onClick: () -> Unit
+) {
+    val neo = isNeobrutalismDesign()
+    Box(
+        modifier = Modifier
+            .clip(if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(16.dp))
+            .background(
+                if (neo) MaterialTheme.colorScheme.surfaceContainerLowest
+                else Color.Black.copy(alpha = 0.5f)
+            )
+            .border(
+                width = if (neo) 1.5.dp else 1.dp,
+                color = if (neo) Color.White.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.22f),
+                shape = if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(16.dp)
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    jsonSub.start?.let { start ->
-                        Text(text = "⏱️ ${formatTime(start)}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    }
-                    jsonSub.id?.let { id ->
-                        if (jsonSub.start != null) Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = "ID $id", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (isActive) {
-                        Text(text = strings.playingLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                    }
-                    jsonSub.difficulty?.let { difficulty ->
-                        Surface(color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f), contentColor = MaterialTheme.colorScheme.onTertiaryContainer, shape = RoundedCornerShape(6.dp)) {
-                            Text(text = difficulty, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                        }
-                    }
-                    jsonSub.level?.let { level ->
-                        Surface(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f), contentColor = MaterialTheme.colorScheme.onPrimaryContainer, shape = RoundedCornerShape(6.dp)) {
-                            Text(text = level, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            if (jsonSub.english.isNotBlank()) {
-                ClickableWordText(
-                    text = jsonSub.english,
-                    style = MaterialTheme.typography.bodyLarge.copy(color = subtitleEnColor, shadow = textShadow, fontFamily = fontFamilyFor(subtitleFontEn)),
-                    highlightColor = subtitleEnColor,
-                    onWordClick = onWordClick,
-                    onTextClick = onSentenceClick
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            if (subtitle.isNotBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = subtitleColor,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
                 )
             }
-            jsonSub.translation?.takeIf { it.isNotBlank() }?.let { translation ->
-                Spacer(Modifier.height(6.dp))
-                Text(text = translation, style = MaterialTheme.typography.bodyMedium.copy(color = subtitleFaColor, shadow = textShadow, fontFamily = fontFamilyFor(subtitleFontFa)), textAlign = TextAlign.Right, modifier = Modifier.fillMaxWidth())
-            }
-            Spacer(Modifier.height(10.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(
-                    onClick = onSeek,
-                    colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.weight(1.3f)
-                ) {
-                    Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = strings.playFromStartBtn, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                    }
-                }
-                TextButton(
-                    onClick = onSentenceClick,
-                    colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.weight(1.7f)
-                ) {
-                    Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                        Icon(imageVector = Icons.Default.School, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.tertiary)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = strings.lessonSheetTitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
-                    }
-                }
+        }
+    }
+}
+
+/** Collapsible glass panel used by the EN/FA and JSON time-sync controls. */
+@Composable
+private fun SyncPanel(
+    title: String,
+    expanded: Boolean,
+    expandLabel: String,
+    onToggle: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(durationMillis = 220),
+        label = "syncArrow"
+    )
+    GlassCard(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        cornerRadius = 20.dp,
+        contentPadding = PaddingValues(14.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { onToggle() },
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = expandLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = arrowRotation }
+                )
             }
         }
+        AnimatedVisibility(visible = expanded, enter = fadeIn(), exit = fadeOut()) {
+            Column(modifier = Modifier.padding(top = 12.dp)) { content() }
+        }
+    }
+}
+
+@Composable
+private fun PanelToggle(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+/**
+ * Timestamp label. Locale.US keeps the digits latin (the Persian locale
+ * rendered them as Persian numerals) and hours are finally supported, so a
+ * 90-minute film no longer shows "90:00".
+ */
+fun formatTime(seconds: Double): String {
+    val total = seconds.toLong().coerceAtLeast(0L)
+    val hours = total / 3600
+    val minutes = (total % 3600) / 60
+    val secs = total % 60
+    return if (hours > 0) {
+        String.format(Locale.US, "%d:%02d:%02d", hours, minutes, secs)
+    } else {
+        String.format(Locale.US, "%02d:%02d", minutes, secs)
     }
 }
 

@@ -1,37 +1,49 @@
 package com.example.ui.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.model.JsonSubtitle
+import com.example.logic.KnownWordsStore
+import com.example.logic.TtsSpeaker
+import com.example.logic.autoTextAlign
+import com.example.logic.autoTextDirection
 import com.example.model.JsonWord
 import com.example.model.SubtitleLearningState
 import com.example.ui.theme.AppStrings
+import com.example.ui.theme.NeoBrutalismAccent
+import com.example.ui.theme.isNeobrutalismDesign
 
 /**
  * Learning bottom sheet shown for subtitle interactions:
  *
- *  - Sentence click  → the full lesson (translation, grammar, vocabulary,
+ *  - Sentence click  -> the full lesson (translation, grammar, vocabulary,
  *    sentence structure, notes) for that English subtitle line.
- *  - Word click      → word analysis (translation, meaning in this sentence,
- *    word role, additional level-appropriate explanation, examples).
+ *  - Word click      -> word analysis (translation, meaning in this
+ *    sentence, word role, extra explanation, examples).
  *
- * When a JSON learning file exists, its data is ALWAYS used first (passed in
- * via [state]). When the JSON has no entry for the opened sentence/word, a
- * graceful fallback is shown (translation + dictionary-derived vocabulary,
- * or a friendly hint for words) — never a crash or a blank screen.
+ * When a JSON learning file exists its data is always used first (passed in
+ * via [state]); otherwise a graceful fallback is shown.
+ *
+ * Sentences and words can now be HEARD, not only read, and a word can be
+ * marked as already known so it stops being offered as study material and
+ * counts towards the coverage percentage.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,99 +54,171 @@ fun SubtitleLearningSheet(
     onWordClick: (word: String, sentence: String, translation: String?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    // The sheet opens fully expanded (skipPartiallyExpanded) so the drag
-    // immediately scrolls the lesson instead of first fighting the sheet's
-    // own drag-to-expand gesture, and the content is a LazyColumn — the same
-    // proven pattern as the dictionary sheet — so long JSON lessons with many
-    // vocabulary cards scroll smoothly: only the visible cards are composed
-    // while the video position updates keep recomposing the screen.
+    // Fully expanded on open so the first drag scrolls the lesson instead of
+    // fighting the sheet's own drag-to-expand gesture.
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val isWordMode = state.targetWord != null
+    val context = LocalContext.current
 
+    LaunchedEffect(Unit) {
+        KnownWordsStore.ensureLoaded(context)
+        TtsSpeaker.ensureInit(context)
+    }
+    DisposableEffect(Unit) {
+        onDispose { TtsSpeaker.stop() }
+    }
+
+    val neo = isNeobrutalismDesign()
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        shape = if (neo) {
+            RoundedCornerShape(0.dp)
+        } else {
+            RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
+        },
         containerColor = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxHeight(0.9f)
+        dragHandle = null,
+        modifier = Modifier.fillMaxHeight(0.92f)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 20.dp)
-        ) {
-            item {
-                // Drag handle
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Surface(
-                        modifier = Modifier.width(40.dp).height(4.dp),
-                        shape = RoundedCornerShape(2.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                    ) {}
-                }
+                    modifier = Modifier
+                        .width(44.dp)
+                        .height(if (neo) 6.dp else 5.dp)
+                        .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
+                        .then(
+                            if (neo) {
+                                Modifier.background(NeoBrutalismAccent)
+                            } else {
+                                Modifier.background(brandBrush(alpha = 0.55f))
+                            }
+                        )
+                )
             }
 
-            item {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (state.targetWord != null) strings.wordLessonSheetTitle else strings.lessonSheetTitle,
+                        text = if (isWordMode) strings.wordLessonSheetTitle else strings.lessonSheetTitle,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1
                     )
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Filled.Close,
-                            contentDescription = strings.close,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(52.dp)
+                            .height(if (neo) 4.dp else 3.dp)
+                            .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
+                            .then(
+                                if (neo) {
+                                    Modifier.background(NeoBrutalismAccent)
+                                } else {
+                                    Modifier.background(brandBrush())
+                                }
+                            )
+                    )
                 }
-            }
-
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-
-            if (state.targetWord != null) {
-                wordLearningItems(
-                    state = state,
-                    strings = strings,
-                    learningLevel = learningLevel,
-                    onWordClick = onWordClick
-                )
-            } else {
-                sentenceLearningItems(
-                    state = state,
-                    strings = strings,
-                    learningLevel = learningLevel,
-                    onWordClick = onWordClick
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(12.dp))
-                Button(
+                SoftIconButton(
+                    icon = Icons.Filled.Close,
+                    contentDescription = strings.close,
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth().height(44.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text(strings.closeSheetBtn, fontWeight = FontWeight.Bold)
+                    size = 36.dp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxWidth().fadingEdges(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (isWordMode) {
+                    wordLearningItems(state, strings, learningLevel, onWordClick)
+                } else {
+                    sentenceLearningItems(state, strings, learningLevel, onWordClick)
                 }
+            }
+
+            GradientButton(
+                text = strings.closeSheetBtn,
+                onClick = onDismiss,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 18.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Speak / speak-slowly controls, plus the "I already know this" switch for
+ * single words. Hearing a word is the part that actually sticks.
+ */
+@Composable
+private fun PronunciationRow(
+    text: String,
+    strings: AppStrings,
+    knownWord: String? = null
+) {
+    val context = LocalContext.current
+    val isEn = strings.isEn
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SoftIconButton(
+            icon = Icons.Filled.PlayArrow,
+            contentDescription = if (isEn) "Speak" else "خواندن",
+            onClick = { TtsSpeaker.speak(context, text) },
+            size = 34.dp
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        TextButton(
+            onClick = { TtsSpeaker.speak(context, text, slow = true) },
+            contentPadding = PaddingValues(horizontal = 10.dp)
+        ) {
+            Text(
+                text = if (isEn) "Slowly" else "آهسته",
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
+        if (!knownWord.isNullOrBlank()) {
+            Spacer(modifier = Modifier.weight(1f))
+            val known = KnownWordsStore.words.contains(KnownWordsStore.normalize(knownWord))
+            TextButton(
+                onClick = { KnownWordsStore.toggle(context, knownWord) },
+                contentPadding = PaddingValues(horizontal = 10.dp)
+            ) {
+                Text(
+                    text = if (known) {
+                        if (isEn) "Known" else "بلدم ✓"
+                    } else {
+                        if (isEn) "I know this" else "بلدم"
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = if (known) FontWeight.Bold else FontWeight.Normal,
+                    color = if (known) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
 }
 
-// ── Sentence lesson view ──
+// -- Sentence lesson view --
 // Each card is its own LazyColumn item: only the visible part is composed,
-// so long JSON lessons (many vocabulary cards) scroll smoothly instead of
-// recomposing the whole sheet content on every frame.
+// so long JSON lessons scroll smoothly.
 
 private fun LazyListScope.sentenceLearningItems(
     state: SubtitleLearningState,
@@ -145,11 +229,9 @@ private fun LazyListScope.sentenceLearningItems(
     val jsonSub = state.jsonSubtitle
     val level = jsonSub?.level ?: learningLevel
 
-    // The sentence itself
     item { SentenceCard(state, strings, level) }
 
     if (jsonSub != null) {
-        // JSON learning data takes priority.
         jsonSub.lesson?.let { lesson ->
             item {
                 LessonCard(
@@ -162,10 +244,10 @@ private fun LazyListScope.sentenceLearningItems(
                 )
             }
         }
-        jsonSub.pronunciation?.let { pronunciation ->
+        jsonSub.pronunciation?.takeIf { it.isNotBlank() }?.let { pronunciation ->
             item { InfoRow(label = strings.lessonPronunciationLabel, value = pronunciation) }
         }
-        jsonSub.notes?.let { notes ->
+        jsonSub.notes?.takeIf { it.isNotBlank() }?.let { notes ->
             item { InfoRow(label = strings.lessonNotesLabel, value = notes) }
         }
         if (jsonSub.words.isNotEmpty()) {
@@ -178,25 +260,20 @@ private fun LazyListScope.sentenceLearningItems(
             )
         }
     } else {
-        // No JSON lesson for this sentence: graceful fallback using the
-        // aligned translation + dictionary-derived vocabulary.
         item { FallbackNotice(strings.noJsonLessonFallback) }
         if (!state.translation.isNullOrBlank()) {
             item { InfoRow(label = strings.lessonTranslationLabel, value = state.translation) }
         }
         if (state.fallbackVocab.isNotEmpty()) {
             item {
-                Text(
-                    text = strings.lessonVocabLabel,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(top = 8.dp)
+                SectionHeader(
+                    title = strings.lessonVocabLabel,
+                    subtitle = strings.tapWordHint,
+                    modifier = Modifier.padding(top = 4.dp)
                 )
-                Spacer(modifier = Modifier.height(6.dp))
             }
-            items(state.fallbackVocab.entries.toList()) { (word, def) ->
-                FallbackVocabRow(word, def, strings, onWordClick, state)
+            itemsIndexed(state.fallbackVocab.entries.toList()) { _, entry ->
+                FallbackVocabRow(entry.key, entry.value, onWordClick, state)
             }
         }
     }
@@ -204,45 +281,57 @@ private fun LazyListScope.sentenceLearningItems(
 
 @Composable
 private fun SentenceCard(state: SubtitleLearningState, strings: AppStrings, level: String) {
-    Card(
+    GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
-        shape = MaterialTheme.shapes.medium
+        tint = MaterialTheme.colorScheme.primary,
+        cornerRadius = 22.dp,
+        contentPadding = PaddingValues(16.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Text(
+            text = strings.lessonSentenceLabel,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = state.sentenceEnglish,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                textAlign = state.sentenceEnglish.autoTextAlign(),
+                textDirection = state.sentenceEnglish.autoTextDirection()
+            ),
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        if (!state.translation.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = strings.lessonSentenceLabel,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                text = state.translation,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    textDirection = state.translation.autoTextDirection()
+                ),
+                color = MaterialTheme.colorScheme.secondary,
+                textAlign = state.translation.autoTextAlign(),
+                modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = state.sentenceEnglish,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            if (!state.translation.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = state.translation,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.secondary,
-                    textAlign = TextAlign.Right,
-                    modifier = Modifier.fillMaxWidth()
+        }
+        if (state.sentenceEnglish.isNotBlank()) {
+            PronunciationRow(text = state.sentenceEnglish, strings = strings)
+        }
+        val jsonSub = state.jsonSubtitle
+        if (jsonSub != null && (jsonSub.level != null || jsonSub.difficulty != null || jsonSub.id != null)) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                StatusPill(
+                    text = "${strings.lessonLevelLabel}: ${jsonSub.level ?: level}",
+                    tone = PillTone.Accent
                 )
-            }
-            val jsonSub = state.jsonSubtitle
-            if (jsonSub != null && (jsonSub.level != null || jsonSub.difficulty != null || jsonSub.id != null)) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    LevelChip(strings, strings.lessonLevelLabel, jsonSub.level ?: level)
-                    jsonSub.difficulty?.let { LevelChip(strings, strings.lessonDifficultyLabel, it) }
-                    jsonSub.id?.let { LevelChip(strings, "ID", it) }
+                jsonSub.difficulty?.let {
+                    StatusPill(text = "${strings.lessonDifficultyLabel}: $it", tone = PillTone.Warning)
                 }
+                jsonSub.id?.let { StatusPill(text = "ID $it", tone = PillTone.Neutral) }
             }
         }
     }
@@ -257,70 +346,65 @@ private fun LessonCard(
     structure: String?,
     level: String
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-        shape = MaterialTheme.shapes.medium
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 22.dp,
+        contentPadding = PaddingValues(16.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            if (!grammar.isNullOrBlank()) {
-                Text(
-                    text = "${strings.lessonGrammarLabel}: $grammar",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                if (!grammarTranslation.isNullOrBlank()) {
-                    Text(
-                        text = grammarTranslation,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.secondary,
-                        textAlign = TextAlign.Right,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-            }
-            if (!explanation.isNullOrBlank()) {
-                Text(
-                    text = strings.lessonExplanationLabel,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = explanation,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-            }
-            if (!structure.isNullOrBlank()) {
-                Text(
-                    text = strings.lessonStructureLabel,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = structure,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
+        if (!grammar.isNullOrBlank()) {
             Text(
-                text = "${strings.lessonSentenceLevelNote} — ${strings.levelName(level)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.tertiary,
-                fontWeight = FontWeight.SemiBold
+                text = "${strings.lessonGrammarLabel}: $grammar",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
             )
+            if (!grammarTranslation.isNullOrBlank()) {
+                Text(
+                    text = grammarTranslation,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        textDirection = grammarTranslation.autoTextDirection()
+                    ),
+                    color = MaterialTheme.colorScheme.secondary,
+                    textAlign = grammarTranslation.autoTextAlign(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
         }
+        if (!explanation.isNullOrBlank()) {
+            LabeledBlock(label = strings.lessonExplanationLabel, value = explanation)
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+        if (!structure.isNullOrBlank()) {
+            LabeledBlock(label = strings.lessonStructureLabel, value = structure)
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+        StatusPill(
+            text = "${strings.lessonSentenceLevelNote} - ${strings.levelName(level)}",
+            tone = PillTone.Positive
+        )
     }
 }
 
-// Each vocabulary word is its own LazyColumn item so lessons with big word
-// lists stay smooth while scrolling.
+@Composable
+private fun LabeledBlock(label: String, value: String) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(2.dp))
+    Text(
+        text = value,
+        // User/AI content: auto RTL/LTR per paragraph.
+        style = MaterialTheme.typography.bodyMedium.copy(
+            textAlign = value.autoTextAlign(),
+            textDirection = value.autoTextDirection()
+        ),
+        color = MaterialTheme.colorScheme.onSurface
+    )
+}
 
 private fun LazyListScope.vocabularyItems(
     strings: AppStrings,
@@ -330,64 +414,77 @@ private fun LazyListScope.vocabularyItems(
     onWordClick: (String, String, String?) -> Unit
 ) {
     item {
-        Text(
-            text = strings.lessonVocabLabel,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 10.dp)
+        SectionHeader(
+            title = strings.lessonVocabLabel,
+            subtitle = strings.tapWordHint,
+            modifier = Modifier.padding(top = 4.dp)
         )
-        Text(
-            text = strings.tapWordHint,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(6.dp))
     }
     items(words) { word ->
-        VocabularyWordCard(word = word, strings = strings, onClick = { onWordClick(word.word, sentence, translation) })
+        VocabularyWordCard(
+            word = word,
+            strings = strings,
+            onClick = { onWordClick(word.word, sentence, translation) }
+        )
     }
 }
 
 @Composable
 private fun VocabularyWordCard(word: JsonWord, strings: AppStrings, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 3.dp)
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f)),
-        shape = MaterialTheme.shapes.small
+    val context = LocalContext.current
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        tint = MaterialTheme.colorScheme.secondary,
+        cornerRadius = 18.dp,
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        onClick = onClick
     ) {
         Row(
-            modifier = Modifier.padding(10.dp).fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            SoftIconButton(
+                icon = Icons.Filled.PlayArrow,
+                contentDescription = if (strings.isEn) "Speak" else "خواندن",
+                onClick = { TtsSpeaker.speak(context, word.word) },
+                size = 32.dp
+            )
+            Spacer(modifier = Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = word.word,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        textAlign = word.word.autoTextAlign(),
+                        textDirection = word.word.autoTextDirection()
+                    ),
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                word.partOfSpeech?.let { pos ->
+                word.pronunciation?.takeIf { it.isNotBlank() }?.let { ipa ->
                     Text(
-                        text = strings.partOfSpeechName(pos),
+                        text = ipa,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        fontWeight = FontWeight.SemiBold
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-            word.translation?.let { tr ->
-                Text(
-                    text = tr,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary,
-                    textAlign = TextAlign.Right,
-                    modifier = Modifier.padding(start = 10.dp)
-                )
+            Column(horizontalAlignment = Alignment.End) {
+                word.partOfSpeech?.let { pos ->
+                    StatusPill(text = strings.partOfSpeechName(pos), tone = PillTone.Accent)
+                }
+                word.translation?.takeIf { it.isNotBlank() }?.let { tr ->
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = tr,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            textDirection = tr.autoTextDirection()
+                        ),
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.secondary,
+                        textAlign = tr.autoTextAlign()
+                    )
+                }
             }
         }
     }
@@ -397,37 +494,38 @@ private fun VocabularyWordCard(word: JsonWord, strings: AppStrings, onClick: () 
 private fun FallbackVocabRow(
     word: String,
     def: String,
-    strings: AppStrings,
     onWordClick: (String, String, String?) -> Unit,
     state: SubtitleLearningState
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 3.dp)
-            .clickable { onWordClick(word, state.sentenceEnglish, state.translation) },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f)),
-        shape = MaterialTheme.shapes.small
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        tint = MaterialTheme.colorScheme.secondary,
+        cornerRadius = 18.dp,
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        onClick = { onWordClick(word, state.sentenceEnglish, state.translation) }
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-            Text(
-                text = word,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = def,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Right,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+        Text(
+            text = word,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                textAlign = word.autoTextAlign(),
+                textDirection = word.autoTextDirection()
+            ),
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = def,
+            style = MaterialTheme.typography.bodySmall.copy(
+                textDirection = def.autoTextDirection()
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = def.autoTextAlign(),
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
-// ── Word analysis view ──
+// -- Word analysis view --
 
 private fun LazyListScope.wordLearningItems(
     state: SubtitleLearningState,
@@ -443,42 +541,65 @@ private fun LazyListScope.wordLearningItems(
     if (jsonWord == null) {
         item { FallbackNotice(strings.noJsonWordData) }
     } else {
-        jsonWord.meaningInContext?.let { meaning ->
-            item { InfoCard(strings, strings.meaningInContextLabel, meaning) }
+        jsonWord.meaningInContext?.takeIf { it.isNotBlank() }?.let { meaning ->
+            item { InfoCard(strings.meaningInContextLabel, meaning) }
         }
-        jsonWord.extraExplanation?.let { explanation ->
-            item { InfoCard(strings, strings.extraExplanationLabel, explanation) }
+        jsonWord.extraExplanation?.takeIf { it.isNotBlank() }?.let { explanation ->
+            item { InfoCard(strings.extraExplanationLabel, explanation) }
         }
         if (jsonWord.examples.isNotEmpty()) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            text = strings.examplesLabel,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        jsonWord.examples.forEachIndexed { index, example ->
-                            Text(
-                                text = "${index + 1}. $example",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-            }
+            item { ExamplesCard(strings, jsonWord.examples) }
         }
     }
 
-    // Sentence context — lets the user jump to other words in the sentence.
     item { SentenceContextCard(state, strings, onWordClick) }
+}
+
+@Composable
+private fun ExamplesCard(strings: AppStrings, examples: List<String>) {
+    val context = LocalContext.current
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 22.dp,
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        Text(
+            text = strings.examplesLabel,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        examples.forEachIndexed { index, example ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${index + 1}.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = example,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        textAlign = example.autoTextAlign(),
+                        textDirection = example.autoTextDirection()
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                SoftIconButton(
+                    icon = Icons.Filled.PlayArrow,
+                    contentDescription = if (strings.isEn) "Speak" else "خواندن",
+                    onClick = { TtsSpeaker.speak(context, example) },
+                    size = 30.dp
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -488,60 +609,60 @@ private fun WordHeaderCard(
     jsonWord: JsonWord?,
     level: String
 ) {
-    // Word header
-    Card(
+    GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
-        shape = MaterialTheme.shapes.medium
+        tint = MaterialTheme.colorScheme.primary,
+        cornerRadius = 22.dp,
+        contentPadding = PaddingValues(16.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = state.targetWord ?: "",
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        textAlign = (state.targetWord ?: "").autoTextAlign(),
+                        textDirection = (state.targetWord ?: "").autoTextDirection()
+                    ),
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    jsonWord?.partOfSpeech?.let { pos ->
-                        Surface(
-                            color = MaterialTheme.colorScheme.tertiaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Text(
-                                text = strings.partOfSpeechName(pos),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                            )
-                        }
-                    }
-                    LevelChip(strings, strings.lessonLevelLabel, level)
+                jsonWord?.pronunciation?.takeIf { it.isNotBlank() }?.let { ipa ->
+                    Text(
+                        text = ipa,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-            jsonWord?.translation?.let { tr ->
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = tr,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.secondary,
-                    textAlign = TextAlign.Right,
-                    modifier = Modifier.fillMaxWidth()
-                )
+            Column(horizontalAlignment = Alignment.End) {
+                jsonWord?.partOfSpeech?.let { pos ->
+                    StatusPill(text = strings.partOfSpeechName(pos), tone = PillTone.Accent)
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+                StatusPill(text = "${strings.lessonLevelLabel}: $level", tone = PillTone.Neutral)
             }
-            jsonWord?.pronunciation?.let { ipa ->
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = ipa,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        }
+        jsonWord?.translation?.takeIf { it.isNotBlank() }?.let { tr ->
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = tr,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    textDirection = tr.autoTextDirection()
+                ),
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.secondary,
+                textAlign = tr.autoTextAlign(),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        val target = state.targetWord
+        if (!target.isNullOrBlank()) {
+            PronunciationRow(text = target, strings = strings, knownWord = target)
         }
     }
 }
@@ -552,120 +673,101 @@ private fun SentenceContextCard(
     strings: AppStrings,
     onWordClick: (String, String, String?) -> Unit
 ) {
-    // Sentence context — lets the user jump to other words in the sentence.
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-        shape = MaterialTheme.shapes.medium
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 22.dp,
+        contentPadding = PaddingValues(16.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Text(
+            text = strings.lessonSentenceLabel,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        ClickableContextSubText(
+            text = state.sentenceEnglish,
+            activeWord = state.targetWord ?: "",
+            queryInput = state.targetWord ?: "",
+            style = MaterialTheme.typography.bodyMedium.copy(
+                lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified
+            ),
+            onWordClick = { word -> onWordClick(word, state.sentenceEnglish, state.translation) },
+            modifier = Modifier.fillMaxWidth()
+        )
+        if (!state.translation.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = strings.lessonSentenceLabel,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            ClickableContextSubText(
-                text = state.sentenceEnglish,
-                activeWord = state.targetWord ?: "",
-                queryInput = state.targetWord ?: "",
-                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified),
-                onWordClick = { word -> onWordClick(word, state.sentenceEnglish, state.translation) },
+                text = state.translation,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    textDirection = state.translation.autoTextDirection()
+                ),
+                color = MaterialTheme.colorScheme.secondary,
+                textAlign = state.translation.autoTextAlign(),
                 modifier = Modifier.fillMaxWidth()
             )
-            if (!state.translation.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = state.translation,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary,
-                    textAlign = TextAlign.Right,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+        }
+        if (state.sentenceEnglish.isNotBlank()) {
+            PronunciationRow(text = state.sentenceEnglish, strings = strings)
         }
     }
 }
 
-// ── Shared small pieces ──
+// -- Shared small pieces --
 
 @Composable
-private fun LevelChip(strings: AppStrings, label: String, value: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        shape = RoundedCornerShape(6.dp)
+private fun InfoRow(label: String, value: String) {
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 20.dp,
+        contentPadding = PaddingValues(14.dp)
+    ) {
+        LabeledBlock(label = label, value = value)
+    }
+}
+
+@Composable
+private fun InfoCard(label: String, value: String) {
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        tint = MaterialTheme.colorScheme.primary,
+        cornerRadius = 20.dp,
+        contentPadding = PaddingValues(14.dp)
     ) {
         Text(
-            text = "$label: $value",
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = value,
+            // User/AI content: auto RTL/LTR per paragraph.
+            style = MaterialTheme.typography.bodyMedium.copy(
+                textAlign = value.autoTextAlign(),
+                textDirection = value.autoTextDirection()
+            ),
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-        shape = MaterialTheme.shapes.medium
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
-
-@Composable
-private fun InfoCard(strings: AppStrings, label: String, value: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
-        shape = MaterialTheme.shapes.medium
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
-
-@Composable
 private fun FallbackNotice(text: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)),
-        shape = MaterialTheme.shapes.medium
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        tint = MaterialTheme.colorScheme.tertiary,
+        cornerRadius = 20.dp,
+        contentPadding = PaddingValues(14.dp)
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(12.dp).fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

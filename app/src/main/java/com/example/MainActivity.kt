@@ -14,6 +14,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.ui.screens.MainScreen
+import com.example.ui.theme.AppDesignStyleState
 import com.example.ui.theme.AppThemeMode
 import com.example.ui.theme.MyApplicationTheme
 
@@ -21,6 +22,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // The Android window itself stays LTR for system chrome. The app's
+        // Compose layout mirrors to RTL when the app language is FA via
+        // LocalLayoutDirection in MainScreen (only the tab bar/pager stay LTR).
+        window.decorView.layoutDirection = android.view.View.LAYOUT_DIRECTION_LTR
 
         // Keep the system status bar (clock, battery, signal icons) hidden at
         // all times while using the app — not only during fullscreen video —
@@ -51,6 +56,13 @@ class MainActivity : ComponentActivity() {
         }
 
         val sharedPrefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+
+        // Restore which of the four design languages (Langosphere /
+        // Material Design 3 / Material You / Neubrutalism) the user picked
+        // in Settings ▸ Theme, before the first composition, so the app
+        // launches directly in that design — shapes, type scale, components
+        // and navigation included.
+        AppDesignStyleState.restore(sharedPrefs)
 
         // Restore the user's custom app accent color (if any) before the first
         // composition so the whole app launches already using their chosen color.
@@ -97,7 +109,10 @@ class MainActivity : ComponentActivity() {
                 sharedPrefs.edit().putInt("theme_mode", mode.ordinal).apply()
             }
 
-            MyApplicationTheme(themeMode = themeMode) {
+            MyApplicationTheme(
+                themeMode = themeMode,
+                designStyle = AppDesignStyleState.style,
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

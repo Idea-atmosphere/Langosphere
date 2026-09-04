@@ -14,8 +14,11 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.example.logic.TextDirectionUtils
+import com.example.logic.autoTextDirection
 
 @Composable
 fun ClickableWordText(
@@ -89,7 +92,24 @@ fun ClickableWordText(
                 }
             }
         },
-        style = style,
+        // Auto RTL/LTR: Persian documents/subtitles render right-to-left,
+        // Latin ones left-to-right, independent of the app menu language.
+        // M3 Text takes the direction via TextStyle, so it goes on the style.
+        // Also auto-align Right for RTL and Left for LTR so English lines
+        // stay left even when the app composition is RTL (FA).
+        // When caller passes an absolute Left/Right/Center/Justify we preserve
+        // it — this lets subtitle EN stay Left and FA stay Right even when
+        // the text content would otherwise auto-flip.
+        style = run {
+            val autoAlign = when (style.textAlign) {
+                TextAlign.Center, TextAlign.Justify, TextAlign.Left, TextAlign.Right -> style.textAlign
+                else -> if (TextDirectionUtils.isRtl(text)) TextAlign.Right else TextAlign.Left
+            }
+            style.copy(
+                textDirection = text.autoTextDirection(),
+                textAlign = autoAlign
+            )
+        },
         onTextLayout = {
             layoutResult.value = it
         }

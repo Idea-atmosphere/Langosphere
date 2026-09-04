@@ -1,6 +1,8 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material3.*
@@ -9,11 +11,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.logic.SubtitleJsonParser
+import com.example.logic.autoTextDirection
 import com.example.ui.theme.AppStrings
+import com.example.ui.theme.isNeobrutalismDesign
 
 /**
  * Paste-JSON import dialog for the subtitle section. The content is
@@ -32,12 +37,22 @@ fun JsonSubtitlePasteDialog(
     var jsonText by remember { mutableStateOf("") }
     val detected = remember(jsonText) { SubtitleJsonParser.looksLikeSubtitleJson(jsonText) }
 
+    val neo = isNeobrutalismDesign()
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Card(
             modifier = Modifier.fillMaxWidth(0.96f),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = MaterialTheme.shapes.extraLarge,
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            shape = if (neo) RoundedCornerShape(0.dp) else MaterialTheme.shapes.extraLarge,
+            elevation = if (neo) {
+                CardDefaults.cardElevation(defaultElevation = 0.dp)
+            } else {
+                CardDefaults.cardElevation(defaultElevation = 8.dp)
+            },
+            border = if (neo) {
+                BorderStroke(2.dp, MaterialTheme.colorScheme.outline)
+            } else {
+                null
+            }
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -63,10 +78,23 @@ fun JsonSubtitlePasteDialog(
                     onValueChange = { jsonText = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(strings.jsonPastePlaceholder, style = MaterialTheme.typography.bodySmall) },
-                    textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    // Keep input auto-detected per content; JSON is usually LTR.
+                    textStyle = MaterialTheme.typography.bodySmall.copy(
+                        fontFamily = FontFamily.Monospace,
+                        textAlign = TextAlign.Start,
+                        textDirection = jsonText.autoTextDirection()
+                    ),
                     minLines = 7,
                     maxLines = 12,
-                    shape = MaterialTheme.shapes.medium
+                    shape = if (neo) RoundedCornerShape(0.dp) else MaterialTheme.shapes.medium,
+                    colors = if (neo) {
+                        OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.outline,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)
+                        )
+                    } else {
+                        OutlinedTextFieldDefaults.colors()
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))

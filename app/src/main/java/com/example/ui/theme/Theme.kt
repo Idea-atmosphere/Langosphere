@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -115,23 +116,47 @@ private val DarkColors = darkColorScheme(
 )
 
 /**
- * The app's single theme entry point, built on Material 3 Expressive
- * (Material You):
- *  - MaterialExpressiveTheme + MotionScheme.expressive() give every
- *    Material component the expressive spring-based motion system and the
- *    expressive shape defaults (pill buttons, softer corners).
- *  - [dynamicColor] (on by default): on Android 12+ the color scheme comes
- *    from the user's wallpaper (Material You dynamic colors); on older
- *    devices — or when disabled — the app falls back to the hand-tuned
- *    low-glare palette in Color.kt.
- *  - The user's manual Light / Dark / System mode is respected either way.
+ * The app's single theme entry point. It serves the four design languages
+ * described in DesignStyle.kt:
+ *
+ *  - [AppDesignStyle.LANGOSPHERE] (default): Material 3 Expressive —
+ *    MaterialExpressiveTheme + MotionScheme.expressive() plus the app's own
+ *    very round shape scale (AppShapes) and bold type scale (Typography).
+ *  - [AppDesignStyle.MATERIAL3]: the Material Design 3 baseline — plain
+ *    MaterialTheme with the official M3 shape scale (Material3Shapes),
+ *    the official M3 type scale (Material3Typography) and standard
+ *    Material motion, so components look exactly like the spec.
+ *  - [AppDesignStyle.MATERIAL_YOU]: the Material You (M3 Expressive)
+ *    experience from the material-3-skill — MaterialExpressiveTheme with
+ *    spring motion, the rounder expressive shape scale
+ *    (MaterialYouShapes) and the emphasized type scale
+ *    (MaterialYouTypography). Its primary navigation is the adaptive M3
+ *    NavigationBar / NavigationRail with the Material Symbols icon set.
+ *    (Only this design adapts; the Material Design 3 baseline keeps the M3
+ *    top TabRow, per the user's request.)
+ *  - [AppDesignStyle.NEOBRUTALISM]: the neobrutalist skin — plain
+ *    MaterialTheme with the square NeoBrutalismShapes and the heavy
+ *    NeoTypography over the fixed cream/ink palette. Wallpaper dynamic
+ *    color and the custom accent override are skipped for this design: its
+ *    identity IS its fixed loud palette (see NeoBrutalismLightColors /
+ *    NeoBrutalismDarkColors), and the chunky border/shadow treatment comes
+ *    from the shared components in ui/components/LangosphereUi.kt.
+ *
+ * In all designs except NEOBRUTALISM, [dynamicColor] (on by default) takes
+ * the palette from the wallpaper on Android 12+; otherwise the design's own
+ * fallback palette is used (Color.kt for Langosphere, the M3 baseline
+ * purple for Material 3, and the teal/green Material You palette for
+ * Material You). The user's manual Light / Dark / System mode is respected
+ * either way.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MyApplicationTheme(
     themeMode: AppThemeMode = AppThemeMode.SYSTEM,
-    // Material You dynamic colors are the default (Android 12+); the custom
-    // palette in Color.kt is used on older devices or when this is false.
+    // Which of the four design languages to render (Settings ▸ Theme).
+    designStyle: AppDesignStyle = AppDesignStyleState.style,
+    // Material You dynamic colors are the default (Android 12+); each
+    // design's own palette is used on older devices or when this is false.
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
@@ -142,18 +167,27 @@ fun MyApplicationTheme(
     }
 
     val baseColorScheme = when {
+        // Neobrutalism never follows the wallpaper: its identity is the
+        // fixed cream-and-ink palette with loud accent blocks.
+        designStyle == AppDesignStyle.NEOBRUTALISM ->
+            if (isDark) NeoBrutalismDarkColors else NeoBrutalismLightColors
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
+        designStyle == AppDesignStyle.MATERIAL_YOU ->
+            if (isDark) MaterialYouDarkColors else MaterialYouLightColors
+        designStyle == AppDesignStyle.MATERIAL3 ->
+            if (isDark) Material3DarkColors else Material3LightColors
         isDark -> DarkColors
         else -> LightColors
     }
 
     // If the user picked a custom accent color from the app's settings, apply
     // it on top of the base scheme so it takes effect everywhere immediately.
+    // (Not for neobrutalism — a stray accent would break its fixed palette.)
     val customAccent = AppAccentColorState.color
-    val colorScheme = if (customAccent != null) {
+    val colorScheme = if (customAccent != null && designStyle != AppDesignStyle.NEOBRUTALISM) {
         baseColorScheme.copy(
             primary = customAccent,
             onPrimary = contrastingOnColor(customAccent),
@@ -162,17 +196,60 @@ fun MyApplicationTheme(
         )
     } else baseColorScheme
 
-    val motionScheme = remember { MotionScheme.expressive() }
-
     CompositionLocalProvider(
-        LocalThemeMode provides themeMode
+        LocalThemeMode provides themeMode,
+        LocalDesignStyle provides designStyle,
     ) {
-        MaterialExpressiveTheme(
-            colorScheme = colorScheme,
-            motionScheme = motionScheme,
-            shapes = AppShapes,
-            typography = Typography,
-            content = content
-        )
+        when (designStyle) {
+            AppDesignStyle.LANGOSPHERE -> {
+                // The app's own expressive skin: the app's very round shapes
+                // and bold type scale on top of the expressive Material
+                // motion scheme.
+                val motionScheme = remember { MotionScheme.expressive() }
+                MaterialExpressiveTheme(
+                    colorScheme = colorScheme,
+                    motionScheme = motionScheme,
+                    shapes = AppShapes,
+                    typography = Typography,
+                    content = content
+                )
+            }
+            AppDesignStyle.MATERIAL3 -> {
+                // Material Design 3 baseline: spec shapes, spec type scale and
+                // the standard (non-expressive) Material motion.
+                MaterialTheme(
+                    colorScheme = colorScheme,
+                    shapes = Material3Shapes,
+                    typography = Material3Typography,
+                    content = content
+                )
+            }
+            AppDesignStyle.MATERIAL_YOU -> {
+                // Material You (M3 Expressive): spring-based expressive
+                // motion, the rounder expressive shape scale and the
+                // *emphasized* M3 type scale, exactly as the
+                // material-3-skill guidance specifies.
+                val motionScheme = remember { MotionScheme.expressive() }
+                MaterialExpressiveTheme(
+                    colorScheme = colorScheme,
+                    motionScheme = motionScheme,
+                    shapes = MaterialYouShapes,
+                    typography = MaterialYouTypography,
+                    content = content
+                )
+            }
+            AppDesignStyle.NEOBRUTALISM -> {
+                // Neobrutalism: square shapes + heavy type over the fixed
+                // cream/ink palette. The signature depth (2-4dp ink borders
+                // and hard zero-blur offset shadows) is painted by the shared
+                // components (LangosphereUi.kt) rather than by MaterialTheme.
+                MaterialTheme(
+                    colorScheme = colorScheme,
+                    shapes = NeoBrutalismShapes,
+                    typography = NeoTypography,
+                    content = content
+                )
+            }
+        }
     }
 }
