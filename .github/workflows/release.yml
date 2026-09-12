@@ -1,4 +1,3 @@
-
 # builds a signed APK and publishes it under the repository's Releases tab,
 # with the changelog generated from the commits since the previous tag.
 #
