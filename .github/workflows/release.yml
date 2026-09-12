@@ -19,9 +19,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to build, without the leading v (e.g. 0.0.52)"
+        description: "Version to build, without the leading v (e.g. 0.0.5)"
         required: true
-        default: "0.0.52"
+        default: "0.0.5"
       minify:
         description: "Run R8 code and resource shrinking (off = diagnostic build)"
         type: choice
