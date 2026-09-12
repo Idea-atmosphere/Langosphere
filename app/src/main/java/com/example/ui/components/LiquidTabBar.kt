@@ -51,7 +51,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.ui.theme.NeoBrutalismAccent
+import com.example.ui.theme.neoAccent
+import com.example.ui.components.anime.ToonTabBar
+import com.example.ui.components.anime.ToonTabItem
+import com.example.ui.components.anime.ToonTabRail
+import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isMaterial3Design
 import com.example.ui.theme.isNeobrutalismDesign
 import kotlin.math.PI
@@ -92,6 +96,14 @@ data class LiquidTabItem(
  * lambda on purpose: the fast-changing pager offset is then only read inside
  * this composable and never invalidates the whole screen.
  *
+ * Anime design: the navigation leaves the top of the screen entirely and
+ * becomes a floating "sticker" pill hovering above the bottom edge (see
+ * [ToonTabBar]) — a Sunny blob slides behind the selected icon, which tilts,
+ * scales up and reveals its label. Because it belongs at the bottom,
+ * MainScreen renders it in the Scaffold's `bottomBar` instead of here, and
+ * this function only forwards to it for callers that place the bar
+ * themselves.
+ *
  * Neobrutalism design: a chunky square top tab bar — outlined in ink, with
  * the selected destination stamped as a flat yellow block with a hard
  * offset shadow ([NeoTopTabBar]).
@@ -111,6 +123,16 @@ fun LiquidTabBar(
 
     val scheme = MaterialTheme.colorScheme
     val haptics = LocalHapticFeedback.current
+
+    if (isAnimeDesign()) {
+        ToonTabBar(
+            items = items.toToonItems(),
+            indicatorPosition = indicatorPosition,
+            onTabSelected = onTabSelected,
+            modifier = modifier,
+        )
+        return
+    }
 
     if (isNeobrutalismDesign()) {
         NeoTopTabBar(
@@ -318,6 +340,35 @@ fun LiquidTabBar(
 }
 
 /**
+ * Maps the app's shared tab model onto the toon one. The third destination
+ * (the assistant) is marked as an avatar tab so [ToonTabBar] draws Sora's
+ * headshot there instead of a glyph — she *is* the assistant's identity.
+ */
+fun List<LiquidTabItem>.toToonItems(): List<ToonTabItem> = mapIndexed { index, item ->
+    ToonTabItem(title = item.title, icon = item.icon, avatar = index == 2)
+}
+
+/**
+ * The toon navigation rail for wide (>= 840dp) windows — the same sticker
+ * pill, stood on its end along the leading edge.
+ */
+@Composable
+fun ToonNavigationRail(
+    items: List<LiquidTabItem>,
+    selectedIndex: Int,
+    onTabSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (items.isEmpty()) return
+    ToonTabRail(
+        items = items.toToonItems(),
+        selectedIndex = selectedIndex.coerceIn(0, items.size - 1),
+        onTabSelected = onTabSelected,
+        modifier = modifier,
+    )
+}
+
+/**
  * The neobrutalist top navigation: a square, ink-outlined bar where the
  * active destination is a flat yellow block (ink border + hard offset
  * shadow) with ink-black icon and label; inactive tabs stay plain ink text.
@@ -351,7 +402,7 @@ private fun NeoTopTabBar(
                     .weight(1f)
                     .height(46.dp)
                     .neoHardShadow(color = if (isSelected) ink else Color.Transparent, offset = 3.dp)
-                    .background(if (isSelected) NeoBrutalismAccent else Color.Transparent)
+                    .background(if (isSelected) neoAccent() else Color.Transparent)
                     .border(if (isSelected) 2.dp else 0.dp, ink)
                     .selectable(
                         selected = isSelected,

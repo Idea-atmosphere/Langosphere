@@ -67,7 +67,14 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.neoHardShadow
 import com.example.ui.theme.AccentAmber
-import com.example.ui.theme.NeoBrutalismAccent
+import com.example.ui.theme.neoAccent
+import com.example.ui.components.anime.ToonChip
+import com.example.ui.components.anime.ToonIconButton
+import com.example.ui.components.anime.inkBorder
+import com.example.ui.components.anime.toonSoft
+import com.example.ui.components.anime.inkShadow
+import com.example.ui.theme.AnimeColors
+import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -138,13 +145,26 @@ fun PlayerGlassButton(
     active: Boolean = false
 ) {
     val accent = MaterialTheme.colorScheme.primary
+    if (isAnimeDesign()) {
+        // A cartoon control: ink-outlined circle with a hard shadow. Active
+        // controls go Sunny; the rest sit on the sheet's own surface.
+        ToonIconButton(
+            icon = icon,
+            contentDescription = contentDescription,
+            onClick = onClick,
+            modifier = modifier,
+            fill = if (active) AnimeColors.Sunny else MaterialTheme.colorScheme.surface,
+            size = size.coerceAtLeast(44.dp),
+        )
+        return
+    }
     if (isNeobrutalismDesign()) {
         Box(
             modifier = modifier
                 .size(size)
                 .neoHardShadow(MaterialTheme.colorScheme.outline, offset = 2.dp)
                 .background(
-                    if (active) NeoBrutalismAccent
+                    if (active) neoAccent()
                     else MaterialTheme.colorScheme.surfaceContainerLowest
                 )
                 .border(2.dp, MaterialTheme.colorScheme.outline)
@@ -198,6 +218,16 @@ fun PlayerTextPill(
     height: Dp = 40.dp
 ) {
     val accent = MaterialTheme.colorScheme.primary
+    if (isAnimeDesign()) {
+        ToonChip(
+            text = text,
+            modifier = modifier,
+            selected = active,
+            fill = AnimeColors.Sunny,
+            onClick = onClick,
+        )
+        return
+    }
     if (isNeobrutalismDesign()) {
         // Square text chip: raised surface + ink border; active = yellow
         // block with ink-black label.
@@ -207,7 +237,7 @@ fun PlayerTextPill(
                 .widthIn(min = height + 8.dp)
                 .neoHardShadow(MaterialTheme.colorScheme.outline, offset = 2.dp)
                 .background(
-                    if (active) NeoBrutalismAccent
+                    if (active) neoAccent()
                     else MaterialTheme.colorScheme.surfaceContainerLowest
                 )
                 .border(2.dp, MaterialTheme.colorScheme.outline)
@@ -296,12 +326,20 @@ fun PlayerSeekBar(
     )
     val thumbPx = with(density) { thumbSize.dp.toPx() }
     val neo = isNeobrutalismDesign()
+    val anime = isAnimeDesign()
     // Neobrutalism: square, unblurred track and a flat yellow progress fill.
-    val barShape = if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(3.dp)
+    // Anime: a fully rounded candy bar in Sky with an ink circle thumb.
+    val barShape = when {
+        neo -> RoundedCornerShape(0.dp)
+        anime -> RoundedCornerShape(percent = 50)
+        else -> RoundedCornerShape(3.dp)
+    }
     val thumbShape = if (neo) RoundedCornerShape(0.dp) else CircleShape
-    val progressBrush: Brush =
-        if (neo) SolidColor(NeoBrutalismAccent)
-        else Brush.horizontalGradient(listOf(trackTop, accent))
+    val progressBrush: Brush = when {
+        neo -> SolidColor(neoAccent())
+        anime -> SolidColor(AnimeColors.Sky)
+        else -> Brush.horizontalGradient(listOf(trackTop, accent))
+    }
 
     Box(
         modifier = modifier
@@ -337,26 +375,35 @@ fun PlayerSeekBar(
             },
         contentAlignment = Alignment.CenterStart
     ) {
+        // The toon track is a chunky candy bar with its own ink outline;
+        // the other designs keep the thin translucent rail.
+        val barHeight = when {
+            anime -> 12.dp
+            neo -> 6.dp
+            else -> 5.dp
+        }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (neo) 6.dp else 5.dp)
+                .height(barHeight)
                 .clip(barShape)
-                .background(Color.White.copy(alpha = 0.20f))
+                .background(if (anime) MaterialTheme.colorScheme.surface else Color.White.copy(alpha = 0.20f))
+                .then(if (anime) Modifier.inkBorder(2.dp, barShape) else Modifier)
         )
         Box(
             modifier = Modifier
                 .fillMaxWidth(bufferFraction.coerceIn(0.002f, 1f))
-                .height(if (neo) 6.dp else 5.dp)
+                .height(barHeight)
                 .clip(barShape)
-                .background(Color.White.copy(alpha = 0.30f))
+                .background(if (anime) toonSoft(AnimeColors.SkySoft) else Color.White.copy(alpha = 0.30f))
         )
         Box(
             modifier = Modifier
                 .fillMaxWidth(shownFraction.coerceIn(0.002f, 1f))
-                .height(if (neo) 6.dp else 5.dp)
+                .height(barHeight)
                 .clip(barShape)
                 .background(progressBrush)
+                .then(if (anime) Modifier.inkBorder(2.dp, barShape) else Modifier)
         )
         if (loopStartMs != null && loopEndMs != null && durationMs > 0 && loopEndMs > loopStartMs) {
             val loopStartFraction = (loopStartMs.toFloat() / durationMs).coerceIn(0f, 1f)
@@ -379,9 +426,12 @@ fun PlayerSeekBar(
                         0
                     )
                 }
-                .size(thumbSize.dp)
+                .size(if (anime) (thumbSize + 4f).dp else thumbSize.dp)
                 .clip(thumbShape)
-                .background(Color.White)
+                // The toon thumb is a solid ink circle with a Sky core, so
+                // it reads as a drawn knob rather than a glow.
+                .background(if (anime) AnimeColors.Sky else Color.White)
+                .then(if (anime) Modifier.inkBorder(3.dp, thumbShape) else Modifier)
         )
     }
 }
@@ -446,7 +496,29 @@ fun PlayerControls(
                 size = 42.dp
             )
             Spacer(modifier = Modifier.width(18.dp))
-            if (isNeobrutalismDesign()) {
+            if (isAnimeDesign()) {
+                // The toon transport centre: a 56dp Sakura circle with a 3dp
+                // ink edge and a hard shadow — the loudest thing on screen,
+                // as the primary action should be.
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .graphicsLayer { scaleX = pulse; scaleY = pulse }
+                        .inkShadow(offset = 4.dp, shape = CircleShape)
+                        .clip(CircleShape)
+                        .background(AnimeColors.Sakura)
+                        .inkBorder(3.dp, CircleShape)
+                        .clickable { onPlayPause() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = playPauseDescription,
+                        tint = AnimeColors.Ink,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+            } else if (isNeobrutalismDesign()) {
                 // The neo play/pause is the loud yellow block: square, ink
                 // border, hard shadow, ink-black glyph.
                 Box(
@@ -454,7 +526,7 @@ fun PlayerControls(
                         .size(58.dp)
                         .graphicsLayer { scaleX = pulse; scaleY = pulse }
                         .neoHardShadow(MaterialTheme.colorScheme.outline, offset = 4.dp)
-                        .background(NeoBrutalismAccent)
+                        .background(neoAccent())
                         .border(2.dp, MaterialTheme.colorScheme.outline)
                         .clickable { onPlayPause() },
                     contentAlignment = Alignment.Center

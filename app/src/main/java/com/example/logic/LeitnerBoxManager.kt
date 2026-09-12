@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.util.Log
 import com.example.model.LeitnerCard
 import java.util.concurrent.TimeUnit
 
@@ -23,8 +24,23 @@ import java.util.concurrent.TimeUnit
 class LeitnerBoxManager(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
+        private const val TAG = "LeitnerBoxManager"
+
         private const val DATABASE_NAME = "leitner_box.db"
-        private const val DATABASE_VERSION = 1
+
+        /**
+         * Bumped from 1 to 2 because databases written by earlier builds are
+         * already at version 2 on real devices. Opening one of those with a
+         * lower number made SQLiteOpenHelper's default onDowngrade() throw
+         * ("Can't downgrade database from version 2 to 1"), which crashed the
+         * app during startup before any screen was drawn.
+         *
+         * Never lower this number again — and note that the crash is no longer
+         * possible either way, because onDowngrade below repairs the schema
+         * instead of throwing.
+         */
+        private const val DATABASE_VERSION = 2
+
         private const val TABLE_NAME = "leitner_cards"
 
         private const val COLUMN_ID = "id"
@@ -34,6 +50,21 @@ class LeitnerBoxManager(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         private const val COLUMN_BOX_LEVEL = "box_level"
         private const val COLUMN_NEXT_REVIEW = "next_review"
         private const val COLUMN_CREATED_AT = "created_at"
+
+        /**
+         * Columns this build reads and writes, with the type used when one has
+         * to be added to an older table. COLUMN_ID is deliberately absent: it
+         * is the primary key and cannot be added by ALTER TABLE, so a table
+         * without it has to be rebuilt.
+         */
+        private val COLUMN_TYPES: Map<String, String> = linkedMapOf(
+            COLUMN_WORD to "TEXT",
+            COLUMN_WORD_KEY to "TEXT",
+            COLUMN_DEFINITION to "TEXT",
+            COLUMN_BOX_LEVEL to "INTEGER",
+            COLUMN_NEXT_REVIEW to "INTEGER",
+            COLUMN_CREATED_AT to "INTEGER"
+        )
 
         private val BOX_INTERVAL_DAYS = longArrayOf(1, 2, 4, 8, 16)
         const val MAX_BOX_LEVEL = 5
@@ -55,9 +86,70 @@ class LeitnerBoxManager(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         )
     }
 
+    /**
+     * Upgrades used to DROP the table and recreate it, which silently deleted
+     * every flashcard the user had built up. Now the stored table is inspected
+     * and only what is actually missing gets added.
+     */
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_NAME")
-        onCreate(db)
+        reconcileSchema(db)
+    }
+
+    /**
+     * Opening a database written by a NEWER build must never be fatal: users
+     * install release APKs over debug builds, roll back to an older release, or
+     * restore a backup, and none of that justifies killing the app on launch.
+     * The stored table is repaired if needed and otherwise left alone —
+     * columns a newer build added are simply ignored here.
+     */
+    override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        Log.w(TAG, "Opening a newer $DATABASE_NAME (v$oldVersion) with v$newVersion; reconciling instead of failing")
+        reconcileSchema(db)
+    }
+
+    private fun reconcileSchema(db: SQLiteDatabase) {
+        val existing = readColumnNames(db)
+
+        if (existing.isEmpty()) {
+            // No table at all (or it was unreadable): create a fresh one.
+            db.execSQL("DROP TABLE IF EXISTS $TABLE_NAME")
+            onCreate(db)
+            return
+        }
+
+        if (!existing.contains(COLUMN_ID)) {
+            // Without the primary key the table cannot be repaired in place.
+            Log.w(TAG, "$TABLE_NAME has no '$COLUMN_ID' column; rebuilding it")
+            db.execSQL("DROP TABLE IF EXISTS $TABLE_NAME")
+            onCreate(db)
+            return
+        }
+
+        for ((column, type) in COLUMN_TYPES) {
+            if (existing.contains(column)) continue
+            try {
+                db.execSQL("ALTER TABLE $TABLE_NAME ADD COLUMN $column $type")
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not add column '$column': ${e.message}")
+            }
+        }
+    }
+
+    private fun readColumnNames(db: SQLiteDatabase): Set<String> {
+        val names = mutableSetOf<String>()
+        try {
+            db.rawQuery("PRAGMA table_info(\"$TABLE_NAME\")", null).use { c ->
+                val nameIdx = c.getColumnIndex("name")
+                if (nameIdx < 0) return emptySet()
+                while (c.moveToNext()) {
+                    c.getString(nameIdx)?.let { names.add(it) }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not read $TABLE_NAME schema: ${e.message}")
+            return emptySet()
+        }
+        return names
     }
 
     fun containsWord(word: String): Boolean {

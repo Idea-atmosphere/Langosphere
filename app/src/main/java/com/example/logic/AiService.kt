@@ -54,7 +54,11 @@ object AiService {
     )
 
     /** Errors that will never succeed on a retry (bad key, bad request, ...). */
-    class NonRetryableApiException(message: String) : Exception(message)
+    class NonRetryableApiException(val code: Int, val detail: String) : Exception("HTTP $code: $detail")
+    class ApiServerException(val code: Int, val detail: String) : Exception("HTTP $code: $detail")
+    class EmptyServerResponseException : Exception("empty response body")
+    class NothingToTranslateException : Exception("nothing to translate")
+    class NoSampleLinesException : Exception("no sample lines")
 
     private data class BatchItem(val index: Int, val text: String)
 
@@ -71,7 +75,7 @@ object AiService {
     ): Result<TranslationResult> = withContext(Dispatchers.IO) {
         try {
             if (sourceTexts.isEmpty()) {
-                return@withContext Result.failure(Exception("متنی برای ترجمه وجود ندارد"))
+                return@withContext Result.failure(NothingToTranslateException())
             }
 
             // Callers that still ask for one line per request get the sane
@@ -174,13 +178,14 @@ object AiService {
         messages: List<Pair<String, String>>,
         systemPrompt: String? = null,
         context: Context? = null,
-        targetLang: String? = null
+        targetLang: String? = null,
+        noteSavedMessage: String
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             if (context != null) {
                 val lastUserMsg = messages.lastOrNull { it.first == "user" }?.second
                 if (lastUserMsg != null && AiMemoryManager.parseUserNote(context, lastUserMsg)) {
-                    return@withContext Result.success("✓ یادداشت/قانون ذخیره شد.")
+                    return@withContext Result.success(noteSavedMessage)
                 }
             }
             val sysPrompt = resolvePrompt(
@@ -210,7 +215,7 @@ object AiService {
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             if (sampleLines.isEmpty()) {
-                return@withContext Result.failure(Exception("خطی برای تست وجود ندارد"))
+                return@withContext Result.failure(NoSampleLinesException())
             }
             val resolved = promptText.replace("{LANG}", AiMemoryManager.resolveLangName(targetLang))
             val items = sampleLines.mapIndexed { i, text -> BatchItem(i, text) }
@@ -380,15 +385,14 @@ object AiService {
         val responseBody = response.body?.string()
         if (!response.isSuccessful) {
             val detail = responseBody?.take(400) ?: ""
-            val message = "خطای سرور ${response.code}: $detail"
             // 401/403 = key problem, 400/404/422 = request problem: retrying
             // only wastes the user's time.
             if (response.code in intArrayOf(400, 401, 403, 404, 422)) {
-                throw NonRetryableApiException(message)
+                throw NonRetryableApiException(response.code, detail)
             }
-            throw Exception(message)
+            throw ApiServerException(response.code, detail)
         }
-        if (responseBody == null) throw Exception("پاسخ خالی از سرور")
+        if (responseBody == null) throw EmptyServerResponseException()
         return JSONObject(responseBody)
             .getJSONArray("choices")
             .getJSONObject(0)

@@ -1,8 +1,5 @@
 package com.example.ui.components
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -42,16 +39,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
@@ -65,23 +59,25 @@ import com.example.ui.theme.AccentCyan
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.AccentIndigo
 import com.example.ui.theme.AccentRed
-import com.example.ui.theme.AppAccentColorState
 import com.example.ui.theme.AppStrings
-import com.example.ui.theme.NeoBrutalismAccent
+import com.example.ui.theme.neoAccent
 import com.example.ui.theme.SubtitleColorState
+import com.example.ui.components.anime.ToonChip
+import com.example.ui.components.anime.ToonSwitch
+import com.example.ui.theme.AnimeColors
+import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
 
 /**
  * Player settings.
  *
  * Every option is grouped into its own glass card, and a card that has a
- * master switch (glassmorphism, subtitles, smart pause) carries that switch
- * in its own header instead of repeating the exact same title and
- * description twice in a row, which is what the previous version did.
+ * master switch (subtitles, smart pause) carries that switch in its own
+ * header instead of repeating the exact same title and description twice in
+ * a row. The app-wide appearance knobs that used to live here — the glass /
+ * blur design toggle, the app accent color and the fonts — moved to
+ * Settings ▸ Theme (see ThemeSettingsDialog): the design toggle was removed
+ * outright (it changed nothing), and colors/fonts are app-wide concerns.
  */
 @Composable
 fun PlayerSettingsSheet(
@@ -98,52 +94,25 @@ fun PlayerSettingsSheet(
     onSaveSrt: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    fun importCustomFont(uri: Uri, isEnglish: Boolean) {
-        scope.launch(Dispatchers.IO) {
-            try {
-                val destFile = File(
-                    context.filesDir,
-                    if (isEnglish) "custom_subtitle_font_en.ttf" else "custom_subtitle_font_fa.ttf"
-                )
-                context.contentResolver.openInputStream(uri)?.use { input ->
-                    destFile.outputStream().use { output -> input.copyTo(output) }
-                }
-                withContext(Dispatchers.Main) {
-                    if (isEnglish) {
-                        prefs.customFontPathEn = destFile.absolutePath
-                        prefs.fontEn = "custom"
-                    } else {
-                        prefs.customFontPathFa = destFile.absolutePath
-                        prefs.fontFa = "custom"
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    val fontLauncherEn = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let { importCustomFont(it, true) }
-    }
-    val fontLauncherFa = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let { importCustomFont(it, false) }
-    }
-
-    val customFamilyEn = rememberCustomFontFamily(prefs.customFontPathEn)
-    val customFamilyFa = rememberCustomFontFamily(prefs.customFontPathFa)
-
     val neo = isNeobrutalismDesign()
+    val anime = isAnimeDesign()
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(
             modifier = Modifier.padding(14.dp).fillMaxWidth(0.96f).fillMaxHeight(0.92f),
-            shape = if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(30.dp),
+            shape = when {
+                neo -> RoundedCornerShape(0.dp)
+                // The toon sheet's 28dp corners, with the ink edge below.
+                anime -> RoundedCornerShape(28.dp)
+                else -> RoundedCornerShape(30.dp)
+            },
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = if (neo) 0.dp else 6.dp,
-            border = if (neo) BorderStroke(2.dp, MaterialTheme.colorScheme.outline) else null
+            // Neither ink-outlined skin uses tonal elevation.
+            tonalElevation = if (neo || anime) 0.dp else 6.dp,
+            border = when {
+                neo -> BorderStroke(2.dp, MaterialTheme.colorScheme.outline)
+                anime -> BorderStroke(3.dp, MaterialTheme.colorScheme.outline)
+                else -> null
+            }
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 // ── Title bar ──
@@ -156,21 +125,29 @@ fun PlayerSettingsSheet(
                             .size(40.dp)
                             .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
                             .then(
-                                if (neo) {
-                                    Modifier.background(NeoBrutalismAccent)
-                                } else {
-                                    Modifier.background(brandBrush())
+                                when {
+                                    anime -> Modifier.background(AnimeColors.Sky)
+                                    neo -> Modifier.background(neoAccent())
+                                    else -> Modifier.background(brandBrush())
                                 }
                             )
                             .then(
-                                if (neo) Modifier.border(2.dp, MaterialTheme.colorScheme.outline) else Modifier
+                                when {
+                                    anime -> Modifier.border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                                    neo -> Modifier.border(2.dp, MaterialTheme.colorScheme.outline)
+                                    else -> Modifier
+                                }
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = null,
-                            tint = if (neo) Color.Black else Color.White,
+                            tint = when {
+                                anime -> AnimeColors.Ink
+                                neo -> Color.Black
+                                else -> Color.White
+                            },
                             modifier = Modifier.size(21.dp)
                         )
                     }
@@ -191,7 +168,7 @@ fun PlayerSettingsSheet(
                                 .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
                                 .then(
                                     if (neo) {
-                                        Modifier.background(NeoBrutalismAccent)
+                                        Modifier.background(neoAccent())
                                     } else {
                                         Modifier.background(brandBrush())
                                     }
@@ -213,54 +190,6 @@ fun PlayerSettingsSheet(
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 14.dp)
                 ) {
-                    // ── Appearance ──
-                    SettingsCard(
-                        title = strings.design1Title,
-                        subtitle = strings.design1Desc,
-                        checked = prefs.glassmorphism,
-                        onCheckedChange = { prefs.glassmorphism = it }
-                    ) {
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Text(
-                            text = strings.appAccentColorTitle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = strings.appAccentColorDesc,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        val accentOptions = remember {
-                            listOf<Color?>(
-                                null,
-                                AccentIndigo,
-                                AccentCyan,
-                                AccentGreen,
-                                AccentAmber,
-                                AccentRed,
-                                Color(0xFFE91E8C),
-                                Color(0xFF7A4FD1),
-                                Color(0xFFFF7043)
-                            )
-                        }
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-                        ) {
-                            accentOptions.forEach { swatch ->
-                                ColorSwatch(
-                                    color = swatch,
-                                    selected = AppAccentColorState.color == swatch,
-                                    emptyLabel = strings.defaultCd,
-                                    onClick = { prefs.setAccentColor(swatch) }
-                                )
-                            }
-                        }
-                    }
-
                     // ── Subtitles ──
                     SettingsCard(
                         title = strings.showSubtitlesTitle,
@@ -333,41 +262,6 @@ fun PlayerSettingsSheet(
                                 )
                             }
                         }
-                    }
-
-                    // ── Fonts ──
-                    SettingsCard(
-                        title = strings.subtitleFontTitle,
-                        subtitle = strings.subtitleFontDesc
-                    ) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        FontPicker(
-                            label = strings.fontEnLabel,
-                            selectedKey = prefs.fontEn,
-                            customFamily = customFamilyEn,
-                            hasCustom = prefs.customFontPathEn != null,
-                            strings = strings,
-                            onSelect = { prefs.fontEn = it },
-                            onImport = { fontLauncherEn.launch("*/*") },
-                            onRemoveCustom = {
-                                prefs.customFontPathEn = null
-                                if (prefs.fontEn == "custom") prefs.fontEn = "default"
-                            }
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        FontPicker(
-                            label = strings.fontFaLabel,
-                            selectedKey = prefs.fontFa,
-                            customFamily = customFamilyFa,
-                            hasCustom = prefs.customFontPathFa != null,
-                            strings = strings,
-                            onSelect = { prefs.fontFa = it },
-                            onImport = { fontLauncherFa.launch("*/*") },
-                            onRemoveCustom = {
-                                prefs.customFontPathFa = null
-                                if (prefs.fontFa == "custom") prefs.fontFa = "default"
-                            }
-                        )
                     }
 
                     // ── Smart pause ──
@@ -512,7 +406,13 @@ private fun SettingsCard(
     val changeHandler = onCheckedChange
     val trailing: (@Composable () -> Unit)? =
         if (checkedValue != null && changeHandler != null) {
-            { Switch(checked = checkedValue, onCheckedChange = changeHandler) }
+            {
+                if (isAnimeDesign()) {
+                    ToonSwitch(checked = checkedValue, onCheckedChange = changeHandler)
+                } else {
+                    Switch(checked = checkedValue, onCheckedChange = changeHandler)
+                }
+            }
         } else null
 
     GlassCard(
@@ -549,7 +449,7 @@ private fun AudioTrackRow(
     val shape = if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(16.dp)
     val rowModifier = if (neo) {
         Modifier
-            .background(if (selected) NeoBrutalismAccent else scheme.surfaceContainerLowest)
+            .background(if (selected) neoAccent() else scheme.surfaceContainerLowest)
             .border(2.dp, scheme.outline)
     } else {
         Modifier
@@ -691,6 +591,16 @@ private fun ShiftPill(
     onClick: () -> Unit
 ) {
     val color = if (negative) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    if (isAnimeDesign()) {
+        ToonChip(
+            text = label,
+            modifier = modifier,
+            selected = true,
+            fill = if (negative) AnimeColors.Sakura else AnimeColors.Mint,
+            onClick = onClick,
+        )
+        return
+    }
     if (isNeobrutalismDesign()) {
         Box(
             modifier = modifier
@@ -755,7 +665,11 @@ private fun ToggleRow(
             }
         }
         Spacer(modifier = Modifier.width(10.dp))
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        if (isAnimeDesign()) {
+            ToonSwitch(checked = checked, onCheckedChange = onCheckedChange)
+        } else {
+            Switch(checked = checked, onCheckedChange = onCheckedChange)
+        }
     }
 }
 
@@ -784,7 +698,7 @@ private fun SliderRow(
                 modifier = Modifier
                     .background(
                         if (isNeobrutalismDesign()) {
-                            NeoBrutalismAccent
+                            neoAccent()
                         } else {
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                         }
@@ -842,7 +756,7 @@ private fun ColorSwatch(
     val ringWidth = if (selected) 3.dp else 1.dp
     val swatchShape = if (neo) RoundedCornerShape(0.dp) else CircleShape
     val ringColor = if (selected) {
-        if (neo) NeoBrutalismAccent else MaterialTheme.colorScheme.primary
+        if (neo) neoAccent() else MaterialTheme.colorScheme.primary
     } else {
         if (neo) {
             MaterialTheme.colorScheme.outline
@@ -871,146 +785,5 @@ private fun ColorSwatch(
                 modifier = Modifier.size(15.dp)
             )
         }
-    }
-}
-
-@Composable
-private fun FontPicker(
-    label: String,
-    selectedKey: String,
-    customFamily: FontFamily?,
-    hasCustom: Boolean,
-    strings: AppStrings,
-    onSelect: (String) -> Unit,
-    onImport: () -> Unit,
-    onRemoveCustom: () -> Unit
-) {
-    val fontOptions = remember(strings) {
-        listOf(
-            "default" to strings.fontDefault,
-            "serif" to "Serif",
-            "sansserif" to "Sans",
-            "monospace" to "Mono",
-            "cursive" to "Cursive"
-        )
-    }
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-        ) {
-            fontOptions.forEach { (key, optionLabel) ->
-                FontActionChip(
-                    label = optionLabel,
-                    fontFamily = fontFamilyFor(key),
-                    selected = selectedKey == key,
-                    onClick = { onSelect(key) }
-                )
-            }
-            if (hasCustom) {
-                FontActionChip(
-                    label = strings.fontCustomLabel,
-                    fontFamily = customFamily ?: FontFamily.Default,
-                    selected = selectedKey == "custom",
-                    onClick = { onSelect("custom") }
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            FontActionChip(
-                label = strings.importCustomFontBtn,
-                onClick = onImport
-            )
-            if (hasCustom) {
-                FontActionChip(
-                    label = strings.removeCustomFontBtn,
-                    destructive = true,
-                    onClick = onRemoveCustom
-                )
-            }
-        }
-    }
-}
-
-/**
- * A selectable/action chip of the font picker. Neobrutalism: selected chips
- * become the loud yellow block with ink-black text; idle chips are raised
- * squares with the ink border; destructive stays a flat error block.
- */
-@Composable
-private fun FontActionChip(
-    label: String,
-    fontFamily: FontFamily? = null,
-    selected: Boolean = false,
-    destructive: Boolean = false,
-    onClick: () -> Unit
-) {
-    val scheme = MaterialTheme.colorScheme
-    // Option chips preview their font (labelMedium); action buttons are the
-    // smaller labelSmall, matching the original layout in all designs.
-    val textStyle = if (fontFamily != null) {
-        MaterialTheme.typography.labelMedium.copy(fontFamily = fontFamily)
-    } else {
-        MaterialTheme.typography.labelSmall
-    }
-    if (isNeobrutalismDesign()) {
-        val container = when {
-            selected -> NeoBrutalismAccent
-            destructive -> scheme.error
-            else -> scheme.surfaceContainerLowest
-        }
-        val content = when {
-            selected -> Color.Black
-            destructive -> scheme.onError
-            else -> scheme.onSurface
-        }
-        Box(
-            modifier = Modifier
-                .background(container)
-                .border(2.dp, scheme.outline)
-                .clickable(onClick = onClick)
-                .padding(horizontal = 14.dp, vertical = 9.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = label,
-                style = textStyle,
-                fontWeight = FontWeight.Bold,
-                color = content,
-                maxLines = 1
-            )
-        }
-        return
-    }
-    val container = when {
-        selected -> scheme.primary.copy(alpha = 0.18f)
-        destructive -> scheme.error.copy(alpha = 0.12f)
-        else -> scheme.surfaceVariant.copy(alpha = 0.6f)
-    }
-    val content = when {
-        selected -> scheme.primary
-        destructive -> scheme.error
-        else -> scheme.onSurfaceVariant
-    }
-    Surface(
-        color = container,
-        contentColor = content,
-        shape = RoundedCornerShape(14.dp),
-        onClick = onClick
-    ) {
-        Text(
-            text = label,
-            style = textStyle,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
-        )
     }
 }

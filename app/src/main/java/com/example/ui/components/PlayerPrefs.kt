@@ -10,7 +10,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import com.example.ui.theme.AppAccentColorState
 import com.example.ui.theme.SubtitleColorState
 import java.io.File
 
@@ -24,15 +23,6 @@ import java.io.File
  * UI stays reactive and storage always matches what is on screen.
  */
 class PlayerPrefs(val raw: SharedPreferences) {
-
-    // ── Appearance ──
-    private val glassState = mutableStateOf(raw.getBoolean("glassmorphism_enabled", true))
-    var glassmorphism: Boolean
-        get() = glassState.value
-        set(value) {
-            glassState.value = value
-            raw.edit().putBoolean("glassmorphism_enabled", value).apply()
-        }
 
     // ── Subtitles ──
     private val subtitlesState = mutableStateOf(raw.getBoolean("subtitles_enabled", true))
@@ -163,12 +153,8 @@ class PlayerPrefs(val raw: SharedPreferences) {
         }
 
     // ── Colors (kept in the process-wide theme singletons) ──
-    fun setAccentColor(color: Color?) {
-        AppAccentColorState.color = color
-        if (color == null) raw.edit().remove("app_accent_color").apply()
-        else raw.edit().putInt("app_accent_color", color.toArgb()).apply()
-    }
-
+    // The app-wide palette lives in AppPaletteState (ui/theme/Palette.kt);
+    // these are the subtitle text colors drawn over/under the video.
     fun setSubtitleColorEn(color: Color) {
         SubtitleColorState.colorEn = color
         raw.edit().putInt("subtitle_color_en", color.toArgb()).apply()
@@ -195,10 +181,25 @@ class PlayerPrefs(val raw: SharedPreferences) {
     fun savedWasPlaying(key: String): Boolean = raw.getBoolean("${key}_was_playing", true)
 }
 
+/**
+ * One process-wide [PlayerPrefs] instance per preferences file. This MUST be
+ * shared: the player screen and the Settings ▸ Theme ▸ Font dialog each call
+ * [rememberPlayerPrefs], and when every call built its own instance the
+ * dialog's writes updated only that instance's Compose state — the player's
+ * copy kept its launch-time snapshot, which is why the subtitle font picks
+ * "did not work" until the screen was recreated. With one shared instance a
+ * write is immediately visible to every reader.
+ */
+private val sharedPlayerPrefs = java.util.concurrent.ConcurrentHashMap<String, PlayerPrefs>()
+
 @Composable
 fun rememberPlayerPrefs(): PlayerPrefs {
     val context = LocalContext.current
-    return remember { PlayerPrefs(context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)) }
+    return remember {
+        sharedPlayerPrefs.getOrPut("app_prefs") {
+            PlayerPrefs(context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE))
+        }
+    }
 }
 
 /** Maps a stored font key to a real font family. */

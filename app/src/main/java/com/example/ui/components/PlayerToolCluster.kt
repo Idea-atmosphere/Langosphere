@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -23,6 +24,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.example.ui.components.anime.inkBorder
+import com.example.ui.components.anime.inkShadow
+import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
 
 /**
@@ -75,12 +79,28 @@ fun PlayerToolCluster(
     ) {
         if (progress > 0.01f && actions.isNotEmpty()) {
             val neo = isNeobrutalismDesign()
+            val anime = isAnimeDesign()
+            // The toon cluster is a floating white pill with an ink edge, so
+            // the expanded tools read as one drawn control strip instead of
+            // a translucent smear over the video.
+            val clusterShape = if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(percent = 50)
             Row(
                 modifier = Modifier
-                    .clip(if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(24.dp))
-                    .background(
-                        if (neo) Color.Transparent
-                        else Color.Black.copy(alpha = 0.38f * progress)
+                    .then(
+                        if (anime) {
+                            Modifier
+                                .inkShadow(offset = 3.dp, shape = clusterShape)
+                                .clip(clusterShape)
+                                .background(MaterialTheme.colorScheme.surface)
+                                .inkBorder(2.dp, clusterShape)
+                        } else {
+                            Modifier
+                                .clip(clusterShape)
+                                .background(
+                                    if (neo) Color.Transparent
+                                    else Color.Black.copy(alpha = 0.38f * progress)
+                                )
+                        }
                     )
                     .padding(horizontal = 3.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,

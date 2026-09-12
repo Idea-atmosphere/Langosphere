@@ -67,6 +67,7 @@ import com.example.ui.components.AboutDialog
 import com.example.ui.components.DictionaryBottomSheet
 import com.example.ui.components.DonatePopupDialog
 import com.example.ui.components.GlassCard
+import com.example.ui.components.JsonChunkPanel
 import com.example.ui.components.JsonSubtitlePasteDialog
 import com.example.ui.components.LiquidTabBar
 import com.example.ui.components.LiquidTabItem
@@ -82,15 +83,25 @@ import com.example.ui.theme.AccentAmber
 import com.example.ui.theme.AccentCyan
 import com.example.ui.theme.AccentIndigo
 import com.example.ui.theme.AppDesignStyleState
+import com.example.ui.theme.AppFontState
 import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.AppStrings
 import com.example.ui.theme.AppThemeMode
-import com.example.ui.theme.NeoBrutalismAccent
+import com.example.ui.theme.neoAccent
 import com.example.ui.theme.isMaterial3Design
+import com.example.ui.components.ToonNavigationRail
+import com.example.ui.components.anime.SoraAvatar
+import com.example.ui.components.anime.ToonOutlinedTitle
+import com.example.ui.components.anime.ToonTabBar
+import com.example.ui.components.anime.halftone
+import com.example.ui.components.toToonItems
+import com.example.ui.theme.AnimeColors
+import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isMaterialYouDesign
 import com.example.ui.theme.isNeobrutalismDesign
 import com.example.ui.theme.Typography as AppTypography
 import com.example.ui.theme.forAppLanguage
+import com.example.ui.theme.withFontFamily
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
@@ -108,15 +119,27 @@ fun MainScreen(
 ) {
     val viewModel: AppViewModel = viewModel()
     val appLanguage by viewModel.appLanguage.collectAsState()
-    // The type scale depends on BOTH the UI language and the active design
-    // language (forAppLanguage reads LocalDesignStyle). Keying on both makes
-    // switching the design live swap the scale immediately instead of keeping
-    // the previous design's line-heights/tracking (which garbles wrapping).
-    val typography = remember(appLanguage, AppDesignStyleState.style) {
-        AppTypography.forAppLanguage(appLanguage)
+    // The type scale depends on the UI language, the active design language
+    // (forAppLanguage reads LocalDesignStyle) AND the user's "whole app"
+    // font choice (Settings ▸ Theme ▸ Font), which is layered on top of the
+    // design's own scale. Keying on all three makes switching any of them
+    // live swap the scale immediately instead of keeping the previous
+    // design's line-heights/tracking (which garbles wrapping).
+    val appFontEn = AppFontState.app
+    val appFontFa = AppFontState.appFa
+    val typography = remember(appLanguage, AppDesignStyleState.style, appFontEn, appFontFa) {
+        AppTypography.forAppLanguage(appLanguage).withFontFamily(
+            AppFontState.resolvedAppFamily(fa = appLanguage == AppLanguage.FA)
+        )
     }
 
-    val appLayoutDirection = if (appLanguage == AppLanguage.FA) LayoutDirection.Rtl else LayoutDirection.Ltr
+    // The structure of the whole app is left-to-right, in every UI language.
+    // Mirroring rows, rails and start/end paddings for Persian copy is what
+    // made some of them collide, so the layout stays LTR and only the text
+    // resolves its own direction, per string, from its content (see
+    // String.autoTextDirection / TextDirectionUtils.isRtl) — a Persian line
+    // still reads right-to-left inside itself, and no wording changes.
+    val appLayoutDirection = LayoutDirection.Ltr
     CompositionLocalProvider(LocalLayoutDirection provides appLayoutDirection) {
         MaterialTheme(typography = typography) {
             MainScreenContent(
@@ -137,7 +160,8 @@ private fun MainScreenContent(
     onThemeToggle: (AppThemeMode) -> Unit,
     currentThemeMode: AppThemeMode
 ) {
-    val strings = remember(appLanguage) { AppStrings(appLanguage) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val strings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
 
     val tabs = remember(strings) {
         listOf(
@@ -159,7 +183,6 @@ private fun MainScreenContent(
     var showMaxWordsDialog by remember { mutableStateOf(false) }
     var showFileManager by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
-    val context = androidx.compose.ui.platform.LocalContext.current
     val sharedPrefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     var maxWords by remember { mutableIntStateOf(sharedPrefs.getInt("max_words", 0)) }
 
@@ -234,10 +257,16 @@ private fun MainScreenContent(
     var showJsonPasteDialog by remember { mutableStateOf(false) }
     var showRemoveSubsConfirm by remember { mutableStateOf(false) }
 
-    // Settings sections: Theme (main theme mode picker),
+    // Settings sections: Theme (its own small back stack, below),
     // Tutorial & AI Learning (prompts + JSON learning instructions) and the
     // App guide (a walkthrough of every tab and section).
-    var showThemeSettings by remember { mutableStateOf(false) }
+    //
+    // The theme area's sections (App design, App colors, Font) all open from
+    // buttons INSIDE the Theme dialog — the settings menu keeps a single
+    // 🎨 Theme entry — and each of them can walk back to it. The nav object
+    // owns that stack; it is saveable, so the section stays open across the
+    // activity recreate that switching design triggers.
+    val themeNav = rememberThemeSettingsNav()
     var showTutorialDialog by remember { mutableStateOf(false) }
     var showAppGuide by remember { mutableStateOf(false) }
 
@@ -289,6 +318,11 @@ private fun MainScreenContent(
     // and flat ink icons by the neo branches below (never M3 TopAppBar).
     val neoChrome = isNeobrutalismDesign()
 
+    // Toon chrome: a halftone paper band carrying the outlined "Langosphere"
+    // logotype and a circular Sora badge, with navigation moved to the
+    // floating bottom sticker bar (or a vertical rail on wide windows).
+    val animeChrome = isAnimeDesign()
+
     // M3 navigation presentation per the material-design-3-ui skill: only the
     // Material You design uses a bottom NavigationBar on compact (phone)
     // windows and a side NavigationRail on medium / expanded (tablet /
@@ -300,10 +334,28 @@ private fun MainScreenContent(
     // Medium / expanded windows place the Material You NavigationRail on the
     // leading edge, with the app content (a Scaffold) beside it. Compact
     // windows and the other designs use the plain Scaffold layout.
-    // In RTL (Persian) the Row mirrors so the rail appears on the right,
-    // but the rail's own icons/labels stay LTR.
-    val appLayoutDirection = if (appLanguage == AppLanguage.FA) LayoutDirection.Rtl else LayoutDirection.Ltr
+    // The layout is LTR in every UI language (see the note on the app's root
+    // provider): the rail sits on the left and the content beside it, whatever
+    // the language of the copy inside them.
+    val appLayoutDirection = LayoutDirection.Ltr
+    // The toon rail appears on genuinely wide windows only (>= 840dp, the
+    // M3 "expanded" breakpoint); narrower windows keep the bottom sticker
+    // bar, which is easier to reach one-handed.
+    val toonExpanded = LocalConfiguration.current.screenWidthDp >= 840
+
     Row(modifier = Modifier.fillMaxSize()) {
+        if (animeChrome && toonExpanded && chromeVisible) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                ToonNavigationRail(
+                    items = tabs,
+                    selectedIndex = selectedTab,
+                    onTabSelected = { index ->
+                        pagerScope.launch { pagerState.animateScrollToPage(index) }
+                    },
+                )
+            }
+        }
+
         if (materialYou && !compact && chromeVisible) {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 M3NavigationRail(
@@ -325,6 +377,9 @@ private fun MainScreenContent(
                         .background(
                             when {
                                 neoChrome -> SolidColor(MaterialTheme.colorScheme.surfaceContainerLowest)
+                                // The toon band is flat paper; its texture is
+                                // the halftone drawn over it just below.
+                                animeChrome -> SolidColor(MaterialTheme.colorScheme.background)
                                 material3Chrome -> SolidColor(MaterialTheme.colorScheme.surface)
                                 else -> Brush.verticalGradient(
                                     colors = listOf(
@@ -335,6 +390,7 @@ private fun MainScreenContent(
                                 )
                             }
                         )
+                        .then(if (animeChrome) Modifier.halftone(alpha = 0.10f) else Modifier)
                 ) {
                     // ── Brand header ──
                     // Header row stays LTR so the settings gear keeps its
@@ -349,14 +405,19 @@ private fun MainScreenContent(
                         ) {
                         // The neobrutalist bar swaps the animated gradient
                         // "sphere" for a flat square yellow mark.
-                        if (!material3Chrome && !neoChrome) {
+                        if (animeChrome) {
+                            // Sora leads the band as the app's face. She is
+                            // decorative here, so she honours "Show Sora".
+                            SoraAvatar(size = 40.dp, borderWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                        } else if (!material3Chrome && !neoChrome) {
                             LangosphereMark(modifier = Modifier.size(30.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                         } else if (neoChrome) {
                             Box(
                                 modifier = Modifier
                                     .size(28.dp)
-                                    .background(NeoBrutalismAccent)
+                                    .background(neoAccent())
                                     .border(2.dp, MaterialTheme.colorScheme.outline)
                                     .padding(4.dp),
                                 contentAlignment = Alignment.Center,
@@ -370,6 +431,16 @@ private fun MainScreenContent(
                             Spacer(modifier = Modifier.width(10.dp))
                         }
                         Column(modifier = Modifier.weight(1f)) {
+                            if (animeChrome) {
+                                // Manga logotype: ink-stroked glyphs with a
+                                // Sakura fill.
+                                ToonOutlinedTitle(
+                                    text = "Langosphere",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fillColor = AnimeColors.Sakura,
+                                    strokeWidth = 7f,
+                                )
+                            } else {
                             Text(
                                 // The product name is always "Langosphere",
                                 // in every language.
@@ -397,6 +468,7 @@ private fun MainScreenContent(
                                     Color.Unspecified
                                 },
                             )
+                            }
                             // Live subtitle: the section the user is currently in.
                             Text(
                                 text = tabs[selectedTab.coerceIn(0, tabs.lastIndex)].title,
@@ -519,7 +591,7 @@ private fun MainScreenContent(
                                     leadingIcon = { MenuIcon(Icons.Filled.Settings) },
                                     onClick = {
                                         showThemeMenu = false
-                                        showThemeSettings = true
+                                        themeNav.open(ThemeSettingsSection.HUB)
                                     }
                                 )
                                 // Settings ▸ Tutorial & AI Learning section
@@ -539,7 +611,7 @@ private fun MainScreenContent(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            if (strings.isEn) "App guide" else "راهنمای برنامه"
+                                            strings.appGuideMenu
                                         )
                                     },
                                     leadingIcon = { MenuIcon(Icons.Filled.Menu) },
@@ -572,7 +644,11 @@ private fun MainScreenContent(
                     // rendered here for it. The bar itself always stays LTR
                     // so tab order never flips, even when the surrounding
                     // chrome is RTL.
-                    if (!materialYou) {
+                    // Neither the Material You design nor the toon skin keeps
+                    // a top tab bar: both move primary navigation to the
+                    // bottom (see bottomBar), and the toon rail replaces even
+                    // that on expanded windows.
+                    if (!materialYou && !animeChrome) {
                         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                             LiquidTabBar(
                                 items = tabs,
@@ -592,6 +668,22 @@ private fun MainScreenContent(
             // Only the Material You design uses a bottom NavigationBar on
             // compact windows; the M3 baseline and Langosphere both use a
             // top tab bar instead. The bar itself always stays LTR.
+            if (animeChrome && !toonExpanded && chromeVisible) {
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    ToonTabBar(
+                        items = tabs.toToonItems(),
+                        // The fractional pager position, so the Sunny blob
+                        // tracks the finger during a swipe instead of
+                        // snapping once it settles.
+                        indicatorPosition = {
+                            pagerState.currentPage + pagerState.currentPageOffsetFraction
+                        },
+                        onTabSelected = { index ->
+                            pagerScope.launch { pagerState.animateScrollToPage(index) }
+                        },
+                    )
+                }
+            }
             if (materialYou && compact && chromeVisible) {
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                     M3NavigationBar(
@@ -755,6 +847,23 @@ private fun MainScreenContent(
                                             )
                                         }
 
+                                        // JSON chunk management: shows which
+                                        // AI answers ("CHUNK 1-50") are merged
+                                        // into the loaded JSON, lets one chunk
+                                        // be removed again, and exports the
+                                        // merged result to Downloads.
+                                        if (jsonSubtitles != null) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            JsonChunkPanel(
+                                                strings = strings,
+                                                pkg = jsonSubtitles!!,
+                                                fileName = jsonSubFileName,
+                                                onRemoveChunk = { viewModel.removeJsonChunk(it) },
+                                                onRemoveJson = { viewModel.removeJsonSubtitle() },
+                                                onExportJson = { viewModel.exportJsonSubtitleToDownloads() }
+                                            )
+                                        }
+
                                         Text(
                                             text = strings.importSectionScrollHint,
                                             style = MaterialTheme.typography.labelSmall,
@@ -828,7 +937,7 @@ private fun MainScreenContent(
                                             baseUrl = aiPrefs.getString("base_url", "http://localhost:20128/v1") ?: "http://localhost:20128/v1",
                                             apiKey = aiPrefs.getString("api_key", "") ?: "",
                                             model = aiPrefs.getString("model", "gpt-4o-mini") ?: "gpt-4o-mini",
-                                            targetLang = aiPrefs.getString("target_lang", "فارسی") ?: "فارسی"
+                                            targetLang = aiPrefs.getString("target_lang", "Persian") ?: "Persian"
                                         )
                                     },
                                     onSaveSrt = { viewModel.exportSrtToDownloads() },
@@ -1146,7 +1255,8 @@ private fun MainScreenContent(
             JsonSubtitlePasteDialog(
                 strings = strings,
                 onImport = { text -> viewModel.importJsonSubtitleText(text) },
-                onDismiss = { showJsonPasteDialog = false }
+                onDismiss = { showJsonPasteDialog = false },
+                loadedPackage = jsonSubtitles
             )
         }
 
@@ -1192,16 +1302,16 @@ private fun MainScreenContent(
             )
         }
 
-        // Settings ▸ Theme section — main theme mode picker (existing
-        // system) + the independent Beta theme layer toggle.
-        if (showThemeSettings) {
-            ThemeSettingsDialog(
-                strings = strings,
-                currentThemeMode = currentThemeMode,
-                onThemeModeChange = onThemeToggle,
-                onDismiss = { showThemeSettings = false }
-            )
-        }
+        // Settings ▸ Theme — the hub (theme mode + one button per section)
+        // and its sections (App design / App colors / Font), each on its own
+        // screen with a Back control that returns to the hub. The host picks
+        // the dialog from the shared back stack.
+        ThemeSettingsHost(
+            nav = themeNav,
+            strings = strings,
+            currentThemeMode = currentThemeMode,
+            onThemeModeChange = onThemeToggle,
+        )
 
         // Settings ▸ Tutorial & AI Learning section — learning level,
         // dictionary-vs-JSON toggle, and the JSON prompt generator with the
@@ -1306,7 +1416,7 @@ private fun ThemeQuickChip(
         Box(
             modifier = Modifier
                 .width(76.dp)
-                .background(if (selected) NeoBrutalismAccent else scheme.surfaceContainerLowest)
+                .background(if (selected) neoAccent() else scheme.surfaceContainerLowest)
                 .border(2.dp, scheme.outline)
                 .clickable(onClick = onClick)
                 .padding(vertical = 8.dp, horizontal = 4.dp),
@@ -1380,7 +1490,7 @@ private fun MediaImportTile(
                     .clip(if (neo) MaterialTheme.shapes.extraSmall else CircleShape)
                     .background(
                         when {
-                            neo && loaded -> NeoBrutalismAccent
+                            neo && loaded -> neoAccent()
                             neo -> scheme.surfaceVariant
                             loaded -> scheme.primary.copy(alpha = 0.18f)
                             else -> scheme.surfaceVariant.copy(alpha = 0.55f)

@@ -41,7 +41,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.logic.autoTextDirection
+import androidx.compose.ui.graphics.graphicsLayer
+import com.example.ui.components.anime.BubbleTail
+import com.example.ui.components.anime.ToonBubble
+import com.example.ui.components.anime.ToonChip
+import com.example.ui.components.anime.toonOn
+import com.example.ui.components.anime.toonPopSpring
+import com.example.ui.components.anime.toonSoft
+import com.example.ui.theme.AnimeColors
 import com.example.ui.theme.AppStrings
+import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
 
 /**
@@ -55,7 +64,6 @@ import com.example.ui.theme.isNeobrutalismDesign
 @Composable
 private fun SubtitleRowShell(
     isActive: Boolean,
-    glass: Boolean,
     onSeek: () -> Unit,
     header: @Composable RowScope.() -> Unit,
     body: @Composable () -> Unit
@@ -71,6 +79,49 @@ private fun SubtitleRowShell(
         animationSpec = tween(durationMillis = 260),
         label = "rowBar"
     )
+
+    if (isAnimeDesign()) {
+        // Toon subtitles are manga speech bubbles: the line being spoken
+        // pops in at full size and opacity on the toon spring, while the
+        // lines around it hang back at 60% alpha and 0.96 scale so the
+        // active one is unmistakable while scrolling.
+        val pop by animateFloatAsState(
+            targetValue = if (isActive) 1f else 0.96f,
+            animationSpec = toonPopSpring(),
+            label = "toon-subtitle-pop",
+        )
+        ToonBubble(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .graphicsLayer {
+                    scaleX = pop
+                    scaleY = pop
+                    alpha = if (isActive) 1f else 0.60f
+                }
+                .clickable(onClick = onSeek),
+            tail = BubbleTail.Left,
+            fill = if (isActive) toonSoft(AnimeColors.SunnySoft) else null,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ToonChip(text = "EN", selected = true, fill = AnimeColors.Sky)
+                Spacer(modifier = Modifier.width(8.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    content = header,
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            body()
+        }
+        return
+    }
+
     GlassCard(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 5.dp),
         tint = if (isActive) MaterialTheme.colorScheme.primary else null,
@@ -119,6 +170,24 @@ private fun RowAction(
     onClick: () -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
+    if (isAnimeDesign()) {
+        // Row actions become toon chips: the tone color fills the chip and
+        // the label stays ink, which is the skin's contrast contract.
+        val fill = when (color) {
+            scheme.primary -> AnimeColors.Sakura
+            scheme.secondary -> AnimeColors.Sky
+            else -> AnimeColors.Lavender
+        }
+        ToonChip(
+            text = label,
+            modifier = modifier,
+            selected = enabled,
+            fill = fill,
+            icon = icon,
+            onClick = if (enabled) onClick else null,
+        )
+        return
+    }
     if (isNeobrutalismDesign()) {
         // Flat square action block: the tone color filled with its
         // on-color glyph/label (yellow/pink → ink; indigo → white), dimmed
@@ -205,7 +274,6 @@ fun SubtitleLineRow(
     englishText: String,
     translationText: String?,
     isActive: Boolean,
-    glass: Boolean,
     enColor: Color,
     faColor: Color,
     textShadow: Shadow,
@@ -223,7 +291,6 @@ fun SubtitleLineRow(
 ) {
     SubtitleRowShell(
         isActive = isActive,
-        glass = glass,
         onSeek = onSeek,
         header = {
             StatusPill(
@@ -249,20 +316,36 @@ fun SubtitleLineRow(
                 onTextClick = onSentenceClick
             )
             translationText?.takeIf { it.isNotBlank() }?.let { translation ->
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = translation,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = faColor,
-                        shadow = textShadow,
-                        fontFamily = faFont,
-                        textDirection = translation.autoTextDirection()
-                    ),
-                    // Auto per-content alignment: Persian Right, English Left
-                    // regardless of app LayoutDirection (which is Rtl when FA).
-                    textAlign = TextAlign.Right,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Spacer(modifier = Modifier.height(8.dp))
+                val faBubbleFill = toonSoft(AnimeColors.LavenderSoft)
+                val faLine: @Composable () -> Unit = {
+                    Text(
+                        text = translation,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = if (isAnimeDesign()) toonOn(faBubbleFill) else faColor,
+                            shadow = if (isAnimeDesign()) Shadow.None else textShadow,
+                            fontFamily = faFont,
+                            textDirection = translation.autoTextDirection()
+                        ),
+                        // Auto per-content alignment: Persian Right, English Left
+                        // regardless of app LayoutDirection (which is Rtl when FA).
+                        textAlign = TextAlign.Right,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (isAnimeDesign()) {
+                    // The Persian line gets its own lavender bubble with the
+                    // tail on the opposite side, so the two languages read as
+                    // two speakers in a manga panel.
+                    ToonBubble(
+                        modifier = Modifier.fillMaxWidth(),
+                        tail = BubbleTail.Right,
+                        fill = faBubbleFill,
+                        contentPadding = PaddingValues(12.dp),
+                    ) { faLine() }
+                } else {
+                    faLine()
+                }
             }
             Spacer(modifier = Modifier.height(10.dp))
             Row(
@@ -364,7 +447,6 @@ fun JsonSubtitleRow(
     englishText: String,
     translationText: String?,
     isActive: Boolean,
-    glass: Boolean,
     enColor: Color,
     faColor: Color,
     textShadow: Shadow,
@@ -377,7 +459,6 @@ fun JsonSubtitleRow(
 ) {
     SubtitleRowShell(
         isActive = isActive,
-        glass = glass,
         onSeek = onSeek,
         header = {
             Row(verticalAlignment = Alignment.CenterVertically) {

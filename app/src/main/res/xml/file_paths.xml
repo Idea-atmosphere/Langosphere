@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the app's own internal files directory is exposed, and only through
+     a one-shot read permission granted to the app the user picks when sharing
+     a crash report. -->
+<paths>
+    <files-path
+        name="internal_files"
+        path="." />
+</paths>

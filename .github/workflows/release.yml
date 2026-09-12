@@ -1,0 +1,167 @@
+# Push a tag, get a release. `git tag v0.0.6 && git push origin v0.0.6`
+# builds a signed APK and publishes it under the repository's Releases tab,
+# with the changelog generated from the commits since the previous tag.
+#
+# There is also a manual entry point (Actions > Release > Run workflow) that
+# builds a signed APK from any branch, with a version you choose, and
+# publishes it as a PRERELEASE. R8 shrinking can be turned off there for a
+# diagnostic build.
+#
+# This is the ONLY workflow that can see the signing secrets, and it can only
+# be triggered by a tag or a manual run on this repository -- never by a pull
+# request and never from a fork. The keystore is decoded outside the checkout
+# directory so it can never be picked up by an artifact upload, and it is
+# destroyed even if the build fails.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build, without the leading v (e.g. 0.0.52)"
+        required: true
+        default: "0.0.52"
+      minify:
+        description: "Run R8 code and resource shrinking (off = diagnostic build)"
+        type: choice
+        options: ["true", "false"]
+        default: "true"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      # Write access is granted to this job only, not to the whole workflow.
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so the generated changelog can reach the previous tag.
+          fetch-depth: 0
+
+      - name: Derive version
+        id: version
+        env:
+          MANUAL_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            NAME="${MANUAL_VERSION#v}"
+          else
+            NAME="${GITHUB_REF_NAME#v}"
+          fi
+          if ! [[ "$NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must look like 0.0.6 (MAJOR.MINOR.PATCH), got '${NAME}'."
+            exit 1
+          fi
+          MAJOR="${NAME%%.*}"
+          REST="${NAME#*.}"
+          MINOR="${REST%%.*}"
+          PATCH="${REST#*.}"
+          CODE=$(( 10#$MAJOR * 10000 + 10#$MINOR * 100 + 10#$PATCH ))
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NAME" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "Building Langosphere $NAME (versionCode $CODE)"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      # $RUNNER_TEMP is outside the git checkout, so the keystore cannot be
+      # matched by an artifact glob, committed, or copied into the APK output
+      # directory. Nothing derived from the secret is ever printed.
+      - name: Decode signing keystore outside the workspace
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ]; then
+            echo "::error::Secret ANDROID_KEYSTORE_BASE64 is not set. Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$RUNNER_TEMP/release.jks"
+          if [ ! -s "$RUNNER_TEMP/release.jks" ]; then
+            echo "::error::Decoded keystore is empty. Re-create the secret with: base64 -w0 my-upload-key.jks"
+            exit 1
+          fi
+          echo "Keystore decoded ($(stat -c%s "$RUNNER_TEMP/release.jks") bytes)."
+
+      - name: Build signed release APK
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # Tag builds always shrink. A manual run can turn shrinking off to
+          # isolate an R8 problem.
+          ENABLE_MINIFY: ${{ github.event_name == 'workflow_dispatch' && inputs.minify || 'true' }}
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          echo "R8 shrinking: $ENABLE_MINIFY"
+          ./gradlew --no-daemon --stacktrace \
+            -PappVersionName="${{ steps.version.outputs.name }}" \
+            -PappVersionCode="${{ steps.version.outputs.code }}" \
+            -PenableMinify="$ENABLE_MINIFY" \
+            assembleRelease
+
+      # Runs even when the build fails, so the key never outlives the job.
+      - name: Destroy the keystore
+        if: always()
+        run: shred -u "$RUNNER_TEMP/release.jks" 2>/dev/null || rm -f "$RUNNER_TEMP/release.jks"
+
+      # No mapping.txt is published: R8 no longer renames anything (see
+      # app/proguard-rules.pro), so stack traces already carry real class,
+      # method and line names and need no translation table.
+      - name: Verify and name the APK
+        id: apk
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          SRC="$(find app/build/outputs/apk/release -name '*.apk' | head -n 1)"
+          if [ -z "$SRC" ]; then
+            echo "::error::No release APK was produced."
+            exit 1
+          fi
+          case "$SRC" in
+            *unsigned*)
+              echo "::error::The APK is unsigned, which means the signing secrets were not applied. Refusing to publish it."
+              exit 1
+              ;;
+          esac
+          "$(find "$ANDROID_HOME/build-tools" -name apksigner | sort | tail -n 1)" verify "$SRC"
+          DEST="app/build/outputs/apk/release/Langosphere-${TAG}.apk"
+          [ "$SRC" = "$DEST" ] || mv "$SRC" "$DEST"
+          echo "path=$DEST" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Langosphere ${{ steps.version.outputs.tag }}
+          generate_release_notes: ${{ github.event_name == 'push' }}
+          # A manual run is a diagnostic build: it is marked as a prerelease
+          # and never becomes the "Latest" release.
+          prerelease: ${{ github.event_name != 'push' }}
+          make_latest: ${{ github.event_name == 'push' }}
+          files: ${{ steps.apk.outputs.path }}

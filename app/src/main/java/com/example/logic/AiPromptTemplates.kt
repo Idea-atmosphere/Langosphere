@@ -45,79 +45,31 @@ object AiPromptTemplates {
         else -> level
     }
 
-    /** Display title for a mode. Kept here so no new string resources are needed. */
-    fun modeTitle(mode: PromptMode, isEn: Boolean): String = when (mode) {
-        PromptMode.TRANSLATION_ONLY -> if (isEn) "Translation only" else "فقط ترجمه"
-        PromptMode.TRANSLATION_LEARNING -> if (isEn) "Translation + full lesson" else "ترجمه + درس کامل"
-        PromptMode.VOCAB_PRONUNCIATION -> if (isEn) "Vocabulary & pronunciation" else "واژگان و تلفظ"
-        PromptMode.GRAMMAR_COACH -> if (isEn) "Grammar coach" else "مربی گرامر"
-        PromptMode.LEITNER_CARDS -> if (isEn) "Leitner flashcards" else "کارت‌های لایتنر"
-        PromptMode.WORD_ANALYSIS -> if (isEn) "Single word analysis" else "تحلیل یک واژه"
-    }
-
-    /** Short description for a mode. */
-    fun modeDescription(mode: PromptMode, isEn: Boolean): String = when (mode) {
-        PromptMode.TRANSLATION_ONLY ->
-            if (isEn) "Fastest and cheapest: line, timing, translation. Nothing else."
-            else "سریع‌ترین و ارزان‌ترین: خط، زمان‌بندی و ترجمه. همین."
-        PromptMode.TRANSLATION_LEARNING ->
-            if (isEn) "The complete package: translation, grammar, structure, words, notes."
-            else "بسته‌ی کامل: ترجمه، گرامر، ساختار، واژگان و یادداشت."
-        PromptMode.VOCAB_PRONUNCIATION ->
-            if (isEn) "For listen mode: IPA, stress, fast-speech forms and listening traps."
-            else "برای حالت گوش کن: تلفظ، تکیه، شکل محاوره‌ای و دام‌های شنیداری."
-        PromptMode.GRAMMAR_COACH ->
-            if (isEn) "One grammar point per line, explained and drilled step by step."
-            else "هر خط یک نکته‌ی گرامری، با توضیح و تمرین پله‌به‌پله."
-        PromptMode.LEITNER_CARDS ->
-            if (isEn) "Only the words worth memorizing, written as flashcard fronts and backs."
-            else "فقط واژه‌های ارزش حفز‌کردن، در قالب رو و پشت کارت."
-        PromptMode.WORD_ANALYSIS ->
-            if (isEn) "Paste one word and its sentence, get a single word-analysis object."
-            else "یک واژه و جمله‌اش را می‌دهی، تحلیل کامل می‌گیری."
-    }
-
     /** Whether the mode produces an importable subtitle package. */
     fun producesSubtitlePackage(mode: PromptMode): Boolean = mode != PromptMode.WORD_ANALYSIS
 
-    /** Step-by-step usage instructions shown in the tutorial dialog. */
-    fun usageSteps(isEn: Boolean): List<String> = if (isEn) {
-        listOf(
-            "Pick your level and a mode, then copy the prompt.",
-            "Open any AI chat, paste the prompt, then attach or paste your .srt file.",
-            "Save the JSON answer as a .json file (or copy it).",
-            "In the app: import section > JSON subtitle > select file or paste.",
-            "For long films, ask for the next chunk until the file is finished."
-        )
-    } else {
-        listOf(
-            "سطح و حالت را انتخاب کن و پرامپت را کپی کن.",
-            "در هر چت هوش مصنوعی، پرامپت را پیست کن و بعد فایل srt را بفرست.",
-            "جواب JSON را در یک فایل json ذخیره کن یا کپی کن.",
-            "در برنامه: بخش افزودن فایل ▸ زیرنویس JSON ▸ انتخاب فایل یا پیست.",
-            "برای فیلم‌های بلند، تا تمام شدن فایل بخش بعدی را بخواه."
-        )
-    }
+    /**
+     * Cleans up a language the learner typed for use in a prompt: trimmed, and
+     * otherwise used EXACTLY as written. Nothing renames "آلمانی" to "German"
+     * or "de" to "German" — how a language is spelled is the learner's choice,
+     * and the model on the other end understands either.
+     */
+    fun normalizeLanguage(raw: String?): String = raw?.trim().orEmpty()
 
-    /** Maps the app's target-language setting to an English language name. */
-    fun normalizeTargetLanguage(raw: String?): String {
-        val value = raw?.trim().orEmpty()
-        if (value.isEmpty()) return "Persian"
-        return when (value.lowercase()) {
-            "fa", "fa-ir", "persian", "farsi", "فارسی", "پارسی" -> "Persian"
-            "en", "english", "انگلیسی" -> "English"
-            "ar", "arabic", "عربی" -> "Arabic"
-            "tr", "turkish", "ترکی", "ترکی استانبولی" -> "Turkish"
-            "de", "german", "آلمانی", "المانی" -> "German"
-            "fr", "french", "فرانسوی" -> "French"
-            "es", "spanish", "اسپانیایی" -> "Spanish"
-            "ru", "russian", "روسی" -> "Russian"
-            else -> value
-        }
-    }
+    /** The app's target-language setting, or the built-in default when blank. */
+    fun normalizeTargetLanguage(raw: String?): String =
+        normalizeLanguage(raw).ifEmpty { "Persian" }
+
+    /** The app's source-language setting, or the built-in default when blank. */
+    fun normalizeSourceLanguage(raw: String?): String =
+        normalizeLanguage(raw).ifEmpty { "English" }
 
     /** Per-level writing rules. This is what actually makes output level-appropriate. */
-    fun levelGuidance(level: String, targetLanguage: String): String = when (level.uppercase()) {
+    fun levelGuidance(
+        level: String,
+        targetLanguage: String,
+        sourceLanguage: String = "English"
+    ): String = when (level.uppercase()) {
         "A1" -> """
             LEVEL RULES (A1):
             - Assume a vocabulary of about 1000 words. Explain everything else.
@@ -141,19 +93,19 @@ object AiPromptTemplates {
         """.trimIndent()
         "B2" -> """
             LEVEL RULES (B2):
-            - Assume about 5000 known words. Explanations may mix English and $targetLanguage.
+            - Assume about 5000 known words. Explanations may mix $sourceLanguage and $targetLanguage.
             - Focus on nuance: connotation, formality, near-synonyms.
             - Pick 3-5 items per line, favouring idioms and collocations over single words.
         """.trimIndent()
         "C1" -> """
             LEVEL RULES (C1):
-            - Explanations mostly in English; use $targetLanguage only for tricky nuance.
+            - Explanations mostly in $sourceLanguage; use $targetLanguage only for tricky nuance.
             - Cover register, irony, implicature and stylistic choice.
             - Pick 2-4 items per line: only rare, idiomatic or culturally loaded ones.
         """.trimIndent()
         "C2" -> """
             LEVEL RULES (C2):
-            - Explanations in English; $targetLanguage only where the nuance is untranslatable.
+            - Explanations in $sourceLanguage; $targetLanguage only where the nuance is untranslatable.
             - Discuss dialect, era, sociolect, wordplay and authorial intent.
             - Pick 1-3 items per line. Skip anything an educated native would know.
         """.trimIndent()
@@ -165,12 +117,16 @@ object AiPromptTemplates {
      * (models copy comments into their output, which breaks strict JSON), plus a
      * separate field reference.
      */
-    fun jsonSchemaSpec(targetLanguage: String = "Persian", level: String = "B1"): String = """
+    fun jsonSchemaSpec(
+        targetLanguage: String = "Persian",
+        level: String = "B1",
+        sourceLanguage: String = "English"
+    ): String = """
         OUTPUT SHAPE - return exactly this structure:
         {
           "formatVersion": 1,
           "metadata": {
-            "language": "English",
+            "language": "$sourceLanguage",
             "targetLanguage": "$targetLanguage",
             "level": "$level",
             "description": "Langosphere learning package"
@@ -180,7 +136,7 @@ object AiPromptTemplates {
               "id": 1,
               "start": 12.4,
               "end": 15.8,
-              "english": "original English subtitle line",
+              "english": "original $sourceLanguage subtitle line",
               "translation": "the translated line",
               "level": "$level",
               "difficulty": "medium",
@@ -210,7 +166,9 @@ object AiPromptTemplates {
         FIELD REFERENCE:
         - id: the cue number from the source file. Number or string. Never renumber.
         - start / end: seconds as plain numbers (12.4), NOT "00:00:12,400".
-        - english: the source line, unchanged. Keep it even when translating.
+        - english: the source line in $sourceLanguage, unchanged. Keep it even when
+          translating. The KEY is always named "english" - that is the app's field
+          name for "the original line", whatever language that line is in.
         - translation: the $targetLanguage line.
         - level / difficulty: optional per line. difficulty is easy, medium or hard.
         - pronunciation / notes: optional strings.
@@ -222,9 +180,56 @@ object AiPromptTemplates {
         - Omit any field you cannot fill well. Never send an empty string.
     """.trimIndent()
 
-    /** One cue in, one JSON object out. Short examples raise format compliance a lot. */
-    fun workedExample(targetLanguage: String): String = """
-        WORKED EXAMPLE
+    /**
+     * A trimmed-down variant of [jsonSchemaSpec] for translation-only output:
+     * only the fields that mode actually asks for (id/start/end/english/translation).
+     * The full schema mentions grammar/words in its field reference, which used to
+     * leak into the translation-only prompt even though that mode explicitly says
+     * not to include lessons or word lists.
+     */
+    fun minimalJsonSchemaSpec(
+        targetLanguage: String = "Persian",
+        level: String = "B1",
+        sourceLanguage: String = "English"
+    ): String = """
+        OUTPUT SHAPE - return exactly this structure:
+        {
+          "formatVersion": 1,
+          "metadata": {
+            "language": "$sourceLanguage",
+            "targetLanguage": "$targetLanguage",
+            "level": "$level",
+            "description": "Langosphere learning package"
+          },
+          "subtitles": [
+            {
+              "id": 1,
+              "start": 12.4,
+              "end": 15.8,
+              "english": "original $sourceLanguage subtitle line",
+              "translation": "the translated line"
+            }
+          ]
+        }
+
+        FIELD REFERENCE:
+        - id: the cue number from the source file. Number or string. Never renumber.
+        - start / end: seconds as plain numbers (12.4), NOT "00:00:12,400".
+        - english: the source line in $sourceLanguage, unchanged. The KEY is always
+          named "english"; that is the app's field name for "the original line".
+        - translation: the $targetLanguage line.
+        - Extra unknown fields are ignored by the app, but do not invent required ones.
+        - Omit any field you cannot fill well. Never send an empty string.
+    """.trimIndent()
+
+    /**
+     * One cue in, one JSON object out. Short examples raise format compliance a
+     * lot. The sample cue stays an English one (it is the app's own sample data)
+     * and a note tells the model to keep the exact same shape for any other
+     * source language.
+     */
+    fun workedExample(targetLanguage: String, sourceLanguage: String = "English"): String = """
+        WORKED EXAMPLE${if (sourceLanguage == "English") "" else " (shown with an English line - use the same shape for your $sourceLanguage lines, and keep the key name \"english\")"}
         Input cue:
         42
         00:03:11,120 --> 00:03:13,480
@@ -271,43 +276,57 @@ object AiPromptTemplates {
           summarise cues, even if two cues are one sentence.
         - If you are running out of room, close the JSON after the last COMPLETE object
           and state the id you stopped at. A truncated JSON is useless to the app.
-        - Begin each answer with the id range you are covering, on a line BEFORE the
-          JSON, in this form: CHUNK 1-$chunkSize
+        - Begin EVERY answer with the id range you are covering, on its own line
+          BEFORE the JSON, in exactly this form: CHUNK 1-$chunkSize
+          Use the real first and last cue ids of that answer, so the next answer
+          starts where this one ended, for example CHUNK 51-100.
+          The app detects this marker, removes it and merges every chunk of the
+          film into one file by itself - so never skip it, never re-spell it and
+          never put it inside the JSON.
     """.trimIndent()
 
     /** Final self-check. This removes most parser failures. */
-    fun validationChecklist(): String = """
+    fun validationChecklist(sourceLanguage: String = "English"): String = """
         CHECK BEFORE YOU ANSWER:
-        - The JSON starts with { and ends with }. No markdown fences, no commentary
-          inside or after it, and no // or /* */ comments anywhere.
+        - Apart from the CHUNK marker line your answer is only the JSON: it starts
+          with { and ends with }. No markdown fences, no commentary inside or after
+          it, and no // or /* */ comments anywhere.
         - Valid strict JSON: double quotes only, no trailing commas, no NaN,
           numbers unquoted, all braces and brackets balanced.
         - Every input cue appears exactly once, in order, with its original id.
         - start and end are numbers in seconds.
         - No field is an empty string; omit it instead.
         - Apostrophes and quotes inside text are escaped correctly.
-        - The translation has no leftover English except proper nouns.
+        - The translation has no leftover $sourceLanguage except proper nouns.
     """.trimIndent()
 
     /**
      * Builds the ready-to-copy prompt for the given CEFR level and mode.
+     *
+     * Both sides of the language pair are configurable (Settings ▸ Tutorial &
+     * AI Learning): [sourceLanguage] is the language of the subtitle/text being
+     * learned and [targetLanguage] is the language everything is explained and
+     * translated into. Each one goes into the prompt exactly as the learner
+     * typed it; both default to the pair the app shipped with.
      */
     fun buildPrompt(
         level: String,
         mode: PromptMode,
         targetLanguage: String = "Persian",
-        chunkSize: Int = 50
+        chunkSize: Int = 50,
+        sourceLanguage: String = "English"
     ): String {
         val normalizedLevel = level.uppercase()
         val levelName = levelDescription(normalizedLevel)
         val lang = normalizeTargetLanguage(targetLanguage)
+        val src = normalizeSourceLanguage(sourceLanguage)
         return when (mode) {
-            PromptMode.TRANSLATION_ONLY -> translationOnly(normalizedLevel, levelName, lang, chunkSize)
-            PromptMode.TRANSLATION_LEARNING -> translationLearning(normalizedLevel, levelName, lang, chunkSize)
-            PromptMode.VOCAB_PRONUNCIATION -> vocabPronunciation(normalizedLevel, levelName, lang, chunkSize)
-            PromptMode.GRAMMAR_COACH -> grammarCoach(normalizedLevel, levelName, lang, chunkSize)
-            PromptMode.LEITNER_CARDS -> leitnerCards(normalizedLevel, levelName, lang, chunkSize)
-            PromptMode.WORD_ANALYSIS -> wordAnalysis(normalizedLevel, levelName, lang)
+            PromptMode.TRANSLATION_ONLY -> translationOnly(normalizedLevel, levelName, lang, src, chunkSize)
+            PromptMode.TRANSLATION_LEARNING -> translationLearning(normalizedLevel, levelName, lang, src, chunkSize)
+            PromptMode.VOCAB_PRONUNCIATION -> vocabPronunciation(normalizedLevel, levelName, lang, src, chunkSize)
+            PromptMode.GRAMMAR_COACH -> grammarCoach(normalizedLevel, levelName, lang, src, chunkSize)
+            PromptMode.LEITNER_CARDS -> leitnerCards(normalizedLevel, levelName, lang, src, chunkSize)
+            PromptMode.WORD_ANALYSIS -> wordAnalysis(normalizedLevel, levelName, lang, src)
         }
     }
 
@@ -316,11 +335,12 @@ object AiPromptTemplates {
         level: String,
         levelName: String,
         lang: String,
+        src: String,
         chunkSize: Int
     ): String = """
-        You are a professional subtitle translator preparing a file for a $levelName ($level) learner of English.
+        You are a professional subtitle translator preparing a file for a $levelName ($level) learner of $src.
 
-        TASK: translate an English subtitle file (SRT or VTT) into $lang.
+        TASK: translate a $src subtitle file (SRT or VTT) into $lang.
 
         RULES:
         - Translate cue by cue, keeping every original timing.
@@ -328,14 +348,14 @@ object AiPromptTemplates {
         - Match the register: slang stays slangy, formal stays formal.
         - Keep names, brands and on-screen text as they are.
         - Use vocabulary and sentence length suitable for a $level learner.
-        - Do NOT add grammar notes, word lists or explanations in this mode.
+        - Do NOT add lesson notes, vocabulary lists or explanations in this mode.
         - Include ONLY these fields per subtitle: id, start, end, english, translation.
 
-        ${jsonSchemaSpec(lang, level)}
+        ${minimalJsonSchemaSpec(lang, level, src)}
 
         ${chunkingRules(chunkSize)}
 
-        ${validationChecklist()}
+        ${validationChecklist(src)}
     """.trimIndent()
 
     // Mode 2 - the full learning package the app is built around.
@@ -343,11 +363,12 @@ object AiPromptTemplates {
         level: String,
         levelName: String,
         lang: String,
+        src: String,
         chunkSize: Int
     ): String = """
-        You are an expert English teacher and subtitle translator building a complete learning package for a $levelName ($level) learner whose language is $lang.
+        You are an expert $src teacher and subtitle translator building a complete learning package for a $levelName ($level) learner whose language is $lang.
 
-        TASK: turn an English subtitle file (SRT or VTT) into a Langosphere JSON learning package.
+        TASK: turn a $src subtitle file (SRT or VTT) into a Langosphere JSON learning package.
 
         FOR EVERY CUE PROVIDE:
         1. translation - natural $lang, level appropriate, same register as the original.
@@ -356,7 +377,7 @@ object AiPromptTemplates {
         3. lesson.explanation - two or three sentences on what the line teaches.
         4. lesson.structure - break the sentence into its parts, for example
            "subject + have been + verb-ing + time phrase".
-        5. words - the items worth learning here. For each: translation, partOfSpeech,
+        5. words - the vocabulary items worth learning here. For each: translation, partOfSpeech,
            meaningInContext (its meaning in THIS line, not the dictionary entry),
            extraExplanation, at least one fresh example sentence, and pronunciation.
         6. notes - idiom, collocation, culture or slang note when there is one.
@@ -369,16 +390,17 @@ object AiPromptTemplates {
         - Example sentences must be new, short and about everyday situations.
         - When a line is only "Yeah." or a name, just translate it and omit lesson and words.
         - Never invent grammar that is not in the sentence. Omit lesson if there is none.
+        - The "english" field always holds the ORIGINAL $src line, whatever language it is in.
 
-        ${levelGuidance(level, lang)}
+        ${levelGuidance(level, lang, src)}
 
-        ${jsonSchemaSpec(lang, level)}
+        ${jsonSchemaSpec(lang, level, src)}
 
-        ${workedExample(lang)}
+        ${workedExample(lang, src)}
 
         ${chunkingRules(chunkSize)}
 
-        ${validationChecklist()}
+        ${validationChecklist(src)}
     """.trimIndent()
 
     // Mode 3 - listening and pronunciation, which is what the player's listen mode needs.
@@ -386,9 +408,10 @@ object AiPromptTemplates {
         level: String,
         levelName: String,
         lang: String,
+        src: String,
         chunkSize: Int
     ): String = """
-        You are a pronunciation and listening coach for a $levelName ($level) learner of English whose language is $lang.
+        You are a pronunciation and listening coach for a $levelName ($level) learner of $src whose language is $lang.
 
         The learner watches films with the subtitles HIDDEN and reveals a line only after
         trying to hear it. Your job is to explain why a line is hard to HEAR, not to read.
@@ -409,17 +432,18 @@ object AiPromptTemplates {
            difficulty comes from connected speech rather than vocabulary.
 
         RULES:
-        - Always use standard IPA and mark primary stress with the ' symbol.
+        - Always use standard IPA for $src and mark primary stress with the ' symbol.
         - Mention contractions and swallowed sounds explicitly. This is the point of the mode.
         - Do not fill words with easy items; three well-chosen words beat ten obvious ones.
+        - Where a listening trap only exists in $src, say so instead of inventing one.
 
-        ${levelGuidance(level, lang)}
+        ${levelGuidance(level, lang, src)}
 
-        ${jsonSchemaSpec(lang, level)}
+        ${jsonSchemaSpec(lang, level, src)}
 
         ${chunkingRules(chunkSize)}
 
-        ${validationChecklist()}
+        ${validationChecklist(src)}
     """.trimIndent()
 
     // Mode 4 - grammar first, with a small drill per line.
@@ -427,15 +451,16 @@ object AiPromptTemplates {
         level: String,
         levelName: String,
         lang: String,
+        src: String,
         chunkSize: Int
     ): String = """
-        You are a grammar coach for a $levelName ($level) learner of English whose language is $lang.
+        You are a grammar coach for a $levelName ($level) learner of $src whose language is $lang.
 
-        TASK: turn an English subtitle file into a grammar course, one point per line.
+        TASK: turn a $src subtitle file into a grammar course, one point per line.
 
         FOR EVERY CUE PROVIDE:
         1. translation - natural $lang.
-        2. lesson.grammar - exactly ONE grammar point, the most useful one in the line.
+        2. lesson.grammar - exactly ONE $src grammar point, the most useful one in the line.
         3. lesson.grammarTranslation - that grammar name in $lang.
         4. lesson.explanation - the rule in plain words: when it is used, how it is formed,
            and the mistake a $lang speaker typically makes with it.
@@ -449,16 +474,16 @@ object AiPromptTemplates {
         RULES:
         - Do not repeat the same grammar point on consecutive lines. If a line has nothing
           new, pick a smaller detail such as article use, word order or preposition choice.
-        - Contrast with $lang when the languages differ, because that is where errors come from.
+        - Contrast $src with $lang whenever the two differ, because that is where errors come from.
         - When a line truly has no grammar to teach, translate it and omit lesson.
 
-        ${levelGuidance(level, lang)}
+        ${levelGuidance(level, lang, src)}
 
-        ${jsonSchemaSpec(lang, level)}
+        ${jsonSchemaSpec(lang, level, src)}
 
         ${chunkingRules(chunkSize)}
 
-        ${validationChecklist()}
+        ${validationChecklist(src)}
     """.trimIndent()
 
     // Mode 5 - flashcard harvest, still in the importable package format.
@@ -466,9 +491,10 @@ object AiPromptTemplates {
         level: String,
         levelName: String,
         lang: String,
+        src: String,
         chunkSize: Int
     ): String = """
-        You are building spaced repetition flashcards for a $levelName ($level) learner of English whose language is $lang, from an English subtitle file.
+        You are building spaced repetition flashcards for a $levelName ($level) learner of $src whose language is $lang, from a $src subtitle file.
 
         TASK: keep ONLY the cues that contain something worth memorising, and turn the
         chosen items into flashcard material inside the Langosphere JSON format.
@@ -482,13 +508,14 @@ object AiPromptTemplates {
 
         FOR EACH KEPT CUE PROVIDE:
         1. english and translation - the line is the card's context sentence, so keep it.
+           "english" holds the original $src line, "translation" its $lang version.
         2. words - the card items. For each:
-           - word: the card front, the expression exactly as a learner should recall it.
-           - translation: the card back, short and memorable. No essays.
+           - word: the card front, the $src expression exactly as a learner should recall it.
+           - translation: the card back in $lang, short and memorable. No essays.
            - meaningInContext: the meaning in this scene.
            - extraExplanation: how to remember it. Word family, literal image, false friend
              warning against $lang, or a common collocation.
-           - examples: two short sentences in different situations.
+           - examples: two short $src sentences in different situations.
            - pronunciation: IPA with stress.
            - partOfSpeech: including phrase or idiom when it is a multi word item.
         3. difficulty - how hard the item is to remember.
@@ -498,25 +525,26 @@ object AiPromptTemplates {
         Keep the original cue ids of the kept lines. Dropping cues is expected in this mode,
         and only here.
 
-        ${levelGuidance(level, lang)}
+        ${levelGuidance(level, lang, src)}
 
-        ${jsonSchemaSpec(lang, level)}
+        ${jsonSchemaSpec(lang, level, src)}
 
         ${chunkingRules(chunkSize)}
 
-        ${validationChecklist()}
+        ${validationChecklist(src)}
     """.trimIndent()
 
     // Mode 6 - single word, for pasting into a chat while watching.
     private fun wordAnalysis(
         level: String,
         levelName: String,
-        lang: String
+        lang: String,
+        src: String
     ): String = """
-        You are a word analysis tutor for a $levelName ($level) learner of English whose language is $lang.
+        You are a word analysis tutor for a $levelName ($level) learner of $src whose language is $lang.
 
-        The user pastes an English WORD together with the SENTENCE it appeared in, and
-        sometimes the translation of that sentence.
+        The user pastes a $src WORD together with the SENTENCE it appeared in, and
+        sometimes the $lang translation of that sentence.
 
         TASK: analyse the word AS USED IN THAT SENTENCE and return one JSON object:
         {
@@ -524,8 +552,8 @@ object AiPromptTemplates {
           "translation": "its $lang translation in this sense",
           "partOfSpeech": "noun, verb, adjective, adverb, pronoun, preposition, conjunction, interjection, phrase or idiom",
           "meaningInContext": "what it means in THIS sentence",
-          "extraExplanation": "a short explanation for a $level learner",
-          "examples": ["two or three fresh example sentences"],
+          "extraExplanation": "a short explanation for a $level learner, in $lang",
+          "examples": ["two or three fresh $src example sentences"],
           "pronunciation": "IPA with primary stress marked"
         }
 
@@ -536,7 +564,7 @@ object AiPromptTemplates {
           expression and put it in word, because the parts alone are misleading.
         - Mention a false friend against $lang whenever one exists.
         - Examples must be new, short and everyday. Never reuse the input sentence.
-        - ${'$'}Explanations suitable for $level: simple and short at low levels, nuanced at high levels.
+        - Explanations suitable for $level: simple and short at low levels, nuanced at high levels.
         - Return ONLY the JSON object. No markdown fences, no extra text, no comments.
     """.trimIndent()
 }

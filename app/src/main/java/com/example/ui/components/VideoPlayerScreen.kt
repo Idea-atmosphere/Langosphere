@@ -113,9 +113,17 @@ import com.example.model.JsonSubtitle
 import com.example.model.JsonSubtitlePackage
 import com.example.model.SubtitleEntry
 import com.example.ui.theme.AccentAmber
+import com.example.ui.theme.AppFontState
 import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.AppStrings
 import com.example.ui.theme.SubtitleColorState
+import com.example.ui.theme.resolvedSubtitleFamily
+import androidx.compose.ui.zIndex
+import com.example.ui.components.anime.ToonChip
+import com.example.ui.components.anime.inkBorder
+import com.example.ui.components.anime.inkShadow
+import com.example.ui.theme.AnimeColors
+import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
 import com.example.ui.theme.SubtitleEnOnLight
 import com.example.ui.theme.SubtitleFaOnLight
@@ -186,7 +194,7 @@ fun VideoPlayerScreen(
     onSentenceClick: (sentence: String, translation: String?) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
-    val strings = remember(appLanguage) { AppStrings(appLanguage) }
+    val strings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
     val prefs = rememberPlayerPrefs()
 
     // Locale.US matters here: with the Persian locale the default
@@ -194,7 +202,7 @@ fun VideoPlayerScreen(
     // back by toDoubleOrNull() in the "exact time" field.
     fun offsetText(v: Double): String {
         val formatted = String.format(Locale.US, "%.2f", v)
-        return if (strings.isEn) formatted else formatted.replace("-", "منفی ")
+        return formatted.replace("-", strings.negativeMinusReplacement)
     }
 
     val videoStateKey = remember(videoUri) { "video_state_${videoUri?.hashCode() ?: 0}" }
@@ -256,10 +264,22 @@ fun VideoPlayerScreen(
         offset = Offset(0f, 1f),
         blurRadius = 4f
     )
-    val customFontFamilyEn = rememberCustomFontFamily(prefs.customFontPathEn)
-    val customFontFamilyFa = rememberCustomFontFamily(prefs.customFontPathFa)
-    val subtitleFamilyEn = fontFamilyFor(prefs.fontEn, customFontFamilyEn)
-    val subtitleFamilyFa = fontFamilyFor(prefs.fontFa, customFontFamilyFa)
+    // ── Subtitle fonts (Settings ▸ Theme ▸ Font ▸ Subtitles) ──
+    // The player's own EN/FA choice wins; when a language is left on
+    // "default" it inherits the whole-app font for that language — so the
+    // app font reaches the subtitles too unless the user defined a separate
+    // subtitle font. (The prefs instance is process-wide shared, so picks
+    // made in the font dialog are visible here immediately.) The renderer
+    // parameters are non-null: with nothing chosen anywhere this falls back
+    // to the platform default, exactly like the old fontFamilyFor() did.
+    val appFontEn = AppFontState.app
+    val appFontFa = AppFontState.appFa
+    val subtitleFamilyEn = remember(prefs.fontEn, prefs.customFontPathEn, appFontEn) {
+        resolvedSubtitleFamily(prefs.fontEn, prefs.customFontPathEn, fa = false) ?: FontFamily.Default
+    }
+    val subtitleFamilyFa = remember(prefs.fontFa, prefs.customFontPathFa, appFontEn, appFontFa) {
+        resolvedSubtitleFamily(prefs.fontFa, prefs.customFontPathFa, fa = true) ?: FontFamily.Default
+    }
 
     var showSubtitleSettings by remember { mutableStateOf(false) }
     var isSyncExpanded by remember { mutableStateOf(false) }
@@ -715,13 +735,39 @@ fun VideoPlayerScreen(
         // LTR so raw x offsets and drag gestures never fight an RTL mirror.
         // The list below inherits the page's RTL when the app language is FA.
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            // The toon skin frames the video like a cartoon TV set: 28dp
+            // rounded corners, a 3dp ink bezel and a hard offset shadow. In
+            // fullscreen the frame is dropped so nothing eats into the
+            // picture.
+            val toonTv = isAnimeDesign() && !isFullScreen
+            val tvShape = RoundedCornerShape(28.dp)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(if (isFullScreen) 1f else prefs.videoWeight)
+                    .then(
+                        if (toonTv) {
+                            Modifier
+                                .padding(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 6.dp)
+                                .inkShadow(offset = 4.dp, shape = tvShape)
+                                .clip(tvShape)
+                        } else Modifier
+                    )
                     .background(Color.Black)
+                    .then(if (toonTv) Modifier.inkBorder(3.dp, tvShape) else Modifier)
                     .onGloballyPositioned { containerWidth = it.size.width }
             ) {
+            if (toonTv) {
+                // The "REC" pill: pure set dressing that sells the TV frame.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(12.dp)
+                        .zIndex(2f)
+                ) {
+                    ToonChip(text = "● REC", selected = true, fill = AnimeColors.Sunny)
+                }
+            }
             // The built-in ExoPlayer controller is always off now: the app
             // draws its own controls, so the experience (and the seek bar)
             // is identical in smart-pause and normal mode. Before, the
@@ -759,7 +805,7 @@ fun VideoPlayerScreen(
                         val jsonCurrent = currentJson
                         if (subtitlesHiddenForListen && (jsonCurrent != null || currentEn != null || currentFa != null)) {
                             PlayerTextPill(
-                                text = if (strings.isEn) "Reveal the line" else "نمایش جمله",
+                                text = strings.revealLine,
                                 contentDescription = null,
                                 onClick = { revealCurrent = true },
                                 active = true,
@@ -1029,7 +1075,7 @@ fun VideoPlayerScreen(
                 (currentEn != null || currentJson != null || currentFa != null)
             ) {
                 PlayerTextPill(
-                    text = if (strings.isEn) "Reveal the line" else "نمایش جمله",
+                    text = strings.revealLine,
                     contentDescription = null,
                     onClick = { revealCurrent = true },
                     active = true,
@@ -1067,7 +1113,7 @@ fun VideoPlayerScreen(
                     // most, and one button that unfolds everything else.
                     PlayerTextPill(
                         text = formatSpeedLabel(prefs.playbackSpeed),
-                        contentDescription = if (strings.isEn) "Study tools" else "ابزارهای یادگیری",
+                        contentDescription = strings.studyToolsCd,
                         onClick = {
                             showSpeedPanel = !showSpeedPanel
                             controlsVisible = true
@@ -1080,7 +1126,7 @@ fun VideoPlayerScreen(
                             showToolCluster = !showToolCluster
                             controlsVisible = true
                         },
-                        toggleDescription = if (strings.isEn) "More controls" else "ابزارهای بیشتر",
+                        toggleDescription = strings.moreControlsCd,
                         actions = listOf(
                             PlayerToolAction(
                                 icon = Icons.Default.Settings,
@@ -1093,7 +1139,7 @@ fun VideoPlayerScreen(
                             ),
                             PlayerToolAction(
                                 icon = Icons.Default.Refresh,
-                                contentDescription = if (strings.isEn) "A-B repeat" else "تکرار A-B",
+                                contentDescription = strings.abRepeatCd,
                                 onClick = { cycleAbRepeat() },
                                 active = loopStartMs != null
                             ),
@@ -1130,7 +1176,7 @@ fun VideoPlayerScreen(
                 ) {
                     StudyPanel(
                         currentSpeed = prefs.playbackSpeed,
-                        isEn = strings.isEn,
+                        strings = strings,
                         canLoopLine = loopLineRange != null,
                         listenMode = listenMode,
                         coverage = coverage,
@@ -1163,7 +1209,7 @@ fun VideoPlayerScreen(
                 ) {
                     PlayerTextPill(
                         text = loopBannerText,
-                        contentDescription = if (strings.isEn) "Clear A-B loop" else "پاک کردن حلقه A-B",
+                        contentDescription = strings.clearAbLoopCd,
                         onClick = {
                             loopStartMs = null
                             loopEndMs = null
@@ -1413,13 +1459,13 @@ fun VideoPlayerScreen(
                             // Coverage at a glance, without opening a panel.
                             if (coverage.totalTokens > 0) {
                                 StatusPill(
-                                    text = if (strings.isEn) "Known ${coverage.percent}%" else "بلدی ٪${coverage.percent}",
+                                    text = strings.knownPercent(coverage.percent),
                                     tone = if (coverage.percent >= 90) PillTone.Positive else PillTone.Neutral
                                 )
                             }
                             if (listenMode) {
                                 StatusPill(
-                                    text = if (strings.isEn) "Listen" else "گوش کن",
+                                    text = strings.listenPill,
                                     tone = PillTone.Warning
                                 )
                             }
@@ -1499,7 +1545,6 @@ fun VideoPlayerScreen(
                                 translationText = jsonSub.translation,
                                 isActive = jsonSub.start != null && jsonSub.end != null &&
                                     jsonSub.start!! <= currentTime && currentTime <= jsonSub.end!!,
-                                glass = prefs.glassmorphism,
                                 enColor = subtitleListColorEn,
                                 faColor = subtitleListColorFa,
                                 textShadow = listTextShadow,
@@ -1562,7 +1607,6 @@ fun VideoPlayerScreen(
                                 englishText = enSub.text,
                                 translationText = faMatch?.text,
                                 isActive = enSub.start <= currentTime && enSub.end >= currentTime,
-                                glass = prefs.glassmorphism,
                                 enColor = subtitleListColorEn,
                                 faColor = subtitleListColorFa,
                                 textShadow = listTextShadow,
