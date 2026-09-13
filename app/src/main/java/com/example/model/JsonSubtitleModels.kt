@@ -17,9 +17,62 @@ data class JsonSubtitlePackage(
     /** Format version (default 1). Kept so future versions stay distinguishable. */
     val formatVersion: Int = 1,
     val metadata: JsonSubtitleMetadata? = null,
-    val subtitles: List<JsonSubtitle> = emptyList()
+    val subtitles: List<JsonSubtitle> = emptyList(),
+    /**
+     * The AI answer "chunks" this package was built from, in import order.
+     * Empty for a normal single-file import; one entry per `CHUNK x-y` answer
+     * that was detected and merged. See [JsonChunkInfo] and
+     * [com.example.logic.SubtitleJsonParser.mergePackages].
+     */
+    val chunks: List<JsonChunkInfo> = emptyList()
 ) {
     val hasTimings: Boolean get() = subtitles.any { it.start != null && it.end != null }
+
+    /** True when more than one AI answer (CHUNK …) has been merged into this package. */
+    val isMerged: Boolean get() = chunks.size > 1
+}
+
+/**
+ * One AI answer chunk.
+ *
+ * The JSON prompt templates (see [com.example.logic.AiPromptTemplates]) ask the
+ * model to begin every answer with a line like `CHUNK 1-50` BEFORE the JSON, so
+ * a long film can be produced 50 cues at a time. The importer detects that
+ * marker, strips it (it is not JSON and used to break the import), and keeps it
+ * here so that:
+ *  - the UI can show which chunks are merged into the loaded package,
+ *  - a single chunk can be removed again when the model got one wrong,
+ *  - chunks are joined in the right order even when imported out of order.
+ *
+ * Everything is optional: a marker may be a range ("CHUNK 1-50"), a part number
+ * only ("CHUNK 3"), or written in Persian ("بخش ۵۱-۱۰۰").
+ */
+data class JsonChunkInfo(
+    /** First cue id of this chunk, when the marker gave a range. */
+    val start: Int? = null,
+    /** Last cue id of this chunk, when the marker gave a range. */
+    val end: Int? = null,
+    /** Chunk/part number when the marker only said which part it is ("CHUNK 3"). */
+    val part: Int? = null,
+    /** The marker text exactly as the model wrote it, e.g. "CHUNK 1-50". */
+    val label: String = "",
+    /** Keys of the subtitles that came from this chunk (id, or text when there is no id). */
+    val subtitleKeys: List<String> = emptyList(),
+    /** File / chat name this chunk was imported from, when known. */
+    val sourceName: String = ""
+) {
+    /** Short human label for chips and lists: "CHUNK 1-50", "CHUNK 3" or the raw text. */
+    val shortLabel: String
+        get() = when {
+            start != null && end != null -> "CHUNK $start-$end"
+            part != null -> "CHUNK $part"
+            label.isNotBlank() -> label
+            else -> "CHUNK"
+        }
+
+    /** How many subtitles this marker says it covers, when it is a range. */
+    val declaredSize: Int?
+        get() = if (start != null && end != null && end >= start) end - start + 1 else null
 }
 
 data class JsonSubtitleMetadata(

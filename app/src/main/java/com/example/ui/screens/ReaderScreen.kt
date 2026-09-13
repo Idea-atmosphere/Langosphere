@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.FormatColorText
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material3.*
@@ -39,6 +41,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -62,9 +65,21 @@ import com.example.ui.theme.AccentCyan
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.AccentIndigo
 import com.example.ui.theme.AccentRed
+import com.example.logic.isPersianText
+import com.example.ui.theme.AppFontScope
+import com.example.ui.theme.AppFontState
 import com.example.ui.theme.AppStrings
-import com.example.ui.theme.NeoBrutalismAccent
+import com.example.ui.theme.neoAccent
+import com.example.ui.components.anime.SoraMascot
+import com.example.ui.components.anime.SoraSpeechBubble
+import com.example.ui.components.anime.ToonChip
+import com.example.ui.components.anime.ToonIconButton
+import com.example.ui.components.anime.inkBorder
+import com.example.ui.components.anime.inkShadow
+import com.example.ui.theme.AnimeColors
+import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
+import com.example.ui.theme.showSoraMascot
 
 @Composable
 fun ReaderScreen(viewModel: AppViewModel) {
@@ -78,7 +93,22 @@ fun ReaderScreen(viewModel: AppViewModel) {
     val readerTextColorArgb by viewModel.readerTextColor.collectAsState()
     val readerTextColor = readerTextColorArgb?.let { Color(it) }
     val appLanguage by viewModel.appLanguage.collectAsState()
-    val strings = remember(appLanguage) { AppStrings(appLanguage) }
+    val context = LocalContext.current
+    val strings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
+
+    // The toon reader tints each word by how well it is known. A card that
+    // has climbed to the last Leitner box counts as "known" (mint), anything
+    // still in circulation is "learning" (sakura + wavy rule). Derived, not
+    // stored, so it follows the box automatically.
+    val leitnerCards by viewModel.leitnerCards.collectAsState()
+    val knownWords = remember(leitnerCards) {
+        leitnerCards.filter { it.boxLevel >= LEITNER_KNOWN_LEVEL }
+            .mapTo(mutableSetOf()) { it.word.lowercase() }
+    }
+    val learningWords = remember(leitnerCards) {
+        leitnerCards.filter { it.boxLevel < LEITNER_KNOWN_LEVEL }
+            .mapTo(mutableSetOf()) { it.word.lowercase() }
+    }
 
     val isImporting by viewModel.isImportingDict.collectAsState()
     val importCount by viewModel.importCount.collectAsState()
@@ -89,8 +119,6 @@ fun ReaderScreen(viewModel: AppViewModel) {
     // The imported-dictionary list used to be permanently expanded and pushed
     // the actual reading area off screen once a few files were imported.
     var showDictFiles by remember { mutableStateOf(false) }
-
-    val context = LocalContext.current
 
     val textFileLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let {
@@ -239,10 +267,13 @@ fun ReaderScreen(viewModel: AppViewModel) {
                             text = text,
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 color = readerTextColor ?: Color.Unspecified,
+                                fontFamily = readerFontFor(text),
                                 textAlign = TextAlign.Start
                             ),
                             highlightColor = readerTextColor ?: MaterialTheme.colorScheme.primary,
-                            onWordClick = { word -> viewModel.lookupWord(word) }
+                            onWordClick = { word -> viewModel.lookupWord(word) },
+                            knownWords = knownWords,
+                            learningWords = learningWords,
                         )
                     }
                 }
@@ -395,7 +426,7 @@ fun ReaderScreen(viewModel: AppViewModel) {
                         if (neo) {
                             Modifier
                                 .neoHardShadow(MaterialTheme.colorScheme.outline, offset = 4.dp)
-                                .background(NeoBrutalismAccent)
+                                .background(neoAccent())
                                 .border(2.dp, MaterialTheme.colorScheme.outline)
                         } else {
                             Modifier
@@ -509,13 +540,26 @@ fun ReaderScreen(viewModel: AppViewModel) {
 
         // ── Reading surface (the "paper" the PDF/text is shown on) ──
         val neo = isNeobrutalismDesign()
-        val readingShape = if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(24.dp)
+        val anime = isAnimeDesign()
+        val readingShape = when {
+            neo -> RoundedCornerShape(0.dp)
+            anime -> RoundedCornerShape(20.dp)
+            else -> RoundedCornerShape(24.dp)
+        }
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .then(
-                    if (neo) {
+                    if (anime) {
+                        // The toon reading surface is a manga page: white
+                        // stock, a 3dp ink edge and a hard offset shadow.
+                        Modifier
+                            .inkShadow(offset = 4.dp, shape = readingShape)
+                            .clip(readingShape)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .inkBorder(3.dp, readingShape)
+                    } else if (neo) {
                         Modifier
                             // Paper-white card, ink border and a hard offset
                             // shadow — the neubrutalist page frame. Shadow is
@@ -536,7 +580,28 @@ fun ReaderScreen(viewModel: AppViewModel) {
                     }
                 )
         ) {
-            if (text.isEmpty()) {
+            if (text.isEmpty() && anime) {
+                // Sora delivers the toon empty state herself, in a speech
+                // bubble, over the manga page.
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (showSoraMascot()) {
+                        SoraMascot(size = 180.dp)
+                        Spacer(modifier = Modifier.height(14.dp))
+                    }
+                    SoraSpeechBubble(text = strings.soraOpenPdfHint)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = strings.emptyReaderHint,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            } else if (text.isEmpty()) {
                 EmptyState(
                     icon = Icons.Outlined.MenuBook,
                     title = strings.emptyReaderHint,
@@ -554,18 +619,35 @@ fun ReaderScreen(viewModel: AppViewModel) {
                         text = text,
                         style = MaterialTheme.typography.bodyLarge.copy(
                             color = readerTextColor ?: Color.Unspecified,
+                            fontFamily = readerFontFor(text),
                             textAlign = TextAlign.Start
                         ),
                         highlightColor = readerTextColor ?: MaterialTheme.colorScheme.primary,
                         onWordClick = { word ->
                             viewModel.lookupWord(word)
-                        }
+                        },
+                        knownWords = knownWords,
+                        learningWords = learningWords,
                     )
                 }
             }
         }
     }
 }
+
+
+/**
+ * The font for a reading surface: the READER scope's Persian choice when the
+ * page itself is Persian, its English/general choice otherwise — each
+ * inheriting the whole-app font (Settings ▸ Theme ▸ Font) while left on
+ * "default" (see [AppFontState.resolvedFamily]).
+ */
+private fun readerFontFor(text: String): FontFamily? =
+    if (text.isPersianText()) {
+        AppFontState.resolvedFamily(AppFontScope.READER, fa = true)
+    } else {
+        AppFontState.resolvedFamily(AppFontScope.READER, fa = false)
+    }
 
 /** Text action in a single tone, used next to the primary GradientButton. */
 @Composable
@@ -634,6 +716,7 @@ private fun PdfPageNavigator(
 ) {
     var pageInput by remember(currentPage) { mutableStateOf((currentPage + 1).toString()) }
     val neo = isNeobrutalismDesign()
+    val anime = isAnimeDesign()
     val shape = if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(22.dp)
 
     // Keep page controls LTR so Prev stays left / Next stays right even
@@ -645,7 +728,14 @@ private fun PdfPageNavigator(
             modifier = modifier
                 .fillMaxWidth()
                 .then(
-                    if (neo) {
+                    if (anime) {
+                        // The toon navigator is a flat white strip with an ink
+                        // edge; the arrows themselves carry the shadow.
+                        Modifier
+                            .clip(shape)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .inkBorder(2.dp, shape)
+                    } else if (neo) {
                         // Shadow first, then the flat card and its ink border;
                         // the clip below only applies to the soft designs.
                         Modifier
@@ -671,6 +761,7 @@ private fun PdfPageNavigator(
                 text = strings.prevPage,
                 enabled = currentPage > 0,
                 onClick = onPrevious,
+                forward = false,
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -688,26 +779,56 @@ private fun PdfPageNavigator(
                     })
                 )
                 Spacer(modifier = Modifier.width(8.dp))
+                if (anime) {
+                    // The page counter is a sunny sticker tilted 6°, like a
+                    // page number stamped onto a manga panel.
+                    ToonChip(
+                        text = strings.pageOfCount(pageCount),
+                        modifier = Modifier.graphicsLayer { rotationZ = -6f },
+                        selected = true,
+                        fill = AnimeColors.Sunny,
+                    )
+                } else {
                 Text(
                     text = strings.pageOfCount(pageCount),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                }
             }
 
             PageStepButton(
                 text = strings.nextPage,
                 enabled = currentPage < pageCount - 1,
                 onClick = onNext,
+                forward = true,
             )
         }
     }
 }
 
 @Composable
-private fun PageStepButton(text: String, enabled: Boolean, onClick: () -> Unit) {
+private fun PageStepButton(
+    text: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    forward: Boolean = true,
+) {
     val scheme = MaterialTheme.colorScheme
     val color = if (enabled) scheme.primary else scheme.onSurfaceVariant.copy(alpha = 0.4f)
+    if (isAnimeDesign()) {
+        // Toon page turners: two 48dp round ink buttons, sky for forward and
+        // lavender for back. The label survives as the content description so
+        // the target stays announced even without visible text.
+        ToonIconButton(
+            icon = if (forward) Icons.Filled.KeyboardArrowRight else Icons.Filled.KeyboardArrowLeft,
+            contentDescription = text,
+            onClick = onClick,
+            fill = if (forward) AnimeColors.Sky else AnimeColors.Lavender,
+            enabled = enabled,
+        )
+        return
+    }
     if (isNeobrutalismDesign()) {
         Box(
             modifier = Modifier
@@ -893,7 +1014,7 @@ private fun FlowRowSwatches(
                 val neo = isNeobrutalismDesign()
                 val swatchShape = if (neo) RoundedCornerShape(0.dp) else CircleShape
                 val selectionRing = if (isSelected) {
-                    if (neo) NeoBrutalismAccent else MaterialTheme.colorScheme.primary
+                    if (neo) neoAccent() else MaterialTheme.colorScheme.primary
                 } else {
                     if (neo) {
                         MaterialTheme.colorScheme.outline
@@ -964,3 +1085,9 @@ private fun ColorSlider(
         )
     }
 }
+
+/**
+ * A card that has reached the last Leitner box is treated as learned by the
+ * reader's word tinting. Mirrors LeitnerBoxManager.MAX_BOX_LEVEL.
+ */
+private const val LEITNER_KNOWN_LEVEL = 5

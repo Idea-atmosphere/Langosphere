@@ -19,8 +19,10 @@ import com.example.logic.SubtitleJsonParser
 import com.example.logic.SubtitleParser
 import com.example.logic.TranslationDetector
 import com.example.ui.theme.AppLanguage
+import com.example.ui.theme.LanguagePairState
 import com.example.ui.theme.AppStrings
 import com.example.model.DictionaryEntry
+import com.example.model.JsonChunkInfo
 import com.example.model.JsonSubtitlePackage
 import com.example.model.JsonWord
 import com.example.model.LeitnerCard
@@ -70,7 +72,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** Builds an [AppStrings] snapshot for the current UI language, used for status/toast messages emitted from ViewModel logic (not composables). */
-    private fun strings() = AppStrings(_appLanguage.value)
+    private fun strings() = AppStrings(_appLanguage.value, getApplication())
 
     private val _isDictionaryLoaded = MutableStateFlow(false)
     val isDictionaryLoaded: StateFlow<Boolean> = _isDictionaryLoaded
@@ -332,7 +334,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val systemPrompt = "You are a subtitle translator. Translate the given text to $targetLang. Return ONLY the translated text, nothing else."
                 android.util.Log.d("AppViewModel", "=== translateSingleSubtitle START ===")
                 android.util.Log.d("AppViewModel", "EN index=$index, start=${enSub.start}, text='${enSub.text.take(80)}'")
-                val result = com.example.logic.AiService.chat(config, listOf(Pair("user", enSub.text)), systemPrompt, context)
+                val result = com.example.logic.AiService.chat(config, listOf(Pair("user", enSub.text)), systemPrompt, context, noteSavedMessage = strings().aiNoteSaved)
                 result.fold(
                     onSuccess = { response ->
                         val translation = response.trim().removeSurrounding("\"").removeSurrounding("'").trim()
@@ -347,9 +349,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                             android.util.Log.d("AppViewModel", "=== translateSingleSubtitle END ===")
                         } else { _singleTranslateError.value = strings().translationEmptyError }
                     },
-                    onFailure = { e -> _singleTranslateError.value = strings().errorWithMessage(e.message) }
+                    onFailure = { e -> _singleTranslateError.value = strings().apiErrorMessage(e) }
                 )
-            } catch (e: Exception) { _singleTranslateError.value = strings().errorWithMessage(e.message) } finally { _isTranslatingSingle.value = false; _translatingIndex.value = -1 }
+            } catch (e: Exception) { _singleTranslateError.value = strings().apiErrorMessage(e) } finally { _isTranslatingSingle.value = false; _translatingIndex.value = -1 }
         }
     }
 
@@ -455,6 +457,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         else sharedPrefs.edit().remove("reader_text_color").apply()
     }
 
+    /**
+     * The "source → target" language pair (Settings ▸ Tutorial & AI Learning) is
+     * restored before anything else here, so labels built from the ViewModel
+     * (toasts, default file names) never run ahead of the saved value.
+     * MainActivity restores it too, before the first composition.
+     */
+    init { LanguagePairState.restore(getApplication<Application>()) }
+
     init { loadPersistedData() }
     init { refreshLeitnerCards() }
 
@@ -526,7 +536,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 val isLoaded = dbHelper.hasEntries(); _isDictionaryLoaded.value = isLoaded; sharedPrefs.edit().putBoolean("is_dict_loaded", isLoaded).apply()
                 addDictFile(originalDisplayName, when { displayName.endsWith(".mdx") -> "mdx"; displayName.endsWith(".mdd") -> "mdd"; isSqliteDb -> "db"; else -> "txt" })
-            } catch (e: Exception) { e.printStackTrace(); _importError.value = strings().errorWithMessage(e.localizedMessage) } finally { _isImportingDict.value = false }
+            } catch (e: Exception) { e.printStackTrace(); _importError.value = strings().apiErrorMessage(e) } finally { _isImportingDict.value = false }
         }
     }
 
@@ -713,34 +723,164 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Imports JSON subtitle-learning content from raw text (pasted into the
-     * import dialog). Detects the format, validates it, persists it to
-     * saved_sub_json.json, and makes it the highest-priority subtitle
-     * source. Safe to call from any thread.
+     * Imports JSON subtitle-learning content from raw text — a picked file, a
+     * pasted AI answer, or a whole chat reply.
+     *
+     * The text does not have to be pure JSON: the AI prompt templates ask the
+     * model to start each answer with a `CHUNK 1-50` line, and models add
+     * markdown fences or a sentence of commentary anyway. All of that is
+     * detected and stripped by [SubtitleJsonParser], which also merges several
+     * chunk documents found in one paste.
+     *
+     * Chunked imports are merged with the JSON that is already loaded, so
+     * "CHUNK 1-50" followed by "CHUNK 51-100" builds the whole film; an import
+     * without a chunk marker replaces the loaded file instead. Merged chunks
+     * stay individually removable ([removeJsonChunk]) and exportable
+     * ([exportJsonSubtitleToDownloads]). Safe to call from any thread.
      */
     fun importJsonSubtitleText(text: String, sourceName: String? = null) {
         val s = strings()
-        val trimmed = text.trim()
-        if (trimmed.isEmpty()) { _saveMessage.value = s.jsonEmptyFileError; return }
-        if (!SubtitleJsonParser.looksLikeSubtitleJson(trimmed)) { _saveMessage.value = s.jsonNotSubtitleJson; return }
+        if (text.trim().isEmpty()) { _saveMessage.value = s.jsonEmptyFileError; return }
+        if (!SubtitleJsonParser.looksLikeSubtitleJson(text)) { _saveMessage.value = s.jsonNotSubtitleJson; return }
         try {
-            val pkg = SubtitleJsonParser.parse(trimmed)
-            val context = getApplication<Application>()
-            File(context.filesDir, JSON_SUBTITLE_FILE).writeText(trimmed)
-            _jsonSubtitles.value = pkg
-            _jsonOffset.value = 0.0
-            val name = sourceName
-                ?.takeIf { it.isNotBlank() && !it.equals("Unknown", ignoreCase = true) }
+            val incoming = SubtitleJsonParser.parse(text)
+            val existing = _jsonSubtitles.value
+            val chunk = incoming.chunks.firstOrNull()
+            val isChunked = incoming.chunks.isNotEmpty()
+            val mergeWith = if (isChunked) existing else null
+            val reimportedChunk = chunk != null &&
+                mergeWith?.chunks?.any { it.label == chunk.label && it.start == chunk.start && it.end == chunk.end } == true
+
+            // Remember where each new chunk came from, so the chunk list can
+            // show the file / chat name next to its range.
+            val stamped = if (incoming.chunks.isEmpty() || sourceName.isNullOrBlank()) {
+                incoming
+            } else {
+                incoming.copy(
+                    chunks = incoming.chunks.map {
+                        if (it.sourceName.isBlank()) it.copy(sourceName = sourceName) else it
+                    }
+                )
+            }
+            val pkg = if (mergeWith == null) stamped
+            else SubtitleJsonParser.mergePackages(mergeWith, stamped)
+
+            val explicitName = sourceName?.takeIf { it.isNotBlank() && !it.equals("Unknown", ignoreCase = true) }
+            val name = explicitName
+                ?: _jsonSubFileName.value.takeIf { mergeWith != null && it.isNotBlank() }
                 ?: s.jsonDefaultName
+
+            val context = getApplication<Application>()
+            // Always store the normalized package rather than the raw paste: it
+            // is free of CHUNK lines / fences / commentary, it keeps the chunk
+            // bookkeeping so merged chunks survive a restart, and it is exactly
+            // what the time-shift code writes back anyway.
+            File(context.filesDir, JSON_SUBTITLE_FILE).writeText(SubtitleJsonParser.serialize(pkg))
+
+            _jsonSubtitles.value = pkg
+            // A brand new file starts unsynchronised; merging another chunk of
+            // the SAME film keeps the shift the user already dialled in.
+            if (mergeWith == null) _jsonOffset.value = 0.0
             _jsonSubFileName.value = name
             sharedPrefs.edit().putString("sub_json_file_name", name).apply()
-            _saveMessage.value = s.jsonImportedSuccess(name, pkg.subtitles.size)
+
+            _saveMessage.value = when {
+                chunk != null && reimportedChunk ->
+                    s.jsonChunkReimported(chunk.shortLabel, pkg.subtitles.size)
+                chunk != null && mergeWith != null ->
+                    s.jsonChunkMerged(chunk.shortLabel, pkg.chunks.size, pkg.subtitles.size)
+                chunk != null ->
+                    s.jsonChunkImported(chunk.shortLabel, name, pkg.subtitles.size)
+                else -> s.jsonImportedSuccess(name, pkg.subtitles.size)
+            }
         } catch (e: SubtitleJsonParser.SubtitleJsonParseException) {
             _saveMessage.value = s.jsonParseError(e.message)
         } catch (e: Exception) {
             e.printStackTrace()
             _saveMessage.value = s.errorWithMessage(e.message)
         }
+    }
+
+    /**
+     * Removes one merged AI chunk again ("that answer was wrong") and keeps the
+     * rest of the imported JSON. Clears the JSON slot when nothing is left.
+     */
+    fun removeJsonChunk(chunk: JsonChunkInfo) {
+        val s = strings()
+        val current = _jsonSubtitles.value
+        if (current == null) return
+        val remaining = SubtitleJsonParser.removeChunk(current, chunk)
+        if (remaining == null) {
+            removeJsonSubtitle(silent = true)
+            _saveMessage.value = s.jsonChunkRemovedLast(chunk.shortLabel)
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val context = getApplication<Application>()
+                File(context.filesDir, JSON_SUBTITLE_FILE).writeText(SubtitleJsonParser.serialize(remaining))
+                _jsonSubtitles.value = remaining
+                _saveMessage.value = s.jsonChunkRemoved(chunk.shortLabel, remaining.subtitles.size)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _saveMessage.value = s.errorWithMessage(e.message)
+            }
+        }
+    }
+
+    /**
+     * Clears ONLY the imported JSON package (English/Persian subtitle files are
+     * left alone) — the escape hatch after a wrong merge.
+     */
+    fun removeJsonSubtitle(silent: Boolean = false) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val context = getApplication<Application>()
+                File(context.filesDir, JSON_SUBTITLE_FILE).delete()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            _jsonSubtitles.value = null
+            _jsonOffset.value = 0.0
+            _jsonSubFileName.value = ""
+            sharedPrefs.edit().remove("sub_json_file_name").apply()
+            if (!silent) _saveMessage.value = strings().jsonRemovedAll
+        }
+    }
+
+    /**
+     * Exports the loaded JSON package (including every merged chunk) to
+     * Downloads as a standard Langosphere JSON file, so a film built chunk by
+     * chunk can be kept, shared or re-imported later.
+     */
+    fun exportJsonSubtitleToDownloads() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val s = strings()
+                val pkg = _jsonSubtitles.value
+                if (pkg == null) { _saveMessage.value = s.noJsonToExport; return@launch }
+                val context = getApplication<Application>()
+                val temp = File(context.filesDir, "json_subtitle_export.json")
+                temp.writeText(SubtitleJsonParser.serialize(pkg))
+                val path = saveToDownloads(context, jsonExportFileName(pkg), temp)
+                temp.delete()
+                _saveMessage.value = s.jsonExportSaved(path, pkg.subtitles.size, pkg.chunks.size)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _saveMessage.value = strings().errorWithMessage(e.message)
+            }
+        }
+    }
+
+    /** Builds a safe Downloads file name for the exported JSON package. */
+    private fun jsonExportFileName(pkg: JsonSubtitlePackage): String {
+        val base = _jsonSubFileName.value
+            .substringBeforeLast('.')
+            .trim()
+            .replace(Regex("[^A-Za-z0-9._ \u0600-\u06FF-]"), "")
+            .ifBlank { "langosphere_learning" }
+        val suffix = if (pkg.chunks.size > 1) "_merged_${pkg.chunks.size}chunks" else ""
+        return "$base$suffix.json"
     }
 
     /**
@@ -918,6 +1058,34 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             _isActiveWordInLeitner.value = true
             refreshLeitnerCards()
             _leitnerMessage.value = if (isNew) strings().wordAddedToLeitner(word) else strings().wordUpdatedInLeitner(word)
+        }
+    }
+
+    /**
+     * Adds any word/definition pair straight to the Leitner box. Used by the
+     * beta "quiz from JSON" section, where the meaning comes from the imported
+     * AI learning package instead of the offline dictionary.
+     */
+    fun addWordToLeitner(word: String, definition: String) {
+        val cleanWord = word.trim()
+        val cleanDefinition = definition.trim()
+        if (cleanWord.isEmpty() || cleanDefinition.isEmpty()) {
+            _leitnerMessage.value = strings().noMeaningToSave
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val isNew = leitnerHelper.addCard(cleanWord, cleanDefinition)
+                refreshLeitnerCards()
+                _leitnerMessage.value = if (isNew) {
+                    strings().wordAddedToLeitner(cleanWord)
+                } else {
+                    strings().wordUpdatedInLeitner(cleanWord)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _leitnerMessage.value = strings().errorWithMessage(e.message)
+            }
         }
     }
 

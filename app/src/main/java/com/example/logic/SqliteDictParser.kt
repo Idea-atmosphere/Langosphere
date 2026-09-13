@@ -69,6 +69,9 @@ import com.example.model.DictionaryEntry
  */
 object SqliteDictParser {
 
+    /** No word/definition table found; mapped to strings by AppStrings. */
+    class NoWordTableException : Exception("no word/definition table")
+
     private const val TAG = "SqliteDictParser"
     private const val BATCH_SIZE = 1000
     // Cap on how many usage examples get attached per word, combining every
@@ -142,7 +145,7 @@ object SqliteDictParser {
         try {
             val allTables = listTables(sourceDb)
             val schema = findBestTable(sourceDb, allTables)
-                ?: throw Exception("هیچ جدول واژه/تعریف قابل شناسایی در این فایل دیتابیس پیدا نشد")
+                ?: throw NoWordTableException()
             Log.d(TAG, "Using table='${schema.tableName}' word='${schema.wordColumn}' def='${schema.defColumn}' exOrig='${schema.exampleOriginalColumn}' exTrans='${schema.exampleTranslationColumn}' rows=${schema.rowCount}, total tables in DB=${allTables.size}")
 
             // Precise pairing: other tables with an explicit word-reference column.

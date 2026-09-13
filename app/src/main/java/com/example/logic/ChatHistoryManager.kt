@@ -15,6 +15,19 @@ object ChatHistoryManager {
 
     private const val HISTORY_DIR = "chat_history"
 
+    /**
+     * Title given to new chats before per-language titles existed (always
+     * Persian). Still stored in old installs, so it must keep matching.
+     */
+    private const val LEGACY_DEFAULT_TITLE = "چت جدید"
+
+    /**
+     * True when [title] is still an untouched default: the current
+     * language's default, or the pre-migration Persian one.
+     */
+    fun isDefaultTitle(title: String, currentDefault: String): Boolean =
+        title == currentDefault || title == LEGACY_DEFAULT_TITLE
+
     private fun getHistoryDir(context: Context): File {
         val dir = File(context.filesDir, HISTORY_DIR)
         if (!dir.exists()) dir.mkdirs()
@@ -24,11 +37,11 @@ object ChatHistoryManager {
     /**
      * Create a new empty chat session.
      */
-    fun createNewSession(): ChatSession {
+    fun createNewSession(defaultTitle: String): ChatSession {
         val now = System.currentTimeMillis()
         return ChatSession(
             id = UUID.randomUUID().toString(),
-            title = "چت جدید",
+            title = defaultTitle,
             messages = mutableListOf(),
             createdAt = now,
             updatedAt = now
@@ -61,7 +74,7 @@ object ChatHistoryManager {
     /**
      * Load a full chat session by ID (including all messages).
      */
-    fun loadSession(context: Context, sessionId: String): ChatSession? {
+    fun loadSession(context: Context, sessionId: String, untitled: String): ChatSession? {
         val file = File(getHistoryDir(context), "$sessionId.json")
         if (!file.exists()) return null
         return try {
@@ -80,7 +93,7 @@ object ChatHistoryManager {
             }
             ChatSession(
                 id = json.getString("id"),
-                title = json.optString("title", "چت"),
+                title = json.optString("title", untitled),
                 messages = messages,
                 createdAt = json.getLong("createdAt"),
                 updatedAt = json.optLong("updatedAt", json.getLong("createdAt"))
@@ -94,7 +107,7 @@ object ChatHistoryManager {
      * List all chat sessions (metadata only, no messages loaded).
      * Sorted by updatedAt descending (most recent first).
      */
-    fun listSessions(context: Context): List<ChatSession> {
+    fun listSessions(context: Context, untitled: String): List<ChatSession> {
         val dir = getHistoryDir(context)
         val sessions = mutableListOf<ChatSession>()
         dir.listFiles()?.forEach { file ->
@@ -104,7 +117,7 @@ object ChatHistoryManager {
                     sessions.add(
                         ChatSession(
                             id = json.getString("id"),
-                            title = json.optString("title", "چت"),
+                            title = json.optString("title", untitled),
                             messages = mutableListOf(),
                             createdAt = json.getLong("createdAt"),
                             updatedAt = json.optLong("updatedAt", json.getLong("createdAt"))
@@ -127,22 +140,22 @@ object ChatHistoryManager {
     /**
      * Get the most recent chat session (full, with messages), or null if none.
      */
-    fun getLatestSession(context: Context): ChatSession? {
-        val sessions = listSessions(context)
-        return if (sessions.isNotEmpty()) loadSession(context, sessions.first().id) else null
+    fun getLatestSession(context: Context, untitled: String): ChatSession? {
+        val sessions = listSessions(context, untitled)
+        return if (sessions.isNotEmpty()) loadSession(context, sessions.first().id, untitled) else null
     }
 
     /**
      * Auto-generate a title from the first user message.
      */
-    fun autoGenerateTitle(session: ChatSession): String {
-        if (session.messages.isEmpty()) return "چت جدید"
+    fun autoGenerateTitle(session: ChatSession, defaultTitle: String): String {
+        if (session.messages.isEmpty()) return defaultTitle
         val firstUserMsg = session.messages.find { it.role == "user" }
         if (firstUserMsg != null) {
             val title = firstUserMsg.content.take(40).trim()
             return if (title.length < firstUserMsg.content.length) "$title..." else title
         }
-        return "چت جدید"
+        return defaultTitle
     }
 
     /**

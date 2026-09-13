@@ -77,9 +77,23 @@ import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.AccentRed
 import com.example.ui.theme.AppDesignStyle
 import com.example.ui.theme.AppDesignStyleState
-import com.example.ui.theme.NeoBrutalismAccent
+import com.example.ui.theme.neoAccent
+import com.example.ui.components.anime.BubbleTail
+import com.example.ui.components.anime.ToonBubble
+import com.example.ui.components.anime.ToonButton
+import com.example.ui.components.anime.ToonCard
+import com.example.ui.components.anime.ToonChip
+import com.example.ui.components.anime.ToonHeader
+import com.example.ui.components.anime.ToonIconButton
+import com.example.ui.components.anime.inkBorder
+import com.example.ui.components.anime.toonOn
+import com.example.ui.components.anime.toonSoft
+import com.example.ui.components.anime.inkShadow
+import com.example.ui.theme.AnimeColors
+import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isMaterial3Design
 import com.example.ui.theme.isNeobrutalismDesign
+import com.example.ui.theme.showSoraMascot
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor
@@ -102,6 +116,10 @@ import kotlin.math.sin
  *    same Material component vocabulary, but with spring motion, expressive
  *    shapes, emphasized type and the adaptive M3 NavigationBar / NavigationRail
  *    with the Material Symbols icon set.
+ *  - Anime (toon): thick dark-indigo ink outlines, hard offset shadows,
+ *    saturated pastel blocks, halftone screentones, speech bubbles and
+ *    springy "pop" motion — see ui/components/anime/ToonPrimitives.kt,
+ *    which every anime branch below delegates to.
  *  - Neobrutalism: ink-black 2-4dp borders, hard offset shadows (zero blur),
  *    zero-radius corners, loud flat color blocks and flat ink icons — the
  *    visual anatomy of the neubrutalism design scale (neubrutalism.com).
@@ -203,7 +221,10 @@ private val NeoDangerColor = Color(0xFFDC2626)
 @Composable
 fun brandBrush(alpha: Float = 1f): Brush {
     val scheme = MaterialTheme.colorScheme
-    if (isMaterial3Design() || isNeobrutalismDesign()) {
+    // Flat fills for every design that forbids gradients: the two Material
+    // designs, neobrutalism and the toon skin (cel shading is flat by
+    // definition — depth there comes from the ink outline, not a ramp).
+    if (isMaterial3Design() || isNeobrutalismDesign() || isAnimeDesign()) {
         return SolidColor(scheme.primary.copy(alpha = alpha))
     }
     return Brush.linearGradient(
@@ -239,6 +260,21 @@ fun GlassCard(
 ) {
     val scheme = MaterialTheme.colorScheme
     val clickable = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+
+    if (isAnimeDesign()) {
+        // A manga panel: flat fill, 3dp ink outline, hard 4dp shadow. A
+        // tint becomes a soft pastel wash on the surface, never a gradient.
+        val container = tint?.copy(alpha = 0.20f)?.compositeOver(scheme.surface) ?: scheme.surface
+        ToonCard(
+            modifier = modifier,
+            fill = container,
+            shape = RoundedCornerShape(cornerRadius.coerceAtLeast(16.dp)),
+            contentPadding = contentPadding,
+            onClick = onClick,
+            content = content,
+        )
+        return
+    }
 
     if (isNeobrutalismDesign()) {
         val wash = tint?.let { it.copy(alpha = 0.14f) }
@@ -318,6 +354,19 @@ fun SectionHeader(
     val material3 = isMaterial3Design()
     val neo = isNeobrutalismDesign()
 
+    if (isAnimeDesign()) {
+        // The toon header is a halftone band with an outlined logotype, and
+        // it invites Sora along when the user has the mascot switched on.
+        ToonHeader(
+            title = title,
+            modifier = modifier,
+            subtitle = subtitle,
+            mascot = showSoraMascot(),
+            trailing = trailing,
+        )
+        return
+    }
+
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -331,7 +380,7 @@ fun SectionHeader(
                     // (SolidColor so the branch stays a Brush like brandBrush).
                     .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
                     .background(
-                        if (neo) SolidColor(NeoBrutalismAccent)
+                        if (neo) SolidColor(neoAccent())
                         else brandBrush()
                     )
             )
@@ -379,6 +428,20 @@ fun StatusPill(
 ) {
     val scheme = MaterialTheme.colorScheme
 
+    if (isAnimeDesign()) {
+        // Each tone maps to one of the palette's pastel blocks; the label is
+        // always ink, which is what keeps every combination above AA.
+        val fill = when (tone) {
+            PillTone.Positive -> AnimeColors.Mint
+            PillTone.Negative -> AnimeColors.Sakura
+            PillTone.Warning -> AnimeColors.Sunny
+            PillTone.Accent -> AnimeColors.Lavender
+            PillTone.Neutral -> AnimeColors.SkySoft
+        }
+        ToonChip(text = text, modifier = modifier, selected = true, fill = fill, icon = icon)
+        return
+    }
+
     if (isNeobrutalismDesign()) {
         val container: Color
         val content: Color
@@ -396,7 +459,7 @@ fun StatusPill(
                 content = Color.Black
             }
             PillTone.Accent -> {
-                container = NeoBrutalismAccent
+                container = neoAccent()
                 content = Color.Black
             }
             PillTone.Neutral -> {
@@ -518,10 +581,22 @@ fun GradientButton(
 ) {
     val scheme = MaterialTheme.colorScheme
 
+    if (isAnimeDesign()) {
+        ToonButton(
+            text = text,
+            onClick = onClick,
+            modifier = modifier,
+            icon = icon,
+            fill = AnimeColors.Sakura,
+            enabled = enabled,
+        )
+        return
+    }
+
     if (isNeobrutalismDesign()) {
         NeoBlock(
             modifier = modifier,
-            container = if (enabled) NeoBrutalismAccent else scheme.surfaceVariant,
+            container = if (enabled) neoAccent() else scheme.surfaceVariant,
             borderColor = scheme.outline,
             borderWidth = 2.dp,
             shadowOffset = 4.dp,
@@ -645,6 +720,23 @@ fun SoftIconButton(
 ) {
     val scheme = MaterialTheme.colorScheme
 
+    if (isAnimeDesign()) {
+        ToonIconButton(
+            icon = icon,
+            contentDescription = contentDescription,
+            onClick = onClick,
+            modifier = modifier,
+            // A caller-supplied tint identifies the action, so it becomes
+            // the button's *fill* here; the toon primitive then picks the
+            // readable glyph color for that fill automatically.
+            fill = tint ?: AnimeColors.Sunny,
+            // Never below the 48dp a11y touch target, whatever the caller asked for.
+            size = size.coerceAtLeast(48.dp),
+            enabled = enabled,
+        )
+        return
+    }
+
     if (isNeobrutalismDesign()) {
         val resolved = if (enabled) (tint ?: scheme.onSurface) else scheme.onSurfaceVariant.copy(alpha = 0.45f)
         NeoBlock(
@@ -732,6 +824,56 @@ fun EmptyState(
 ) {
     val scheme = MaterialTheme.colorScheme
 
+    if (isAnimeDesign()) {
+        // Sora delivers the empty state in person (when the mascot is on),
+        // saying the title in a speech bubble instead of stacking an icon
+        // over grey text.
+        Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(24.dp),
+            ) {
+                if (showSoraMascot()) {
+                    com.example.ui.components.anime.SoraMascot(size = 120.dp)
+                    Spacer(modifier = Modifier.height(14.dp))
+                } else {
+                    val disc = toonSoft(AnimeColors.SunnySoft)
+                    Box(
+                        modifier = Modifier
+                            .size(76.dp)
+                            .inkShadow(offset = 4.dp, shape = CircleShape)
+                            .clip(CircleShape)
+                            .background(disc)
+                            .inkBorder(3.dp, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(icon, null, Modifier.size(34.dp), tint = toonOn(disc))
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+                ToonBubble(tail = BubbleTail.None) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = scheme.onSurface,
+                        textAlign = TextAlign.Center,
+                    )
+                    if (description != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = scheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            }
+        }
+        return
+    }
+
     if (isNeobrutalismDesign()) {
         Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Column(
@@ -741,7 +883,7 @@ fun EmptyState(
                 Box(
                     modifier = Modifier
                         .size(72.dp)
-                        .background(NeoBrutalismAccent)
+                        .background(neoAccent())
                         .border(2.dp, scheme.outline),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -892,6 +1034,34 @@ fun SegmentedPills(
     val scheme = MaterialTheme.colorScheme
     val haptics = LocalHapticFeedback.current
 
+    if (isAnimeDesign()) {
+        // A row of toon chips: the active one is a Sunny block, the rest sit
+        // on the plain surface. No sliding indicator — the chips themselves
+        // pop, which fits the sticker language better than a rail.
+        val selected = selectedIndex.coerceIn(0, items.size - 1)
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            items.forEachIndexed { index, label ->
+                ToonChip(
+                    text = label,
+                    modifier = Modifier.weight(1f),
+                    selected = index == selected,
+                    fill = AnimeColors.Sunny,
+                    onClick = {
+                        if (index != selected) {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                        onSelect(index)
+                    },
+                )
+            }
+        }
+        return
+    }
+
     if (isNeobrutalismDesign()) {
         val selected = selectedIndex.coerceIn(0, items.size - 1)
         Row(
@@ -908,7 +1078,7 @@ fun SegmentedPills(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .background(if (isSelected) NeoBrutalismAccent else Color.Transparent)
+                        .background(if (isSelected) neoAccent() else Color.Transparent)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -1052,6 +1222,47 @@ fun ProgressRing(
         label = "progress-ring",
     )
 
+    if (isAnimeDesign()) {
+        // Cel-shaded ring: a flat ink track with a Sakura arc on top and a
+        // hard ink outline, matching the outlines every other toon surface
+        // carries. Round caps keep it friendly.
+        val trackColor = toonSoft(AnimeColors.SakuraSoft)
+        Box(modifier = modifier, contentAlignment = Alignment.Center) {
+            Canvas(modifier = Modifier.matchParentSize()) {
+                val stroke = strokeWidth.toPx() * 1.4f
+                val inset = stroke / 2f
+                val arcSize = Size(size.width - stroke, size.height - stroke)
+                drawArc(
+                    color = trackColor,
+                    startAngle = 0f,
+                    sweepAngle = 360f,
+                    useCenter = false,
+                    topLeft = Offset(inset, inset),
+                    size = arcSize,
+                    style = Stroke(width = stroke, cap = StrokeCap.Round),
+                )
+                if (animated > 0f) {
+                    drawArc(
+                        color = AnimeColors.Sakura,
+                        startAngle = -90f,
+                        sweepAngle = 360f * animated,
+                        useCenter = false,
+                        topLeft = Offset(inset, inset),
+                        size = arcSize,
+                        style = Stroke(width = stroke, cap = StrokeCap.Round),
+                    )
+                }
+                drawCircle(
+                    color = scheme.outline,
+                    radius = size.minDimension / 2f - 1f,
+                    style = Stroke(width = 2.dp.toPx()),
+                )
+            }
+            content()
+        }
+        return
+    }
+
     if (isNeobrutalismDesign()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
             Canvas(modifier = Modifier.matchParentSize()) {
@@ -1141,13 +1352,17 @@ fun ProgressRing(
  * with a hard line — used on every scrollable reading surface in the
  * Langosphere design. Material 3 (and Material You) let content scroll
  * cleanly under the chrome instead, so the fade is skipped entirely there —
- * and so does neobrutalism, whose surfaces must stay crisp and unblurred.
+ * and so do neobrutalism and the toon skin, whose surfaces must stay crisp
+ * and unblurred.
  */
 fun Modifier.fadingEdges(topFade: Dp = 18.dp, bottomFade: Dp = 24.dp): Modifier {
     val style = AppDesignStyleState.style
     if (style == AppDesignStyle.MATERIAL3 ||
         style == AppDesignStyle.MATERIAL_YOU ||
-        style == AppDesignStyle.NEOBRUTALISM
+        style == AppDesignStyle.NEOBRUTALISM ||
+        // The toon skin's surfaces are defined by their crisp ink outline;
+        // fading them out at the edges would dissolve exactly that.
+        style == AppDesignStyle.ANIME
     ) return this
     return this
         .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)

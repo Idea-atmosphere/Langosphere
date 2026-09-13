@@ -18,6 +18,8 @@ This app is suitable for people who know a little language and want to learn alo
 * **Synchronized Subtitles:** Selecting English subtitles and synchronized Persian subtitles; English and Persian texts are displayed simultaneously in boxes, and by **clicking on any word**, its meanings from the selected dictionary will be displayed.
 * **Dictionary Support:** Support for MDict dictionary files (currently tested on the **Aryanpour Dictionary**) and `.db` database files—which I asked the AI to make something for, and if I get a database file, I will improve it accordingly so the app can read the file better.
 * **Leitner Box and AnkiDroid:** Ability to add new words to the Leitner box and export directly to the **AnkiDroid** app.
+* **Any Language Pair:** Settings ▸ **Tutorial & AI Learning** has two free-text fields: the language you are learning, and the language you want to be taught in.
+* **Quiz from JSON (BETA):** the tab is now **Better Learning Tools** with two tidy options: the Leitner box, and a quiz built from any imported AI learning file. The quiz is offline, asks about the file's words, sentences and grammar points, and pushes every word you miss into the Leitner box with one tap.
 * **Smart Assistant:** The assistant section currently works, and over time its issues will be fixed and improved.
 
 ### App Screenshots
@@ -34,6 +36,24 @@ This app is suitable for people who know a little language and want to learn alo
   </tr>
 </table>
 
+---
+
+## Design Languages
+
+Settings ▸ Theme ▸ **App design** lets you swap the app's entire look. (The
+Theme dialog is a small hub: one button each for App design, App colors and
+Font. Every section opens on its own screen and has a Back control that
+returns you to the hub, so hopping between them is one tap.) There are five
+design languages, and each one is a full visual system — colors, shapes,
+type, motion and component styling all change together:
+
+| Design | Look |
+| --- | --- |
+| **Langosphere** | The original: glass cards, gradients, a liquid tab bar. |
+| **Material 3** | Google's standard Material palette and components. |
+| **Material You** | Material 3 plus wallpaper-based dynamic color. |
+| **Neobrutalism** | Flat blocks, thick ink borders, hard offset shadows. |
+| **Anime (Toon)** | A kawaii/manga skin. |
 ---
 
 ## Development Process and How It Was Built

@@ -27,7 +27,7 @@ import com.example.logic.autoTextDirection
 import com.example.model.JsonWord
 import com.example.model.SubtitleLearningState
 import com.example.ui.theme.AppStrings
-import com.example.ui.theme.NeoBrutalismAccent
+import com.example.ui.theme.neoAccent
 import com.example.ui.theme.isNeobrutalismDesign
 
 /**
@@ -93,7 +93,7 @@ fun SubtitleLearningSheet(
                         .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
                         .then(
                             if (neo) {
-                                Modifier.background(NeoBrutalismAccent)
+                                Modifier.background(neoAccent())
                             } else {
                                 Modifier.background(brandBrush(alpha = 0.55f))
                             }
@@ -121,7 +121,7 @@ fun SubtitleLearningSheet(
                             .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
                             .then(
                                 if (neo) {
-                                    Modifier.background(NeoBrutalismAccent)
+                                    Modifier.background(neoAccent())
                                 } else {
                                     Modifier.background(brandBrush())
                                 }
@@ -179,7 +179,7 @@ private fun PronunciationRow(
     ) {
         SoftIconButton(
             icon = Icons.Filled.PlayArrow,
-            contentDescription = if (isEn) "Speak" else "خواندن",
+            contentDescription = strings.speakCd,
             onClick = { TtsSpeaker.speak(context, text) },
             size = 34.dp
         )
@@ -189,7 +189,7 @@ private fun PronunciationRow(
             contentPadding = PaddingValues(horizontal = 10.dp)
         ) {
             Text(
-                text = if (isEn) "Slowly" else "آهسته",
+                text = strings.slowlyBtn,
                 style = MaterialTheme.typography.labelMedium
             )
         }
@@ -202,9 +202,9 @@ private fun PronunciationRow(
             ) {
                 Text(
                     text = if (known) {
-                        if (isEn) "Known" else "بلدم ✓"
+                        strings.knownMarked
                     } else {
-                        if (isEn) "I know this" else "بلدم"
+                        strings.iKnowThis
                     },
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = if (known) FontWeight.Bold else FontWeight.Normal,
@@ -446,7 +446,7 @@ private fun VocabularyWordCard(word: JsonWord, strings: AppStrings, onClick: () 
         ) {
             SoftIconButton(
                 icon = Icons.Filled.PlayArrow,
-                contentDescription = if (strings.isEn) "Speak" else "خواندن",
+                contentDescription = strings.speakCd,
                 onClick = { TtsSpeaker.speak(context, word.word) },
                 size = 32.dp
             )
@@ -593,7 +593,7 @@ private fun ExamplesCard(strings: AppStrings, examples: List<String>) {
                 )
                 SoftIconButton(
                     icon = Icons.Filled.PlayArrow,
-                    contentDescription = if (strings.isEn) "Speak" else "خواندن",
+                    contentDescription = strings.speakCd,
                     onClick = { TtsSpeaker.speak(context, example) },
                     size = 30.dp
                 )

@@ -17,6 +17,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.logic.SubtitleJsonParser
 import com.example.logic.autoTextDirection
+import com.example.model.JsonSubtitlePackage
 import com.example.ui.theme.AppStrings
 import com.example.ui.theme.isNeobrutalismDesign
 
@@ -27,15 +28,29 @@ import com.example.ui.theme.isNeobrutalismDesign
  * button fills the field with a valid example package so users can test the
  * import immediately. Real validation (with user-friendly errors) happens on
  * import inside AppViewModel.importJsonSubtitleText.
+ *
+ * A whole AI answer can be pasted as-is: when the model wrote its `CHUNK 1-50`
+ * marker line (as the app's own prompt templates ask it to), the dialog says so
+ * live and tells the user whether that chunk will be merged into the JSON that
+ * is already loaded or replace it.
+ *
+ * @param loadedPackage the JSON that is currently imported, used only to
+ *   explain what the import will do (merge vs. replace).
  */
 @Composable
 fun JsonSubtitlePasteDialog(
     strings: AppStrings,
     onImport: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    loadedPackage: JsonSubtitlePackage? = null
 ) {
     var jsonText by remember { mutableStateOf("") }
     val detected = remember(jsonText) { SubtitleJsonParser.looksLikeSubtitleJson(jsonText) }
+    // Live CHUNK detection, so the user sees that the marker line is handled
+    // instead of wondering whether the paste will fail.
+    val chunk = remember(jsonText) {
+        if (jsonText.isBlank()) null else SubtitleJsonParser.detectChunkMarker(jsonText)
+    }
 
     val neo = isNeobrutalismDesign()
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -112,6 +127,39 @@ fun JsonSubtitlePasteDialog(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error
                     )
+                }
+
+                // Live CHUNK (AI answer) feedback: which chunk this is, and
+                // whether it will be merged into the loaded JSON.
+                if (chunk != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                        contentColor = MaterialTheme.colorScheme.primary,
+                        shape = if (neo) RoundedCornerShape(0.dp) else MaterialTheme.shapes.small,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                            Text(
+                                text = "${chunk.shortLabel}  •  ${strings.jsonChunkDetectedLabel}",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = strings.jsonChunkAutoStripHint,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            Text(
+                                text = if (loadedPackage != null) {
+                                    strings.jsonChunkMergeHint
+                                } else {
+                                    strings.jsonChunkReplaceHint
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

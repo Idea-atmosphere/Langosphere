@@ -3,6 +3,8 @@ package com.example.ui.theme
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -42,6 +44,16 @@ import androidx.compose.ui.unit.sp
  *    (4/8/16/24/32dp), an *emphasized* type scale, and the adaptive M3
  *    navigation (bottom NavigationBar on phones, NavigationRail on wider
  *    windows) with the Material Symbols icon set.
+ *  - [AppDesignStyle.ANIME] — the cartoon / manga "toon" skin: a cream
+ *    paper canvas (or a deep indigo night canvas), thick dark-indigo ink
+ *    outlines on every surface, hard zero-blur offset shadows, saturated
+ *    pastel color blocks (sakura pink, sky blue, sunny yellow, mint,
+ *    lavender), halftone dot textures, speech-bubble surfaces, sparkles and
+ *    the chibi mascot **Sora**. Corners are the roundest in the app
+ *    (10/14/20/28/36dp), display type is chunky and outlined, motion is
+ *    springy "pop" everywhere, and navigation moves to a floating bottom
+ *    pill tab bar (a vertical rail on wide windows). Like neobrutalism it
+ *    is deliberately NOT dynamic-color driven.
  *  - [AppDesignStyle.NEOBRUTALISM] — the neobrutalist skin (from the
  *    neubrutalism design scale / neubrutalism.com visual anatomy): a warm
  *    cream canvas, ink-black structural lines, loud color blocks (yellow
@@ -54,7 +66,7 @@ import androidx.compose.ui.unit.sp
  * The choice is picked in Settings (top-right) ▸ Theme and persisted in
  * `app_prefs.design_style`, so the app relaunches in the chosen design.
  */
-enum class AppDesignStyle { LANGOSPHERE, MATERIAL3, MATERIAL_YOU, NEOBRUTALISM }
+enum class AppDesignStyle { LANGOSPHERE, MATERIAL3, MATERIAL_YOU, NEOBRUTALISM, ANIME }
 
 /** The design language the current composition is rendering with. */
 val LocalDesignStyle = staticCompositionLocalOf { AppDesignStyle.LANGOSPHERE }
@@ -74,6 +86,15 @@ fun isMaterial3Design(): Boolean =
 fun isMaterialYouDesign(): Boolean =
     LocalDesignStyle.current == AppDesignStyle.MATERIAL_YOU
 
+/** True only for the anime/toon design, which re-skins every shared
+ *  component with ink outlines, hard offset shadows, pastel blocks,
+ *  halftone textures and speech bubbles (see
+ *  ui/components/anime/ToonPrimitives.kt). */
+@Composable
+@ReadOnlyComposable
+fun isAnimeDesign(): Boolean =
+    LocalDesignStyle.current == AppDesignStyle.ANIME
+
 /** True only for the neobrutalist design, which re-skis every shared
  *  component with ink borders, hard offset shadows and loud color blocks
  *  (see ui/components/LangosphereUi.kt and ui/components/LiquidTabBar.kt). */
@@ -85,7 +106,7 @@ fun isNeobrutalismDesign(): Boolean =
 /**
  * Process-wide holder for the selected design, backed by Compose state and
  * mirrored into SharedPreferences — the same pattern already used by
- * [AppAccentColorState], so any screen can read/change it and the whole app
+ * [AppPaletteState], so any screen can read/change it and the whole app
  * re-themes immediately.
  */
 object AppDesignStyleState {
@@ -582,6 +603,20 @@ val NeoTypography = Typography(
 /** The neubrutalist loud yellow used by the chunky block components. */
 val NeoBrutalismAccent = Color(0xFFFDC800)
 
+/**
+ * The accent the neubrutalist block components should paint with RIGHT NOW.
+ * The skin's signature blocks used to be hardcoded to [NeoBrutalismAccent],
+ * which is why the user's palette choice never showed on this design. Now
+ * the palette's tertiary role IS the block color: the default scheme's
+ * tertiary is the same loud yellow, and MyApplicationTheme's palette layer
+ * overrides it when the user picked a palette — so this resolves through
+ * the live scheme. (The static constant stays as the non-neo fallback.)
+ */
+@Composable
+@ReadOnlyComposable
+fun neoAccent(): Color =
+    if (isNeobrutalismDesign()) MaterialTheme.colorScheme.tertiary else NeoBrutalismAccent
+
 val NeoBrutalismLightColors = lightColorScheme(
     primary = Color(0xFF432DD7),
     onPrimary = Color(0xFFFFFFFF),
@@ -664,26 +699,186 @@ val NeoBrutalismDarkColors = darkColorScheme(
     onErrorContainer = Color(0xFFFFB4A8),
 )
 
-/**
- * Copy for the Settings ▸ Theme ▸ design picker. Kept next to the design
- * system itself (instead of in the big AppStrings class) so the whole
- * feature lives in one file.
- */
-class DesignStyleStrings(private val isEn: Boolean) {
-    private fun t(fa: String, en: String) = if (isEn) en else fa
 
-    val sectionTitle = t("طراحی کل برنامه", "App design")
-    val sectionDesc = t(
-        "چهار طراحی کامل و کاملاً متفاوت. با تغییر این گزینه فقط رنگ‌ها عوض نمی‌شود؛ شکل‌ها، فونت‌ها، دکمه‌ها، کارت‌ها، نوار تب‌ها و حتی آیکون‌ها همه با هم تغییر می‌کنند.",
-        "Four complete, deliberately different designs. This changes far more than colors: shapes, type, buttons, cards, the tab bar, the icons and the way every option is shown all change together."
-    )
-    val langosphereTitle = t("لنگوسفر", "Langosphere")
-    val material3Title = t("متریال ۳ تب بالا", "M3 top bar")
-    val materialYouTitle = t("متریال ۳ تب پایین", "M3 bottom bar")
-    val neobrutalismTitle = t("نئوبروتالیسم", "Neubrutalism")
-    val applyNote = t(
-        "با انتخاب هر گزینه، کل برنامه فوراً با طراحی جدید ساخته می‌شود و انتخاب شما ذخیره می‌ماند.",
-        "Picking an option rebuilds the whole app in that design right away, and your choice is remembered."
-    )
-    val selectedLabel = t("فعال", "Active")
+// ── ANIME (toon) color schemes ──
+// The fixed manga palette from [AnimeColors]. Two rules drive the mapping:
+//
+//  1. `outline` carries the INK color, because every toon surface draws its
+//     border and its hard offset shadow from `colorScheme.outline` — exactly
+//     the same contract the neobrutalist skin already uses, so shared
+//     components need no extra plumbing.
+//  2. Every `on*` role that sits on a pastel fill is Ink, never white. Ink
+//     on Sakura/Sky/Sunny/Mint/Lavender all clear WCAG AA, whereas white on
+//     those pastels fails badly.
+//
+// Dark mode swaps the canvas (Paper → Night, White → Night2) and deepens the
+// ink (Ink → InkDark) but keeps the same saturated accents: they were picked
+// to pop on both canvases, which is what keeps the skin recognisable.
+/** Built as a FUNCTION of the live [AnimeColors] tokens so it follows the
+ *  user's palette choice (see AnimeColors.applyPalette) — a static val would
+ *  freeze the launch-time hues. */
+fun animeLightColors(): ColorScheme = lightColorScheme(
+    primary = AnimeColors.Sakura,
+    onPrimary = AnimeColors.Ink,
+    primaryContainer = AnimeColors.SakuraSoft,
+    onPrimaryContainer = AnimeColors.Ink,
+    inversePrimary = AnimeColors.SakuraSoft,
+    secondary = AnimeColors.Sky,
+    onSecondary = AnimeColors.Ink,
+    secondaryContainer = AnimeColors.SkySoft,
+    onSecondaryContainer = AnimeColors.Ink,
+    tertiary = AnimeColors.Lavender,
+    onTertiary = AnimeColors.Ink,
+    tertiaryContainer = AnimeColors.LavenderSoft,
+    onTertiaryContainer = AnimeColors.Ink,
+    background = AnimeColors.Paper,
+    onBackground = AnimeColors.Ink,
+    surface = Color.White,
+    onSurface = AnimeColors.Ink,
+    surfaceVariant = AnimeColors.Paper2,
+    onSurfaceVariant = AnimeColors.Muted,
+    surfaceTint = Color.Transparent,
+    inverseSurface = AnimeColors.Ink,
+    inverseOnSurface = AnimeColors.Paper,
+    surfaceDim = AnimeColors.Paper2,
+    surfaceBright = Color.White,
+    // The toon skin never uses tonal elevation, so the whole container ramp
+    // stays flat: cards are separated by ink borders and hard shadows.
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color.White,
+    surfaceContainer = AnimeColors.Paper,
+    surfaceContainerHigh = AnimeColors.Paper2,
+    surfaceContainerHighest = AnimeColors.Paper2,
+    outline = AnimeColors.Ink,
+    outlineVariant = AnimeColors.Ink.copy(alpha = 0.30f),
+    scrim = AnimeColors.Ink,
+    error = AnimeColors.Error,
+    onError = Color.White,
+    errorContainer = Color(0xFFFFDCDD),
+    onErrorContainer = Color(0xFF5C1113),
+)
+
+/**
+ * The night palette.
+ *
+ * Two rules drive it. First, the *containers* are the deep `*SoftDark`
+ * washes rather than the light `*Soft` tints — a near-white block on a dark
+ * canvas is both a glare source and, because the paired `on*` role is
+ * near-white too, completely unreadable. Second, the accents themselves stay
+ * bright: they are only ever used as fills behind ink-dark glyphs, or as
+ * small marks (labels, arcs, dots) against the dark canvas, where a bright
+ * hue is exactly what is wanted.
+ *
+ * The surface ramp is Night → Night2 → Night3, which gives cards a visible
+ * lift without resorting to Material's tonal elevation (which this skin
+ * never uses — depth is the hard ink shadow).
+ */
+/** Night counterpart of [animeLightColors] — likewise palette-driven. */
+fun animeDarkColors(): ColorScheme = darkColorScheme(
+    primary = AnimeColors.Sakura,
+    onPrimary = AnimeColors.Ink,
+    primaryContainer = AnimeColors.SakuraSoftDark,
+    onPrimaryContainer = AnimeColors.OnNight,
+    inversePrimary = AnimeColors.Sakura,
+    secondary = AnimeColors.Sky,
+    onSecondary = AnimeColors.Ink,
+    secondaryContainer = AnimeColors.SkySoftDark,
+    onSecondaryContainer = AnimeColors.OnNight,
+    tertiary = AnimeColors.Lavender,
+    onTertiary = AnimeColors.Ink,
+    tertiaryContainer = AnimeColors.LavenderSoftDark,
+    onTertiaryContainer = AnimeColors.OnNight,
+    background = AnimeColors.Night,
+    onBackground = AnimeColors.OnNight,
+    surface = AnimeColors.Night2,
+    onSurface = AnimeColors.OnNight,
+    surfaceVariant = AnimeColors.Night3,
+    onSurfaceVariant = AnimeColors.MutedDark,
+    surfaceTint = Color.Transparent,
+    inverseSurface = AnimeColors.Paper,
+    inverseOnSurface = AnimeColors.Ink,
+    surfaceDim = AnimeColors.Night,
+    surfaceBright = AnimeColors.Night3,
+    surfaceContainerLowest = AnimeColors.Night,
+    surfaceContainerLow = AnimeColors.Night2,
+    surfaceContainer = AnimeColors.Night2,
+    surfaceContainerHigh = AnimeColors.Night3,
+    surfaceContainerHighest = AnimeColors.Night3,
+    outline = AnimeColors.InkDark,
+    outlineVariant = Color(0xFF554A80),
+    scrim = Color(0xCC000000),
+    error = AnimeColors.Error,
+    onError = Color.White,
+    errorContainer = Color(0xFF5C1113),
+    onErrorContainer = Color(0xFFFFDCDD),
+)
+
+/**
+ * "Show Sora" — the toon skin's mascot toggle (Settings ▸ Theme). When it is
+ * off the mascot is hidden everywhere *except* the assistant's own avatar,
+ * which is the assistant's identity rather than decoration.
+ *
+ * Same process-wide Compose-state + SharedPreferences pattern as
+ * [AppDesignStyleState], so flipping it re-renders every screen immediately
+ * without an activity restart.
+ */
+object AnimeMascotState {
+    private const val PREFS_NAME = "app_prefs"
+    private const val PREF_KEY = "anime_mascot"
+
+    /** True when Sora may appear outside the assistant avatar. */
+    var enabled: Boolean by mutableStateOf(true)
+
+    /** Called before the first composition (MainActivity.onCreate). */
+    fun restore(prefs: SharedPreferences) {
+        enabled = prefs.getBoolean(PREF_KEY, true)
+    }
+
+    fun set(context: Context, value: Boolean) {
+        enabled = value
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(PREF_KEY, value)
+            .apply()
+    }
+}
+
+/**
+ * True when a decorative Sora may be drawn here: only in the toon skin, and
+ * only while the user has not switched the mascot off.
+ */
+@Composable
+@ReadOnlyComposable
+fun showSoraMascot(): Boolean = isAnimeDesign() && AnimeMascotState.enabled
+
+/**
+ * Copy for the Settings ▸ Theme ▸ design picker. A thin view over [AppStrings]
+ * (where the XML-backed text lives) so call sites keep their short
+ * `designStrings.*` member names.
+ */
+class DesignStyleStrings(strings: AppStrings) {
+    val sectionTitle = strings.designSectionTitle
+    val sectionDesc = strings.designSectionDesc
+    val langosphereTitle = strings.designLangosphere
+    val material3Title = strings.designMaterial3
+    val materialYouTitle = strings.designMaterialYou
+    val neobrutalismTitle = strings.designNeobrutalism
+    val animeTitle = strings.designAnime
+    val animeMascotTitle = strings.designAnimeMascot
+    val animeMascotDesc = strings.designAnimeMascotDesc
+    val applyNote = strings.designApplyNote
+    val selectedLabel = strings.designSelectedLabel
+
+    /**
+     * The display name of one design language. Used by the Settings ▸ Theme
+     * hub so the "App design" button can show which design is active
+     * without opening its dialog.
+     */
+    fun titleFor(style: AppDesignStyle): String = when (style) {
+        AppDesignStyle.LANGOSPHERE -> langosphereTitle
+        AppDesignStyle.MATERIAL3 -> material3Title
+        AppDesignStyle.MATERIAL_YOU -> materialYouTitle
+        AppDesignStyle.NEOBRUTALISM -> neobrutalismTitle
+        AppDesignStyle.ANIME -> animeTitle
+    }
 }

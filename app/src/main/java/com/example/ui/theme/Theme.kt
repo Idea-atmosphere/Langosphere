@@ -3,6 +3,7 @@ package com.example.ui.theme
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
@@ -27,23 +28,20 @@ enum class AppThemeMode { LIGHT, DARK, SYSTEM }
 
 val LocalThemeMode = staticCompositionLocalOf { AppThemeMode.SYSTEM }
 
-// ── User-customizable app accent color ──
-// A simple app-wide holder (instead of prop-drilling through every screen) so
-// any screen can let the user pick a custom accent color for the whole app,
-// and MyApplicationTheme picks it up immediately since it's backed by
-// Compose state.
-object AppAccentColorState {
-    var color: Color? by mutableStateOf(null)
-}
+// ── User-customizable app palette (Settings ▸ Theme ▸ App colors) ──
+// The three role overrides live in Palette.kt (AppPaletteState) and are
+// applied on top of whatever base color scheme the active design produced,
+// so any screen can read/change them and the whole app re-themes
+// immediately since they are backed by Compose state.
 
 // ── User-customizable subtitle colors (EN/FA) ──
 // Backed by the SAME process-wide Compose-state-singleton pattern as
-// AppAccentColorState above (rather than a per-composable `remember`).
+// AppPaletteState above (rather than a per-composable `remember`).
 // VideoPlayerScreen is only composed while its tab is selected in
 // MainScreen — switching tabs disposes/recreates it — so keeping this color
 // choice at the process level (instead of inside that composable's own
 // `remember`) guarantees it is always the single live source of truth and
-// updates immediately, exactly like the app accent color already does.
+// updates immediately, exactly like the app palette already does.
 object SubtitleColorState {
     var colorEn: Color? by mutableStateOf(null)
     var colorFa: Color? by mutableStateOf(null)
@@ -137,10 +135,19 @@ private val DarkColors = darkColorScheme(
  *  - [AppDesignStyle.NEOBRUTALISM]: the neobrutalist skin — plain
  *    MaterialTheme with the square NeoBrutalismShapes and the heavy
  *    NeoTypography over the fixed cream/ink palette. Wallpaper dynamic
- *    color and the custom accent override are skipped for this design: its
- *    identity IS its fixed loud palette (see NeoBrutalismLightColors /
- *    NeoBrutalismDarkColors), and the chunky border/shadow treatment comes
- *    from the shared components in ui/components/LangosphereUi.kt.
+ *    color is skipped for this design: its identity IS its fixed loud
+ *    palette (see NeoBrutalismLightColors / NeoBrutalismDarkColors), and
+ *    the chunky border/shadow treatment comes from the shared components in
+ *    ui/components/LangosphereUi.kt.
+ *
+ * The user's palette choice (Settings ▸ Theme ▸ App colors) reaches EVERY
+ * design, including the two fixed-palette skins: on neobrutalism the
+ * palette's tertiary role is what the loud blocks paint with (components
+ * resolve it through `neoAccent()` instead of the old static yellow), and on
+ * the toon skin the Sakura/Sky/Sunny accent tokens are repainted (with
+ * Soft/SoftDark companions derived per canvas) before the scheme is built —
+ * so the chosen palette shows on both the day and the night canvas while
+ * each skin keeps its identity.
  *
  * In all designs except NEOBRUTALISM, [dynamicColor] (on by default) takes
  * the palette from the wallpaper on Android 12+; otherwise the design's own
@@ -153,7 +160,7 @@ private val DarkColors = darkColorScheme(
 @Composable
 fun MyApplicationTheme(
     themeMode: AppThemeMode = AppThemeMode.SYSTEM,
-    // Which of the four design languages to render (Settings ▸ Theme).
+    // Which of the five design languages to render (Settings ▸ Theme).
     designStyle: AppDesignStyle = AppDesignStyleState.style,
     // Material You dynamic colors are the default (Android 12+); each
     // design's own palette is used on older devices or when this is false.
@@ -166,11 +173,33 @@ fun MyApplicationTheme(
         AppThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
 
+    // Keep the toon accent tokens in sync with the user's palette choice
+    // BEFORE the scheme is built: the anime skin's components paint from the
+    // AnimeColors.* tokens directly (not the Material scheme), so this is
+    // what makes the palette actually visible on that design. The derived
+    // Soft/SoftDark companions keep the ink-on-pastel contrast contract for
+    // both the day and the night canvas.
+    if (designStyle == AppDesignStyle.ANIME) {
+        AnimeColors.applyPalette(
+            AppPaletteState.primary,
+            AppPaletteState.secondary,
+            AppPaletteState.tertiary
+        )
+    } else {
+        AnimeColors.resetPalette()
+    }
+
     val baseColorScheme = when {
         // Neobrutalism never follows the wallpaper: its identity is the
         // fixed cream-and-ink palette with loud accent blocks.
         designStyle == AppDesignStyle.NEOBRUTALISM ->
             if (isDark) NeoBrutalismDarkColors else NeoBrutalismLightColors
+        // Neither does the toon skin: its identity is the ink + pastel
+        // manga palette, so wallpaper dynamic color is skipped for it too.
+        // The scheme is a FUNCTION of the palette-synced AnimeColors tokens
+        // (see above), so it already carries the user's palette.
+        designStyle == AppDesignStyle.ANIME ->
+            if (isDark) animeDarkColors() else animeLightColors()
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -183,18 +212,31 @@ fun MyApplicationTheme(
         else -> LightColors
     }
 
-    // If the user picked a custom accent color from the app's settings, apply
-    // it on top of the base scheme so it takes effect everywhere immediately.
-    // (Not for neobrutalism — a stray accent would break its fixed palette.)
-    val customAccent = AppAccentColorState.color
-    val colorScheme = if (customAccent != null && designStyle != AppDesignStyle.NEOBRUTALISM) {
-        baseColorScheme.copy(
-            primary = customAccent,
-            onPrimary = contrastingOnColor(customAccent),
-            primaryContainer = lerp(customAccent, if (isDark) Color.Black else Color.White, 0.55f),
-            onPrimaryContainer = if (isDark) Color.White else Color(0xFF1A1A1A),
+    // The user's palette choice (Settings ▸ Theme ▸ App colors) is applied
+    // on top of the base scheme — per role, each optional — so it takes
+    // effect everywhere immediately. Every design ships its own default
+    // presets tuned to keep its contrast contract legible in BOTH the light
+    // and the dark mode (the toon presets are ink-safe pastels, the
+    // neobrutalist ones loud ink-friendly blocks), and a fully custom
+    // palette can be mixed per role — the "on" companion colors are derived
+    // from each chosen color's luminance, so text stays readable whichever
+    // way the palette is picked.
+    // The toon skin is the one exception: its scheme was already built from
+    // the palette-synced AnimeColors tokens above (containers stay the
+    // hand-tuned Soft/SoftDark washes, "on" roles stay Ink, surfaceTint
+    // stays transparent), so layering the generic overrides on top would
+    // only fight that mapping.
+    val colorScheme = if (designStyle == AppDesignStyle.ANIME) {
+        baseColorScheme
+    } else {
+        applyPalette(
+            base = baseColorScheme,
+            primary = AppPaletteState.primary,
+            secondary = AppPaletteState.secondary,
+            tertiary = AppPaletteState.tertiary,
+            isDark = isDark
         )
-    } else baseColorScheme
+    }
 
     CompositionLocalProvider(
         LocalThemeMode provides themeMode,
@@ -238,6 +280,21 @@ fun MyApplicationTheme(
                     content = content
                 )
             }
+            AppDesignStyle.ANIME -> {
+                // Anime / toon: the roundest shape scale in the app plus the
+                // chunky display type, over the fixed ink + pastel palette.
+                // The signature depth (3dp ink borders and hard zero-blur
+                // offset shadows), the halftone textures and the springy
+                // "pop" motion are painted by the toon primitives
+                // (ui/components/anime/ToonPrimitives.kt), never by
+                // MaterialTheme elevation.
+                MaterialTheme(
+                    colorScheme = colorScheme,
+                    shapes = AnimeShapes,
+                    typography = animeTypography(),
+                    content = content
+                )
+            }
             AppDesignStyle.NEOBRUTALISM -> {
                 // Neobrutalism: square shapes + heavy type over the fixed
                 // cream/ink palette. The signature depth (2-4dp ink borders
@@ -252,4 +309,56 @@ fun MyApplicationTheme(
             }
         }
     }
+}
+
+/** The container tone derived from an overridden role color (same formula
+ *  the old single-accent override used). */
+private fun roleContainer(color: Color, isDark: Boolean): Color =
+    lerp(color, if (isDark) Color.Black else Color.White, 0.55f)
+
+private fun roleOnContainer(isDark: Boolean): Color =
+    if (isDark) Color.White else Color(0xFF1A1A1A)
+
+/**
+ * Layers the user's palette choice (Settings ▸ Theme ▸ App colors) over the
+ * base scheme. Each of the three roles is optional: a null role keeps the
+ * base scheme's own color untouched. Overridden roles get their "on"
+ * companions derived from luminance, so both preset palettes and free-form
+ * hex colors stay legible in light and dark modes alike.
+ */
+private fun applyPalette(
+    base: ColorScheme,
+    primary: Color?,
+    secondary: Color?,
+    tertiary: Color?,
+    isDark: Boolean
+): ColorScheme {
+    var scheme = base
+    primary?.let { c ->
+        scheme = scheme.copy(
+            primary = c,
+            onPrimary = contrastingOnColor(c),
+            primaryContainer = roleContainer(c, isDark),
+            onPrimaryContainer = roleOnContainer(isDark),
+            // M3 tints elevated surfaces with the primary color.
+            surfaceTint = c,
+        )
+    }
+    secondary?.let { c ->
+        scheme = scheme.copy(
+            secondary = c,
+            onSecondary = contrastingOnColor(c),
+            secondaryContainer = roleContainer(c, isDark),
+            onSecondaryContainer = roleOnContainer(isDark),
+        )
+    }
+    tertiary?.let { c ->
+        scheme = scheme.copy(
+            tertiary = c,
+            onTertiary = contrastingOnColor(c),
+            tertiaryContainer = roleContainer(c, isDark),
+            onTertiaryContainer = roleOnContainer(isDark),
+        )
+    }
+    return scheme
 }

@@ -230,7 +230,6 @@ Return ONLY JSON: [{"index": 1, "text": "translation"}]""".trimIndent()
         return when (key.lowercase()) {
             "fa", "fas", "per", "persian", "farsi" -> "Persian (Farsi)"
             "en", "eng", "english" -> "English"
-            "ar", "ara", "arabic" -> "Arabic"
             "tr", "tur", "turkish" -> "Turkish"
             "fr", "fra", "french" -> "French"
             "de", "deu", "ger", "german" -> "German"
@@ -244,7 +243,6 @@ Return ONLY JSON: [{"index": 1, "text": "translation"}]""".trimIndent()
             else -> when (key) {
                 "فارسی", "پارسی" -> "Persian (Farsi)"
                 "انگلیسی" -> "English"
-                "عربی" -> "Arabic"
                 "ترکی", "استانبولی" -> "Turkish"
                 "فرانسوی", "فرانسه" -> "French"
                 "آلمانی" -> "German"
@@ -1227,7 +1225,17 @@ Return ONLY JSON: [{"index": 1, "text": "translation"}]""".trimIndent()
         Log.d(TAG, "All memory data cleared")
     }
 
-    fun getMemorySummary(context: Context): String {
+    /** Counts backing the memory summary line (rendered by AppStrings.memorySummary). */
+    data class MemoryCounts(
+        val prompts: Int,
+        val corrections: Int,
+        val rules: Int,
+        val glossary: Int,
+        val dictNotes: Int,
+        val learnedTranslations: Int
+    )
+
+    fun getMemoryCounts(context: Context): MemoryCounts {
         val prompts = loadPrompts(context).size
         val corrections = loadCorrections(context).size
         val allSkills = loadSkills(context)
@@ -1235,15 +1243,7 @@ Return ONLY JSON: [{"index": 1, "text": "translation"}]""".trimIndent()
         val glossary = allSkills.size - rules
         val dictNotes = loadDictNotes(context).size
         val learnedTranslations = loadLearnedTranslations(context).size
-        return buildString {
-            appendLine("حافظه هوش مصنوعی:")
-            appendLine("  پرامپت‌های سفارشی: $prompts")
-            appendLine("  اصلاحات: $corrections")
-            appendLine("  قوانین و یادداشت‌ها: $rules")
-            appendLine("  واژه‌نامه: $glossary")
-            appendLine("  یادداشت‌های دیکشنری: $dictNotes")
-            appendLine("  ترجمه‌های ذخیره‌شده (کش): $learnedTranslations")
-        }
+        return MemoryCounts(prompts, corrections, rules, glossary, dictNotes, learnedTranslations)
     }
 
     private fun nowTimestamp(): String {

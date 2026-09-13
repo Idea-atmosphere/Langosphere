@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
  * errors, and forward compatibility with future JSON versions.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+@Config(sdk = [35])
 class SubtitleJsonParserTest {
 
     private val sampleJson = SubtitleJsonParser.buildSampleJsonString()
@@ -161,7 +161,7 @@ class SubtitleJsonParserTest {
                 {
                   "english": "I love apples and bananas.",
                   "words": {
-                    "love": { "translation": "دوست داشتن", "pos": "verb" },
+                    "love": { "translation": "دوست دارن", "pos": "verb" },
                     "apples": "سیب‌ها"
                   }
                 },

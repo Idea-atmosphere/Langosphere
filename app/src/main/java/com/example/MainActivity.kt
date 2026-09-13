@@ -13,8 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.example.logic.CrashReporter
+import com.example.ui.screens.CrashReportScreen
 import com.example.ui.screens.MainScreen
+import com.example.ui.theme.AnimeFonts
+import com.example.ui.theme.AnimeMascotState
 import com.example.ui.theme.AppDesignStyleState
+import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.AppThemeMode
 import com.example.ui.theme.MyApplicationTheme
 
@@ -22,9 +27,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // The Android window itself stays LTR for system chrome. The app's
-        // Compose layout mirrors to RTL when the app language is FA via
-        // LocalLayoutDirection in MainScreen (only the tab bar/pager stay LTR).
+        // The Android window stays LTR for system chrome, and so does the
+        // app's Compose layout: LocalLayoutDirection in MainScreen is LTR in
+        // every UI language, and only the text inside resolves its own
+        // direction per string, so Persian copy still reads right-to-left.
         window.decorView.layoutDirection = android.view.View.LAYOUT_DIRECTION_LTR
 
         // Keep the system status bar (clock, battery, signal icons) hidden at
@@ -35,41 +41,45 @@ class MainActivity : ComponentActivity() {
         insetsController.hide(WindowInsetsCompat.Type.statusBars())
         insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-        // Crash logger - writes to crash_log.txt in app files dir
-        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            try {
-                val crashLog = java.io.File(filesDir, "crash_log.txt")
-                val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())
-                crashLog.appendText("""
-                    |=== CRASH $timestamp ===
-                    |Thread: ${thread.name}
-                    |Exception: ${throwable.javaClass.simpleName}
-                    |Message: ${throwable.message}
-                    |${throwable.stackTraceToString()}
-                    |=== END ===
-                    |
-                """.trimMargin())
-                android.util.Log.e("CrashLogger", "Crash logged to ${crashLog.absolutePath}", throwable)
-            } catch (_: Exception) {}
-            defaultHandler?.uncaughtException(thread, throwable)
-        }
+        // The crash handler itself is installed by LangosphereApp, before this
+        // activity (or any background work) exists. Here we only pick up a
+        // report left behind by the previous run, once, before any of the
+        // restore work below can fail.
+        val pendingCrashReport = CrashReporter.pendingReport(this)
 
         val sharedPrefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        // Same defaulting as AppViewModel: saved choice wins, otherwise the
+        // system language decides (Persian devices start in Persian).
+        val appLangCode = sharedPrefs.getString("app_language", null) ?: run {
+            val systemLanguage = resources.configuration.locales.get(0).language
+            if (systemLanguage == "fa") "fa" else "en"
+        }
 
-        // Restore which of the four design languages (Langosphere /
-        // Material Design 3 / Material You / Neubrutalism) the user picked
+        // Restore which of the five design languages (Langosphere /
+        // Material Design 3 / Material You / Neubrutalism / Anime) the user picked
         // in Settings ▸ Theme, before the first composition, so the app
         // launches directly in that design — shapes, type scale, components
         // and navigation included.
         AppDesignStyleState.restore(sharedPrefs)
 
-        // Restore the user's custom app accent color (if any) before the first
-        // composition so the whole app launches already using their chosen color.
-        val storedAccentArgb = sharedPrefs.getInt("app_accent_color", 0)
-        if (storedAccentArgb != 0) {
-            com.example.ui.theme.AppAccentColorState.color = androidx.compose.ui.graphics.Color(storedAccentArgb)
-        }
+        // The toon skin's mascot toggle, plus its bundled display fonts
+        // (Baloo 2 / Vazirmatn). Both are resolved before the first
+        // composition so the anime design launches fully formed and no
+        // composable ever has to touch the resource table.
+        AnimeMascotState.restore(sharedPrefs)
+        AnimeFonts.load(this)
+
+        // Restore the user's palette choice (Settings ▸ Theme ▸ App colors)
+        // before the first composition so the whole app launches already
+        // using it. A leftover single "app accent color" from the old player
+        // settings is migrated into the palette's primary role.
+        com.example.ui.theme.AppPaletteState.restore(sharedPrefs)
+
+        // Restore the per-scope font choices (whole app / reading files /
+        // Leitner cards) picked in Settings ▸ Theme ▸ Font. (The subtitle
+        // fonts keep living in the player prefs and are read by the video
+        // screen itself.)
+        com.example.ui.theme.AppFontState.restore(sharedPrefs)
 
         // Restore the user's custom subtitle colors (EN/FA) into the process-wide
         // singleton BEFORE the first composition, so both the video overlay and
@@ -96,6 +106,12 @@ class MainActivity : ComponentActivity() {
             com.example.ui.theme.MessageColorState.receivedColor = androidx.compose.ui.graphics.Color(storedReceivedColorArgb)
         }
 
+        // Restore the learner's "source → target" language pair (Settings ▸
+        // Tutorial & AI Learning) before the first composition, so every label
+        // and every AI prompt is built from it right away instead of defaulting
+        // to English → Persian for one frame.
+        com.example.ui.theme.LanguagePairState.restore(this)
+
         setContent {
             val themeModeOrdinal = sharedPrefs.getInt("theme_mode", 2) // default: SYSTEM
             // Guard against stale/out-of-range persisted ordinals (e.g. after an
@@ -103,6 +119,9 @@ class MainActivity : ComponentActivity() {
             var themeMode by remember {
                 mutableStateOf(AppThemeMode.entries.getOrElse(themeModeOrdinal) { AppThemeMode.SYSTEM })
             }
+
+            // Null once the user has read the report (or when there was none).
+            var crashReport by remember { mutableStateOf(pendingCrashReport) }
 
             fun saveThemeMode(mode: AppThemeMode) {
                 themeMode = mode
@@ -117,10 +136,26 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen(
-                        onThemeToggle = { saveThemeMode(it) },
-                        currentThemeMode = themeMode
-                    )
+                    val report = crashReport
+                    if (report != null) {
+                        // MainScreen is deliberately not composed yet: a crash
+                        // during startup would otherwise repeat immediately and
+                        // the report would never be readable.
+                        CrashReportScreen(
+                            report = report,
+                            appLanguage = AppLanguage.fromCode(appLangCode),
+                            onShare = { CrashReporter.share(this@MainActivity) },
+                            onDismiss = {
+                                CrashReporter.markHandled(this@MainActivity)
+                                crashReport = null
+                            }
+                        )
+                    } else {
+                        MainScreen(
+                            onThemeToggle = { saveThemeMode(it) },
+                            currentThemeMode = themeMode
+                        )
+                    }
                 }
             }
         }

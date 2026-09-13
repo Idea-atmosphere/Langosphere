@@ -6,6 +6,11 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.StartOffset
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
@@ -28,6 +33,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -55,7 +61,20 @@ import com.example.ui.components.SoftIconButton
 import com.example.ui.components.StatusPill
 import com.example.ui.components.brandBrush
 import com.example.ui.components.fadingEdges
+import com.example.ui.components.anime.BubbleTail
+import com.example.ui.components.anime.SoraAvatar
+import com.example.ui.components.anime.SoraMascot
+import com.example.ui.components.anime.SoraMood
+import com.example.ui.components.anime.SoraSpeechBubble
+import com.example.ui.components.anime.ToonIconButton
+import com.example.ui.components.anime.ToonBubble
+import com.example.ui.components.anime.halftone
+import com.example.ui.components.anime.inkBorder
+import com.example.ui.theme.AnimeColors
 import com.example.ui.theme.AppStrings
+import com.example.ui.theme.isAnimeDesign
+import com.example.ui.theme.showSoraMascot
+import com.example.ui.theme.LanguagePairState
 import com.example.ui.theme.MessageColorState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -96,13 +115,21 @@ fun AgentScreen(
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     val appLanguage by (viewModel?.appLanguage?.collectAsState() ?: remember { mutableStateOf(com.example.ui.theme.AppLanguage.FA) })
-    val strings = remember(appLanguage) { AppStrings(appLanguage) }
+    val strings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
 
     val sharedPrefs = context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
     var apiKey by remember { mutableStateOf(sharedPrefs.getString("api_key", "") ?: "") }
     var baseUrl by remember { mutableStateOf(sharedPrefs.getString("base_url", "http://localhost:20128/v1") ?: "http://localhost:20128/v1") }
     var model by remember { mutableStateOf(sharedPrefs.getString("model", "gpt-4o-mini") ?: "gpt-4o-mini") }
-    var targetLang by remember { mutableStateOf(sharedPrefs.getString("target_lang", "فارسی") ?: "فارسی") }
+    // Same app-wide target language as the pair fields and the translation
+    // sheet, so the three can never disagree about what {LANG} means.
+    var targetLang by remember { mutableStateOf(LanguagePairState.targetRaw) }
+    val storedTargetLang = LanguagePairState.targetRaw
+    LaunchedEffect(storedTargetLang) {
+        // Compare trimmed: setTarget() stores the trimmed text, and rewriting
+        // the field on every trailing space would fight the keyboard.
+        if (targetLang.trim() != storedTargetLang) targetLang = storedTargetLang
+    }
     var showSettings by remember { mutableStateOf(false) }
 
     var showMemory by remember { mutableStateOf(false) }
@@ -119,12 +146,12 @@ fun AgentScreen(
     var aiJob by remember { mutableStateOf<Job?>(null) }
     val chatListState = rememberLazyListState()
 
-    var currentSession by remember { mutableStateOf(ChatHistoryManager.createNewSession()) }
+    var currentSession by remember { mutableStateOf(ChatHistoryManager.createNewSession(strings.chatNewTitle)) }
     var showChatHistory by remember { mutableStateOf(false) }
     var chatHistoryList by remember { mutableStateOf<List<ChatSession>>(emptyList()) }
 
     LaunchedEffect(Unit) {
-        val latest = ChatHistoryManager.getLatestSession(context)
+        val latest = ChatHistoryManager.getLatestSession(context, strings.chatUntitled)
         if (latest != null) {
             currentSession = latest
             chatMessages = latest.messages.map { Pair(it.role, it.content) }
@@ -147,14 +174,14 @@ fun AgentScreen(
         chatMessages = newMessages
         currentSession.messages.clear()
         currentSession.messages.addAll(newMessages.map { ChatMessage(it.first, it.second, System.currentTimeMillis()) })
-        if (currentSession.title == "چت جدید" && newMessages.isNotEmpty()) {
-            currentSession.title = ChatHistoryManager.autoGenerateTitle(currentSession)
+        if (ChatHistoryManager.isDefaultTitle(currentSession.title, strings.chatNewTitle) && newMessages.isNotEmpty()) {
+            currentSession.title = ChatHistoryManager.autoGenerateTitle(currentSession, strings.chatNewTitle)
         }
         ChatHistoryManager.saveSession(context, currentSession)
     }
 
     LaunchedEffect(refreshMemory) {
-        memorySummary = AiMemoryManager.getMemorySummary(context)
+        memorySummary = strings.memorySummary(AiMemoryManager.getMemoryCounts(context))
     }
 
     fun stopAi() {
@@ -183,11 +210,33 @@ fun AgentScreen(
 
         // ── Agent header ──
         GlassCard(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                // The toon assistant sits on a lavender halftone band, the
+                // palette's "AI" surface.
+                .then(if (isAnimeDesign()) Modifier.halftone(alpha = 0.10f) else Modifier),
+            tint = if (isAnimeDesign()) AnimeColors.LavenderSoft else null,
             cornerRadius = 24.dp,
             contentPadding = PaddingValues(12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                if (isAnimeDesign()) {
+                    // Sora is the assistant. This avatar is her identity, so
+                    // it ignores the decorative "Show Sora" toggle, and the
+                    // mint dot (ink-bordered, like everything else in the
+                    // skin) says she is online.
+                    Box(contentAlignment = Alignment.BottomEnd) {
+                        SoraAvatar(size = 56.dp, respectMascotSetting = false)
+                        Box(
+                            modifier = Modifier
+                                .size(14.dp)
+                                .clip(CircleShape)
+                                .background(AnimeColors.Mint)
+                                .inkBorder(2.dp, CircleShape)
+                        )
+                    }
+                } else {
                 Box(
                     modifier = Modifier
                         .size(36.dp)
@@ -202,10 +251,11 @@ fun AgentScreen(
                         modifier = Modifier.size(20.dp)
                     )
                 }
+                }
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Agent",
+                        text = if (isAnimeDesign()) strings.soraName else "Agent",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -217,13 +267,20 @@ fun AgentScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1
                         )
+                    } else if (isAnimeDesign()) {
+                        Text(
+                            text = strings.soraTagline,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
                     }
                 }
                 SoftIconButton(
                     icon = Icons.Filled.Add,
                     contentDescription = strings.agentNewChatCd,
                     onClick = {
-                        currentSession = ChatHistoryManager.createNewSession()
+                        currentSession = ChatHistoryManager.createNewSession(strings.chatNewTitle)
                         chatMessages = emptyList()
                     },
                     size = 34.dp
@@ -233,7 +290,7 @@ fun AgentScreen(
                     icon = Icons.Filled.History,
                     contentDescription = strings.agentHistoryCd,
                     onClick = {
-                        chatHistoryList = ChatHistoryManager.listSessions(context)
+                        chatHistoryList = ChatHistoryManager.listSessions(context, strings.chatUntitled)
                         showChatHistory = true
                     },
                     size = 34.dp
@@ -282,7 +339,7 @@ fun AgentScreen(
         }
 
         if (showChatHistory) {
-            ChatHistoryDialog(sessions = chatHistoryList, strings = strings, onOpenSession = { sessionId -> val session = ChatHistoryManager.loadSession(context, sessionId); if (session != null) { currentSession = session; chatMessages = session.messages.map { Pair(it.role, it.content) } }; showChatHistory = false }, onDeleteSession = { sessionId -> ChatHistoryManager.deleteSession(context, sessionId); chatHistoryList = ChatHistoryManager.listSessions(context) }, onNewSession = { currentSession = ChatHistoryManager.createNewSession(); chatMessages = emptyList(); showChatHistory = false }, onDismiss = { showChatHistory = false })
+            ChatHistoryDialog(sessions = chatHistoryList, strings = strings, onOpenSession = { sessionId -> val session = ChatHistoryManager.loadSession(context, sessionId, strings.chatUntitled); if (session != null) { currentSession = session; chatMessages = session.messages.map { Pair(it.role, it.content) } }; showChatHistory = false }, onDeleteSession = { sessionId -> ChatHistoryManager.deleteSession(context, sessionId); chatHistoryList = ChatHistoryManager.listSessions(context, strings.chatUntitled) }, onNewSession = { currentSession = ChatHistoryManager.createNewSession(strings.chatNewTitle); chatMessages = emptyList(); showChatHistory = false }, onDismiss = { showChatHistory = false })
         }
 
         AnimatedVisibility(visible = showMemory) {
@@ -343,7 +400,7 @@ fun AgentScreen(
                         )
                         OutlinedTextField(
                             value = targetLang,
-                            onValueChange = { targetLang = it; sharedPrefs.edit().putString("target_lang", it).apply() },
+                            onValueChange = { targetLang = it; LanguagePairState.setTarget(context, it) },
                             label = { Text(strings.targetLangLabel) },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
@@ -460,7 +517,26 @@ fun AgentScreen(
 
         // ── Conversation ──
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            if (chatMessages.isEmpty() && !isThinking) {
+            if (chatMessages.isEmpty() && !isThinking && isAnimeDesign()) {
+                // Sora introduces herself instead of a generic empty state.
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (showSoraMascot()) {
+                        SoraMascot(size = 150.dp, mood = SoraMood.Happy)
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+                    SoraSpeechBubble(text = strings.soraGreetHello)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = strings.askAgentPlaceholder,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            } else if (chatMessages.isEmpty() && !isThinking) {
                 EmptyState(
                     icon = Icons.Filled.Language,
                     title = "Agent",
@@ -480,6 +556,14 @@ fun AgentScreen(
                     }
                     if (isThinking) {
                         item {
+                            if (isAnimeDesign()) {
+                                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                                    ToonBubble(tail = BubbleTail.Left) {
+                                        SoraTypingDots(label = strings.agentThinking)
+                                    }
+                                }
+                                return@item
+                            }
                             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
                                 Surface(
                                     shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomEnd = 20.dp, bottomStart = 6.dp),
@@ -528,7 +612,16 @@ fun AgentScreen(
                 maxLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(onSend = { sendCurrentInput() }),
-                shape = RoundedCornerShape(24.dp),
+                // The toon composer is a full pill with a thick ink edge.
+                shape = if (isAnimeDesign()) RoundedCornerShape(percent = 50) else RoundedCornerShape(24.dp),
+                colors = if (isAnimeDesign()) {
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    )
+                } else {
+                    OutlinedTextFieldDefaults.colors()
+                },
                 // Typed text follows its own direction: Persian input
                 // right-aligns, English input left-aligns.
                 textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -550,6 +643,18 @@ fun AgentScreen(
                 }
             } else {
                 val canSend = chatInput.isNotBlank()
+                if (isAnimeDesign()) {
+                    // A 48dp sakura sticker button — ink glyph, hard shadow,
+                    // greyed out (but still 48dp) while there is nothing to send.
+                    ToonIconButton(
+                        icon = Icons.Filled.Send,
+                        contentDescription = strings.sendCd,
+                        onClick = { sendCurrentInput() },
+                        fill = AnimeColors.Sakura,
+                        enabled = canSend,
+                    )
+                    return@Row
+                }
                 Box(
                     modifier = Modifier
                         .size(50.dp)
@@ -576,6 +681,46 @@ fun AgentScreen(
 /** One chat bubble, with the agent badge on assistant messages. */
 @Composable
 private fun ChatBubble(isUser: Boolean, content: String) {
+    if (isAnimeDesign()) {
+        // Manga dialogue: Sora speaks from white bubbles with a left tail,
+        // the user answers in Sakura bubbles with a right tail. Text is
+        // always ink, so both fills stay above AA.
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
+        ) {
+            ToonBubble(
+                modifier = Modifier.widthIn(max = 320.dp),
+                tail = if (isUser) BubbleTail.Right else BubbleTail.Left,
+                fill = if (isUser) AnimeColors.Sakura else MaterialTheme.colorScheme.surface,
+            ) {
+                if (!isUser) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        SoraAvatar(size = 18.dp, borderWidth = 1.5.dp, respectMascotSetting = false)
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = "Sora",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = AnimeColors.Sakura,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+                SelectionContainer {
+                    Text(
+                        text = content,
+                        color = if (isUser) AnimeColors.Ink else MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            textAlign = TextAlign.Start,
+                            textDirection = content.autoTextDirection()
+                        )
+                    )
+                }
+            }
+        }
+        return
+    }
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
@@ -785,27 +930,26 @@ private fun PromptsTab(
     onRefresh: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val isEn = strings.isEn
 
     fun labelFor(key: String): String = when (key) {
         AiMemoryManager.PROMPT_TRANSLATE -> strings.promptTranslate
         AiMemoryManager.PROMPT_CHAT -> strings.promptChat
         AiMemoryManager.PROMPT_AGENT -> strings.promptAgent
-        AiMemoryManager.PROMPT_JSON_LESSON -> if (isEn) "JSON lesson package" else "بستهٔ آموزشی JSON"
-        AiMemoryManager.PROMPT_TRANSLATE_EMPTY -> if (isEn) "Empty lines" else "خطوط ترجمه‌نشده"
-        AiMemoryManager.PROMPT_SYNC_TIMINGS -> if (isEn) "Sync + translate" else "هم‌زمان‌سازی + ترجمه"
-        AiMemoryManager.PROMPT_SYNC -> if (isEn) "Subtitle matching" else "تطبیق زیرنویس‌ها"
+        AiMemoryManager.PROMPT_JSON_LESSON -> strings.promptJsonLesson
+        AiMemoryManager.PROMPT_TRANSLATE_EMPTY -> strings.promptEmptyLines
+        AiMemoryManager.PROMPT_SYNC_TIMINGS -> strings.promptSyncTimings
+        AiMemoryManager.PROMPT_SYNC -> strings.promptSync
         else -> key
     }
 
     fun descriptionFor(key: String): String = when (key) {
-        AiMemoryManager.PROMPT_TRANSLATE -> if (isEn) "Used for translating subtitle lines" else "برای ترجمهٔ خطوط زیرنویس"
-        AiMemoryManager.PROMPT_JSON_LESSON -> if (isEn) "Builds the word/grammar study package" else "ساخت بستهٔ واژه و گرامر برای هر جمله"
-        AiMemoryManager.PROMPT_CHAT -> if (isEn) "Free chat with the assistant" else "گفتگوی آزاد با دستیار"
-        AiMemoryManager.PROMPT_AGENT -> if (isEn) "Agent that edits your subtitle files" else "عاملی که فایل زیرنویس را ویرایش می‌کند"
-        AiMemoryManager.PROMPT_TRANSLATE_EMPTY -> if (isEn) "Fills lines left untranslated" else "پر کردن خطوطی که ترجمه نشده‌اند"
-        AiMemoryManager.PROMPT_SYNC_TIMINGS -> if (isEn) "Matches two tracks and fixes timings" else "تطبیق دو زیرنویس و اصلاح زمان‌بندی"
-        AiMemoryManager.PROMPT_SYNC -> if (isEn) "Meaning-based subtitle matching" else "تطبیق زیرنویس‌ها بر اساس معنا"
+        AiMemoryManager.PROMPT_TRANSLATE -> strings.promptDescTranslate
+        AiMemoryManager.PROMPT_JSON_LESSON -> strings.promptDescJsonLesson
+        AiMemoryManager.PROMPT_CHAT -> strings.promptDescChat
+        AiMemoryManager.PROMPT_AGENT -> strings.promptDescAgent
+        AiMemoryManager.PROMPT_TRANSLATE_EMPTY -> strings.promptDescEmpty
+        AiMemoryManager.PROMPT_SYNC_TIMINGS -> strings.promptDescSyncTimings
+        AiMemoryManager.PROMPT_SYNC -> strings.promptDescSync
         else -> ""
     }
 
@@ -886,7 +1030,7 @@ private fun PromptsTab(
             val variables = AiMemoryManager.PROMPT_VARIABLES[currentKey] ?: emptyList()
             if (variables.isNotEmpty()) {
                 Text(
-                    text = if (isEn) "Tap to insert a variable:" else "برای درج متغیر بزن:",
+                    text = strings.tapToInsertVariable,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -905,8 +1049,7 @@ private fun PromptsTab(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (isEn) "{LANG} becomes \"${AiMemoryManager.resolveLangName(targetLang)}\""
-                    else "{LANG} به «${AiMemoryManager.resolveLangName(targetLang)}» تبدیل می‌شود",
+                    text = strings.langBecomesName(AiMemoryManager.resolveLangName(targetLang)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -965,7 +1108,7 @@ private fun PromptsTab(
                             )
                             result.fold(
                                 onSuccess = { testOutput = it },
-                                onFailure = { testError = it.message ?: "?" }
+                                onFailure = { testError = strings.apiErrorDetail(it) }
                             )
                             testing = false
                         }
@@ -981,7 +1124,7 @@ private fun PromptsTab(
                         Spacer(modifier = Modifier.width(4.dp))
                     }
                     Text(
-                        text = if (isEn) "Test on ${effectiveSamples.size} lines" else "تست روی ${effectiveSamples.size} خط",
+                        text = strings.testOnLines(effectiveSamples.size),
                         style = MaterialTheme.typography.labelMedium
                     )
                 }
@@ -998,8 +1141,7 @@ private fun PromptsTab(
             if (sampleLines.isEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (isEn) "No subtitle loaded, so built-in sample lines are used."
-                    else "زیرنویسی بار نشده؛ از خطوط نمونهٔ داخلی استفاده می‌شود.",
+                    text = strings.noSubtitleSamplesNote,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1148,7 +1290,7 @@ private fun SkillsTab(context: Context, strings: AppStrings, onRefresh: () -> Un
                 contentPadding = PaddingValues(horizontal = 8.dp)
             ) {
                 Text(
-                    text = if (strings.isEn) "Clear glossary ($glossaryCount)" else "پاک کردن واژه‌نامه ($glossaryCount)",
+                    text = strings.clearGlossary(glossaryCount),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -1245,7 +1387,7 @@ private fun ExportImportTab(context: Context, strings: AppStrings) {
             Text(strings.clearAllMemoryBtn, style = MaterialTheme.typography.labelMedium)
         }
         Text(
-            text = AiMemoryManager.getMemorySummary(context),
+            text = strings.memorySummary(AiMemoryManager.getMemoryCounts(context)),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontFamily = FontFamily.Monospace
@@ -1265,7 +1407,8 @@ private suspend fun sendChat(context: Context, input: String, apiKey: String, ba
             messages = currentMessages + Pair("user", userMessage),
             systemPrompt = systemPrompt,
             context = context,
-            targetLang = targetLang
+            targetLang = targetLang,
+            noteSavedMessage = strings.aiNoteSaved
         )
         result.fold(onSuccess = { response ->
             val changes = parseSubtitleChanges(response)
@@ -1274,8 +1417,8 @@ private suspend fun sendChat(context: Context, input: String, apiKey: String, ba
             if (changes != null) { val updated = workingSubFa.toMutableList(); changes.forEach { (idx, text) -> if (idx - 1 in updated.indices) updated[idx - 1] = updated[idx - 1].copy(text = text) }; onUpdateSubFa(updated); displayResponse = "✓ ${changes.size}\n$response" }
             if (readerUpdate != null) { onUpdateReaderText(readerUpdate); displayResponse = "✓\n$response" }
             onMessages(currentMessages + Pair("user", userMessage) + Pair("assistant", displayResponse))
-        }, onFailure = { e -> onError(strings.errorWithMessage(e.message)); onMessages(currentMessages + Pair("user", userMessage)) })
-    } catch (e: Exception) { onError(strings.errorWithMessage(e.message)); onMessages(currentMessages + Pair("user", userMessage)) }
+        }, onFailure = { e -> onError(strings.apiErrorMessage(e)); onMessages(currentMessages + Pair("user", userMessage)) })
+    } catch (e: Exception) { onError(strings.apiErrorMessage(e)); onMessages(currentMessages + Pair("user", userMessage)) }
     finally { onThinking(false) }
 }
 
@@ -1290,7 +1433,7 @@ private fun formatSrtTime(seconds: Double): String {
     return String.format("%02d:%02d:%02d,%03d", hour, min, sec, ms)
 }
 
-private fun buildSystemPrompt(context: Context, enList: List<SubtitleEntry>, faList: List<SubtitleEntry>, readerText: String = "", readerFileName: String = "", targetLang: String = "فارسی"): String {
+private fun buildSystemPrompt(context: Context, enList: List<SubtitleEntry>, faList: List<SubtitleEntry>, readerText: String = "", readerFileName: String = "", targetLang: String = "Persian"): String {
     // targetLang is passed through now, so {LANG} in the agent prompt
     // resolves to the language actually selected in settings.
     val basePrompt = AiMemoryManager.getPrompt(context, AiMemoryManager.PROMPT_AGENT, targetLang)
@@ -1324,4 +1467,48 @@ private fun parseReaderTextUpdate(response: String): String? {
     val regex = Regex("""\[READER_UPDATE\]([\s\S]*?)\[/READER_UPDATE\]""")
     val match = regex.find(response) ?: return null
     return match.groupValues[1].trim().ifEmpty { null }
+}
+
+/**
+ * The toon "Sora is typing" indicator: three ink dots bouncing in sequence,
+ * 150ms apart. Falls back to a static row when the system's animator scale
+ * is zero, so the accessibility setting is respected.
+ */
+@Composable
+private fun SoraTypingDots(label: String) {
+    val ink = MaterialTheme.colorScheme.outline
+    val transition = rememberInfiniteTransition(label = "sora-typing")
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        repeat(3) { index ->
+            val offset by transition.animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = keyframes {
+                        durationMillis = 900
+                        0f at 0
+                        1f at 200
+                        0f at 400
+                        0f at 900
+                    },
+                    initialStartOffset = StartOffset(index * 150),
+                ),
+                label = "sora-typing-dot-$index",
+            )
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 3.dp)
+                    .graphicsLayer { translationY = -offset * 6.dp.toPx() }
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(ink)
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }

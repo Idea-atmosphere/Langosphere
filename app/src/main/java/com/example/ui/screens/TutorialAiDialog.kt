@@ -35,6 +35,7 @@ import com.example.ui.components.SoftIconButton
 import com.example.ui.components.StatusPill
 import com.example.ui.components.brandBrush
 import com.example.ui.theme.AppStrings
+import com.example.ui.theme.LanguagePairState
 
 /**
  * Settings > "Tutorial & AI Learning".
@@ -60,7 +61,6 @@ fun TutorialAiDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val isEn = strings.isEn
 
     // The level used for the generated prompt starts at the learner's level but
     // can be changed on its own, so a B1 learner can still build an A2 package
@@ -71,17 +71,21 @@ fun TutorialAiDialog(
     var showGuide by remember { mutableStateOf(false) }
     var showPreview by remember { mutableStateOf(false) }
 
-    // The prompt must translate into whatever the user set in the AI settings,
-    // otherwise it silently always said "Persian".
-    val targetLanguage = remember {
-        AiPromptTemplates.normalizeTargetLanguage(
-            context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
-                .getString("target_lang", "فارسی")
-        )
-    }
+    // The prompt teaches whichever pair the learner typed in the two fields
+    // just below (free text, any language to any language, used exactly as
+    // written). Reading the observable state here means editing the pair
+    // rebuilds the prompt live.
+    val sourceLanguage = LanguagePairState.source
+    val targetLanguage = LanguagePairState.target
     val isPackageMode = AiPromptTemplates.producesSubtitlePackage(selectedMode)
-    val prompt = remember(promptLevel, selectedMode, chunkSize, targetLanguage) {
-        AiPromptTemplates.buildPrompt(promptLevel, selectedMode, targetLanguage, chunkSize)
+    val prompt = remember(promptLevel, selectedMode, chunkSize, targetLanguage, sourceLanguage) {
+        AiPromptTemplates.buildPrompt(
+            level = promptLevel,
+            mode = selectedMode,
+            targetLanguage = targetLanguage,
+            chunkSize = chunkSize,
+            sourceLanguage = sourceLanguage
+        )
     }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -220,7 +224,7 @@ fun TutorialAiDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (isEn) "How to use this" else "چطور استفاده کنم؟",
+                                text = strings.howToUseTitle,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -229,9 +233,9 @@ fun TutorialAiDialog(
                             TextButton(onClick = { showGuide = !showGuide }) {
                                 Text(
                                     text = if (showGuide) {
-                                        if (isEn) "Hide" else "بستن"
+                                        strings.hideBtn
                                     } else {
-                                        if (isEn) "Show" else "نمایش"
+                                        strings.showBtn
                                     },
                                     style = MaterialTheme.typography.labelMedium
                                 )
@@ -239,7 +243,7 @@ fun TutorialAiDialog(
                         }
                         AnimatedVisibility(visible = showGuide) {
                             Column {
-                                AiPromptTemplates.usageSteps(isEn).forEachIndexed { index, step ->
+                                strings.usageSteps.forEachIndexed { index, step ->
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
                                         Text(
                                             text = "${index + 1}.",
@@ -263,20 +267,24 @@ fun TutorialAiDialog(
                     // -- Prompt modes --
                     SectionHeader(
                         title = strings.promptModeTitle,
-                        subtitle = if (isEn) {
-                            "Six ready packages. Pick what you need tonight."
-                        } else {
-                            "شش بسته‌ی آماده؛ همان را بردار که امشب لازم داری."
-                        }
+                        subtitle = strings.promptModesSubtitle
                     )
                     AiPromptTemplates.PromptMode.values().forEach { mode ->
                         PromptModeCard(
-                            title = AiPromptTemplates.modeTitle(mode, isEn),
-                            description = AiPromptTemplates.modeDescription(mode, isEn),
+                            title = strings.promptModeName(mode),
+                            description = strings.promptModeDesc(mode),
                             selected = selectedMode == mode,
                             onClick = { selectedMode = mode }
                         )
                     }
+
+                    // -- The language pair: source → target --
+                    // Typed exactly as the learner wants them; the preview and
+                    // the pills below show what the pair changes.
+                    LanguagePairFields(
+                        strings = strings,
+                        showPreview = true
+                    )
 
                     // -- Generator --
                     GlassCard(
@@ -304,18 +312,18 @@ fun TutorialAiDialog(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             StatusPill(
-                                text = if (isEn) {
-                                    "Translates to: $targetLanguage"
-                                } else {
-                                    "ترجمه به: $targetLanguage"
-                                },
+                                text = strings.promptSourcePill(sourceLanguage),
+                                tone = PillTone.Neutral
+                            )
+                            StatusPill(
+                                text = strings.promptTargetPill(targetLanguage),
                                 tone = PillTone.Accent
                             )
                             StatusPill(
                                 text = if (isPackageMode) {
-                                    if (isEn) "Importable JSON" else "JSON قابل ورود"
+                                    strings.importableJsonPill
                                 } else {
-                                    if (isEn) "For chat use" else "برای چت"
+                                    strings.forChatUsePill
                                 },
                                 tone = if (isPackageMode) PillTone.Positive else PillTone.Neutral
                             )
@@ -353,17 +361,13 @@ fun TutorialAiDialog(
                         if (isPackageMode) {
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = if (isEn) "Cues per request" else "تعداد خط در هر درخواست",
+                                text = strings.cuesPerRequestLabel,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = if (isEn) {
-                                    "A film has 800-1500 lines. Smaller chunks never get truncated."
-                                } else {
-                                    "یک فیلم ۸۰۰ تا ۱۵۰۰ خط دارد؛ بسته‌های کوچک‌تر نیمه‌کاره نمی‌مانند."
-                                },
+                                text = strings.chunkSizeHint,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -380,7 +384,7 @@ fun TutorialAiDialog(
                                         onClick = { chunkSize = size },
                                         label = {
                                             Text(
-                                                text = if (isEn) "$size lines" else "$size خط",
+                                                text = strings.chunkSizeLabel(size),
                                                 style = MaterialTheme.typography.labelSmall
                                             )
                                         }
@@ -418,9 +422,9 @@ fun TutorialAiDialog(
                             TextButton(onClick = { showPreview = !showPreview }) {
                                 Text(
                                     text = if (showPreview) {
-                                        if (isEn) "Hide" else "بستن"
+                                        strings.hideBtn
                                     } else {
-                                        if (isEn) "Show" else "نمایش"
+                                        strings.showBtn
                                     },
                                     style = MaterialTheme.typography.labelMedium
                                 )

@@ -25,6 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.logic.KnownWordsStore
 import com.example.ui.components.neoHardShadow
+import com.example.ui.components.anime.inkBorder
+import com.example.ui.components.anime.inkShadow
+import com.example.ui.theme.AnimeColors
+import com.example.ui.theme.AppStrings
+import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
 import kotlin.math.abs
 
@@ -42,7 +47,7 @@ import kotlin.math.abs
 @Composable
 fun StudyPanel(
     currentSpeed: Float,
-    isEn: Boolean,
+    strings: AppStrings,
     canLoopLine: Boolean,
     listenMode: Boolean,
     coverage: KnownWordsStore.CoverageStats?,
@@ -60,26 +65,37 @@ fun StudyPanel(
         listOf(1.25f, 1.5f, 1.75f, 2.0f)
     )
     val neo = isNeobrutalismDesign()
-    // Neo panels are opaque: text follows the scheme so both light (cream
-    // panel / ink) and dark (cyber panel / light ink) look deliberate.
-    val panelShape = if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(22.dp)
-    val panelBg = if (neo) {
-        MaterialTheme.colorScheme.surfaceContainerLowest
+    val anime = isAnimeDesign()
+    // Neo and toon panels are opaque: text follows the scheme so both light
+    // (cream panel / ink) and dark (night panel / light ink) look deliberate.
+    val panelShape = when {
+        neo -> RoundedCornerShape(0.dp)
+        anime -> RoundedCornerShape(20.dp)
+        else -> RoundedCornerShape(22.dp)
+    }
+    val panelBg = if (neo || anime) {
+        MaterialTheme.colorScheme.surface
     } else {
         Color.Black.copy(alpha = 0.66f)
     }
-    val textPrimary = if (neo) MaterialTheme.colorScheme.onSurface else Color.White
+    val textPrimary = if (neo || anime) MaterialTheme.colorScheme.onSurface else Color.White
     val textSecondary =
-        if (neo) MaterialTheme.colorScheme.onSurfaceVariant else Color.White.copy(alpha = 0.6f)
+        if (neo || anime) MaterialTheme.colorScheme.onSurfaceVariant else Color.White.copy(alpha = 0.6f)
     val textFaint =
-        if (neo) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+        if (neo || anime) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
         else Color.White.copy(alpha = 0.45f)
 
     Column(
         modifier = modifier
             .widthIn(min = 220.dp, max = 300.dp)
             .then(
-                if (neo) {
+                if (anime) {
+                    Modifier
+                        .inkShadow(offset = 4.dp, shape = panelShape)
+                        .clip(panelShape)
+                        .background(panelBg)
+                        .inkBorder(3.dp, panelShape)
+                } else if (neo) {
                     Modifier
                         .neoHardShadow(MaterialTheme.colorScheme.outline, offset = 4.dp)
                         .background(panelBg)
@@ -96,7 +112,7 @@ fun StudyPanel(
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        PanelLabel(if (isEn) "Playback speed" else "سرعت پخش")
+        PanelLabel(strings.studyPlaybackSpeed)
         Spacer(modifier = Modifier.height(8.dp))
         speedRows.forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -115,7 +131,7 @@ fun StudyPanel(
 
         if (canLoopLine) {
             PlayerTextPill(
-                text = if (isEn) "Loop this line" else "تکرار همین جمله",
+                text = strings.studyLoopThisLine,
                 contentDescription = null,
                 onClick = onLoopLine,
                 height = 34.dp
@@ -125,17 +141,17 @@ fun StudyPanel(
 
         if (canSpeak) {
             PanelDivider()
-            PanelLabel(if (isEn) "Pronunciation" else "تلفظ")
+            PanelLabel(strings.studyPronunciation)
             Spacer(modifier = Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 PlayerTextPill(
-                    text = if (isEn) "Speak line" else "خواندن جمله",
+                    text = strings.studySpeakLine,
                     contentDescription = null,
                     onClick = onSpeak,
                     height = 32.dp
                 )
                 PlayerTextPill(
-                    text = if (isEn) "Slow" else "آهسته",
+                    text = strings.studySlowBtn,
                     contentDescription = null,
                     onClick = onSpeakSlow,
                     height = 32.dp
@@ -145,20 +161,19 @@ fun StudyPanel(
         }
 
         PanelDivider()
-        PanelLabel(if (isEn) "Listen mode" else "حالت گوش کن")
+        PanelLabel(strings.studyListenMode)
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = if (isEn) "Subtitles stay hidden until you ask for them."
-            else "زیرنویس پنهان می‌ماند تا خودت بخواهی.",
+            text = strings.studyListenDesc,
             color = textSecondary,
             style = MaterialTheme.typography.labelSmall
         )
         Spacer(modifier = Modifier.height(6.dp))
         PlayerTextPill(
             text = if (listenMode) {
-                if (isEn) "Listen mode: on" else "گوش کن: روشن"
+                strings.studyListenOn
             } else {
-                if (isEn) "Listen mode: off" else "گوش کن: خاموش"
+                strings.studyListenOff
             },
             contentDescription = null,
             onClick = onToggleListen,
@@ -169,7 +184,7 @@ fun StudyPanel(
         if (coverage != null && coverage.totalTokens > 0) {
             Spacer(modifier = Modifier.height(10.dp))
             PanelDivider()
-            PanelLabel(if (isEn) "Coverage" else "درصد پوشش")
+            PanelLabel(strings.studyCoverage)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "${coverage.percent}%",
@@ -178,15 +193,13 @@ fun StudyPanel(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = if (isEn) "of the words in this file are known to you"
-                else "از کلمات این فایل را می‌دانی",
+                text = strings.studyCoverageKnownDesc,
                 color = textSecondary,
                 style = MaterialTheme.typography.labelSmall
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = if (isEn) "Marked as known: ${coverage.knownUnique}"
-                else "بلدم: ${coverage.knownUnique} کلمه",
+                text = strings.studyMarkedKnown(coverage.knownUnique),
                 color = textFaint,
                 style = MaterialTheme.typography.labelSmall
             )
@@ -194,8 +207,7 @@ fun StudyPanel(
             if (coverage.topUnknown.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = if (isEn) "Most frequent unknown words — tap the ones you know:"
-                    else "پرتکرارترین کلمات ناشناس — هرکدام را می‌دانی بزن:",
+                    text = strings.studyTopUnknownHint,
                     color = textSecondary,
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -225,6 +237,15 @@ fun StudyPanel(
 
 @Composable
 private fun PanelLabel(text: String) {
+    if (isAnimeDesign()) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.ExtraBold,
+            color = AnimeColors.Sakura,
+        )
+        return
+    }
     val color = if (isNeobrutalismDesign()) {
         MaterialTheme.colorScheme.onSurfaceVariant
     } else {

@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import android.content.res.Configuration
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,8 +50,19 @@ import com.example.logic.autoTextAlign
 import com.example.logic.autoTextDirection
 import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.AppStrings
-import com.example.ui.theme.NeoBrutalismAccent
+import com.example.ui.theme.neoAccent
+import com.example.ui.components.anime.SoraAvatar
+import com.example.ui.components.anime.SoraMascot
+import com.example.ui.components.anime.SoraMood
+import com.example.ui.components.anime.SoraSpeechBubble
+import com.example.ui.components.anime.ToonButton
+import com.example.ui.components.anime.ToonChip
+import com.example.ui.components.anime.inkBorder
+import com.example.ui.components.anime.toonInk
+import com.example.ui.theme.AnimeColors
+import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
+import com.example.ui.theme.showSoraMascot
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,7 +85,8 @@ fun DictionaryBottomSheet(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val isDark = isSystemInDarkTheme()
-    val strings = remember(appLanguage) { AppStrings(appLanguage) }
+    val context = LocalContext.current
+    val strings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var queryInput by remember(searchedWord) { mutableStateOf(searchedWord) }
@@ -96,10 +109,12 @@ fun DictionaryBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        shape = if (isNeobrutalismDesign()) {
-            RoundedCornerShape(0.dp)
-        } else {
-            RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
+        shape = when {
+            isNeobrutalismDesign() -> RoundedCornerShape(0.dp)
+            // The toon sheet's 28dp top corners come with a 3dp ink edge,
+            // applied as a border on the sheet content below.
+            isAnimeDesign() -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            else -> RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
         },
         containerColor = MaterialTheme.colorScheme.surface,
         // The sheet draws its own gradient handle below; without this the
@@ -107,9 +122,14 @@ fun DictionaryBottomSheet(
         dragHandle = null,
         modifier = Modifier.fillMaxHeight(if (isLandscape) 0.95f else 0.88f)
     ) {
+        val toonSheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .then(
+                    if (isAnimeDesign()) Modifier.inkBorder(3.dp, toonSheetShape) else Modifier
+                )
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             SheetHandle()
@@ -196,6 +216,20 @@ fun DictionaryBottomSheet(
                 }
             }
         }
+
+            // Sora peeks over the toon sheet's top-trailing corner,
+            // overlapping the ink border by 24dp so she reads as a sticker
+            // stuck onto the panel rather than a floating avatar.
+            if (showSoraMascot()) {
+                SoraAvatar(
+                    size = 56.dp,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = (-12).dp, y = (-24).dp),
+                    respectMascotSetting = false,
+                )
+            }
+        }
     }
 }
 
@@ -209,16 +243,18 @@ private fun SheetHandle() {
         contentAlignment = Alignment.Center
     ) {
         val neo = isNeobrutalismDesign()
+        val anime = isAnimeDesign()
         Box(
             modifier = Modifier
-                .width(44.dp)
-                .height(if (neo) 6.dp else 5.dp)
+                .width(if (anime) 46.dp else 44.dp)
+                .height(if (neo || anime) 6.dp else 5.dp)
                 .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
                 .then(
-                    if (neo) {
-                        Modifier.background(NeoBrutalismAccent)
-                    } else {
-                        Modifier.background(brandBrush(alpha = 0.55f))
+                    when {
+                        // A small solid ink pill — the toon sheet's handle.
+                        anime -> Modifier.background(toonInk())
+                        neo -> Modifier.background(neoAccent())
+                        else -> Modifier.background(brandBrush(alpha = 0.55f))
                     }
                 )
         )
@@ -243,16 +279,17 @@ private fun WordHeadline(word: String) {
         )
         Spacer(modifier = Modifier.height(6.dp))
         val neo = isNeobrutalismDesign()
+        val anime = isAnimeDesign()
         Box(
             modifier = Modifier
-                .width(52.dp)
-                .height(if (neo) 4.dp else 3.dp)
+                .width(if (anime) 62.dp else 52.dp)
+                .height(if (neo || anime) 4.dp else 3.dp)
                 .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
                 .then(
-                    if (neo) {
-                        Modifier.background(NeoBrutalismAccent)
-                    } else {
-                        Modifier.background(brandBrush())
+                    when {
+                        anime -> Modifier.background(AnimeColors.Sakura)
+                        neo -> Modifier.background(neoAccent())
+                        else -> Modifier.background(brandBrush())
                     }
                 )
         )
@@ -291,13 +328,17 @@ private fun DictionarySourceFilterRow(
 @Composable
 private fun SourceChip(label: String, selected: Boolean, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
+    if (isAnimeDesign()) {
+        ToonChip(text = label, selected = selected, fill = AnimeColors.Sky, onClick = onClick)
+        return
+    }
     val neo = isNeobrutalismDesign()
     Box(
         modifier = Modifier
             .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
             .background(
                 when {
-                    neo && selected -> NeoBrutalismAccent
+                    neo && selected -> neoAccent()
                     selected -> scheme.primary.copy(alpha = 0.16f)
                     neo -> scheme.surfaceContainerLowest
                     else -> scheme.surfaceVariant.copy(alpha = 0.45f)
@@ -381,10 +422,19 @@ fun JsonWordInfoCard(jsonWord: JsonWord, strings: AppStrings) {
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 jsonWord.partOfSpeech?.let { pos ->
-                    StatusPill(
-                        text = strings.partOfSpeechName(pos),
-                        tone = PillTone.Accent,
-                    )
+                    if (isAnimeDesign()) {
+                        // Part of speech is a sky sticker in the toon skin.
+                        ToonChip(
+                            text = strings.partOfSpeechName(pos),
+                            selected = true,
+                            fill = AnimeColors.Sky,
+                        )
+                    } else {
+                        StatusPill(
+                            text = strings.partOfSpeechName(pos),
+                            tone = PillTone.Accent,
+                        )
+                    }
                 }
                 jsonWord.translation?.takeIf { it.isNotBlank() }?.let { tr ->
                     Spacer(modifier = Modifier.width(10.dp))
@@ -422,6 +472,35 @@ fun JsonWordInfoCard(jsonWord: JsonWord, strings: AppStrings) {
         }
         jsonWord.examples.take(2).forEach { example ->
             Spacer(modifier = Modifier.height(3.dp))
+            if (isAnimeDesign()) {
+                // Quoted examples sit in a tinted block with a thick ink rule
+                // down the leading edge — a manga "aside" panel.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        // surfaceVariant, not the raw Paper2 constant, so the
+                        // block darkens correctly in night mode.
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .inkBorder(1.5.dp, RoundedCornerShape(10.dp)),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(28.dp)
+                            .background(toonInk())
+                    )
+                    Text(
+                        text = example,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    )
+                }
+                return@forEach
+            }
             Text(
                 text = "• $example",
                 style = MaterialTheme.typography.bodySmall,
@@ -438,9 +517,22 @@ private fun AddToLeitnerButton(isAdded: Boolean, strings: AppStrings, onClick: (
     // definition into the app's built-in Leitner box (see LeitnerScreen.kt
     // and AppViewModel.addActiveWordToLeitner) for later spaced-repetition
     // review and Anki export.
+    if (isAnimeDesign()) {
+        // Toon skin: saving is a sakura sticker button; once saved it flips
+        // to a mint outline, matching the "Got it" verdict in Leitner.
+        ToonButton(
+            text = if (isAdded) strings.addedToLeitnerLabel else strings.addToLeitnerBtn,
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+            icon = if (isAdded) Icons.Filled.Star else Icons.Outlined.StarBorder,
+            fill = if (isAdded) AnimeColors.Mint else AnimeColors.Sakura,
+            outlined = isAdded,
+        )
+        return
+    }
     if (isAdded) {
         val neo = isNeobrutalismDesign()
-        val color = if (neo) NeoBrutalismAccent else MaterialTheme.colorScheme.primary
+        val color = if (neo) neoAccent() else MaterialTheme.colorScheme.primary
         val shape = if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(18.dp)
         Row(
             modifier = Modifier
@@ -486,11 +578,19 @@ private fun AddToLeitnerButton(isAdded: Boolean, strings: AppStrings, onClick: (
 private fun SearchField(initialQuery: String, strings: AppStrings, onSearch: (String) -> Unit) {
     var query by remember(initialQuery) { mutableStateOf(initialQuery) }
     val neo = isNeobrutalismDesign()
+    val anime = isAnimeDesign()
+    // The toon search box is a fully rounded pill with a thick ink edge —
+    // the same treatment as the chat composer.
+    val fieldShape = when {
+        anime -> RoundedCornerShape(percent = 50)
+        neo -> RoundedCornerShape(0.dp)
+        else -> RoundedCornerShape(20.dp)
+    }
     OutlinedTextField(
         value = query,
         onValueChange = { query = it },
         modifier = Modifier.fillMaxWidth(),
-        shape = if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(20.dp),
+        shape = fieldShape,
         placeholder = { Text(strings.searchWordPlaceholder) },
         label = { Text(strings.wordLabel) },
         // Input stays auto-detected: Persian RTL, English LTR per content.
@@ -507,15 +607,14 @@ private fun SearchField(initialQuery: String, strings: AppStrings, onSearch: (St
             )
         },
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = if (neo) {
-                MaterialTheme.colorScheme.outline
-            } else {
-                MaterialTheme.colorScheme.primary
+            focusedBorderColor = when {
+                anime || neo -> MaterialTheme.colorScheme.outline
+                else -> MaterialTheme.colorScheme.primary
             },
-            unfocusedBorderColor = if (neo) {
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)
-            } else {
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+            unfocusedBorderColor = when {
+                anime -> MaterialTheme.colorScheme.outline
+                neo -> MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)
+                else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
             },
         ),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -703,6 +802,23 @@ private fun LookupInProgressCard() {
 
 @Composable
 fun NoResultsCard(strings: AppStrings) {
+    if (isAnimeDesign()) {
+        // Sora shrugs instead of an empty magnifier: friendlier, and it keeps
+        // the sheet in the same visual language as the rest of the skin.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            if (showSoraMascot()) {
+                SoraMascot(size = 110.dp, mood = SoraMood.Thinking)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            SoraSpeechBubble(text = strings.noResultsFound)
+        }
+        return
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()

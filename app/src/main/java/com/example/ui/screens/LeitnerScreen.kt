@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -49,6 +50,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.draw.clip
@@ -56,6 +58,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -64,6 +67,8 @@ import com.example.logic.autoTextAlign
 import com.example.logic.autoTextDirection
 import com.example.model.LeitnerCard
 import com.example.ui.components.EmptyState
+import com.example.ui.components.JsonQuizBetaCard
+import com.example.ui.components.JsonQuizBetaDialog
 import com.example.ui.components.GlassCard
 import com.example.ui.components.GradientButton
 import com.example.ui.components.PillTone
@@ -75,8 +80,19 @@ import com.example.ui.components.fadingEdges
 import com.example.ui.components.neoHardShadow
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.AccentRed
+import com.example.logic.isPersianText
+import com.example.ui.theme.AppFontScope
+import com.example.ui.theme.AppFontState
 import com.example.ui.theme.AppStrings
-import com.example.ui.theme.NeoBrutalismAccent
+import com.example.ui.theme.neoAccent
+import com.example.ui.components.anime.ToonButton
+import com.example.ui.components.anime.ToonCard
+import com.example.ui.components.anime.inkBorder
+import com.example.ui.components.anime.toonOn
+import com.example.ui.components.anime.toonSoft
+import com.example.ui.components.anime.inkShadow
+import com.example.ui.theme.AnimeColors
+import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
@@ -102,10 +118,23 @@ fun LeitnerScreen(viewModel: AppViewModel) {
     val allCards by viewModel.leitnerCards.collectAsState()
     val dueCards by viewModel.leitnerDueCards.collectAsState()
     val appLanguage by viewModel.appLanguage.collectAsState()
-    val strings = remember(appLanguage) { AppStrings(appLanguage) }
+    val context = LocalContext.current
+    val strings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
+
+    // The imported AI learning JSON is the input of the beta quiz section, so
+    // this tab observes it too (the card shows which file the quiz would use).
+    val jsonSubtitles by viewModel.jsonSubtitles.collectAsState()
+    val jsonSubFileName by viewModel.jsonSubFileName.collectAsState()
 
     var reviewMode by remember { mutableStateOf(true) } // true = review due cards, false = browse all
     var isRevealed by remember { mutableStateOf(false) }
+
+    // This tab is a small toolbox ("Better learning tools"): the Leitner box
+    // itself, and the beta quiz built from the imported JSON package.
+    var tool by remember { mutableStateOf(LearningTool.LEITNER) }
+
+    // BETA: the "quiz from JSON" dialog (see JsonQuizBetaDialog).
+    var showJsonQuiz by remember { mutableStateOf(false) }
 
     // The review deck. pageCount is read lazily, so answering a card (which
     // removes it from dueCards) shrinks the deck without resetting anything.
@@ -134,7 +163,123 @@ fun LeitnerScreen(viewModel: AppViewModel) {
             .fillMaxSize()
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
+        // ── The two tools of this tab, as buttons ──
+        // The active one is tinted with the brand colour; the JSON quiz wears
+        // its BETA label on the corner of the button itself.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            LearningToolButton(
+                text = strings.toolLeitnerBox,
+                selected = tool == LearningTool.LEITNER,
+                onClick = { tool = LearningTool.LEITNER },
+                modifier = Modifier.weight(1f),
+            )
+            LearningToolButton(
+                text = strings.toolJsonQuiz,
+                selected = tool == LearningTool.JSON_QUIZ,
+                onClick = { tool = LearningTool.JSON_QUIZ },
+                badge = strings.jsonQuizBetaBadge,
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        if (tool == LearningTool.JSON_QUIZ) {
+            Spacer(modifier = Modifier.height(12.dp))
+            // BETA: words, sentences and grammar points of the imported AI
+            // learning JSON become a multiple-choice quiz. A file can be picked
+            // or a raw AI answer pasted here — the "CHUNK 1-50" marker line,
+            // fences and commentary are stripped and the JSON is imported
+            // automatically, so the quiz always runs on the app's own data.
+            JsonQuizBetaCard(
+                strings = strings,
+                pkg = jsonSubtitles,
+                fileName = jsonSubFileName,
+                onOpen = { showJsonQuiz = true },
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            return@Column
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         // ── Header: progress ring + counts + export ──
+        if (isAnimeDesign()) {
+            // The toon header trades the ring for two stat stickers and a row
+            // of five "jars" — one per Leitner box, filled with that box's
+            // color and labelled with how many cards are sitting in it.
+            val dueFill = toonSoft(AnimeColors.SunnySoft)
+            val learnedFill = toonSoft(AnimeColors.MintSoft)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ToonCard(
+                    fill = dueFill,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(12.dp),
+                ) {
+                    Text(
+                        "🔥 " + strings.reviewTodayChip(dueCards.size),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = toonOn(dueFill),
+                    )
+                    Text(
+                        "${dueCards.size}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = toonOn(dueFill),
+                    )
+                }
+                ToonCard(
+                    fill = learnedFill,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(12.dp),
+                ) {
+                    Text(
+                        "✦ " + strings.allCardsChip(allCards.size),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = toonOn(learnedFill),
+                    )
+                    Text(
+                        "$mastered",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = toonOn(learnedFill),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                for (level in 1..MAX_BOX_LEVEL) {
+                    val count = allCards.count { it.boxLevel == level }
+                    val jar = RoundedCornerShape(percent = 40)
+                    val jarFill = AnimeColors.BoxFills[(level - 1) % AnimeColors.BoxFills.size]
+                    val onJar = toonOn(jarFill)
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(jar)
+                            .background(jarFill)
+                            .inkBorder(2.dp, jar)
+                            .padding(vertical = 10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text("$count", style = MaterialTheme.typography.titleMedium, color = onJar)
+                        Text("$level", style = MaterialTheme.typography.labelSmall, color = onJar)
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            ToonButton(
+                text = strings.exportAnki,
+                onClick = { viewModel.exportLeitnerToAnki() },
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Filled.Download,
+                fill = AnimeColors.Lavender,
+                enabled = allCards.isNotEmpty(),
+            )
+        } else {
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
             tint = MaterialTheme.colorScheme.primary,
@@ -153,14 +298,9 @@ fun LeitnerScreen(viewModel: AppViewModel) {
                     )
                 }
                 Spacer(modifier = Modifier.width(14.dp))
+                // No title here: the tool picker above already names this tool,
+                // so the header card only reports the deck.
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = strings.leitnerTitle,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text = strings.leitnerSummary(allCards.size, dueCards.size),
                         style = MaterialTheme.typography.bodySmall,
@@ -174,6 +314,7 @@ fun LeitnerScreen(viewModel: AppViewModel) {
                     enabled = allCards.isNotEmpty(),
                 )
             }
+        }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -235,11 +376,7 @@ fun LeitnerScreen(viewModel: AppViewModel) {
 
                 if (dueCards.size > 1) {
                     Text(
-                        text = if (strings.isEn) {
-                            "Swipe left or right to move between cards • tap to flip"
-                        } else {
-                            "برای جابه‌جایی بین کارت‌ها به چپ یا راست بکش • برای دیدن معنی بزن"
-                        },
+                        text = strings.swipeHintCards,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -306,6 +443,61 @@ fun LeitnerScreen(viewModel: AppViewModel) {
             }
         }
     }
+
+    if (showJsonQuiz) {
+        JsonQuizBetaDialog(
+            viewModel = viewModel,
+            strings = strings,
+            onDismiss = { showJsonQuiz = false },
+        )
+    }
+}
+
+/** The two tools inside the "Better learning tools" tab. */
+private enum class LearningTool { LEITNER, JSON_QUIZ }
+
+/**
+ * One of the tab's two tools, drawn as a button: the active tool is tinted
+ * with the brand colour and its label turns bold, the other one sits on the
+ * plain surface. [badge] hangs a small label on the button's top corner —
+ * the JSON quiz carries "BETA" there.
+ */
+@Composable
+private fun LearningToolButton(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    badge: String? = null,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Box(modifier = modifier) {
+        GlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            tint = if (selected) scheme.primary else scheme.onSurface,
+            cornerRadius = 16.dp,
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 14.dp),
+            onClick = onClick,
+        ) {
+            Text(
+                text = text,
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = if (selected) scheme.primary else scheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
+        }
+        if (badge != null) {
+            StatusPill(
+                text = badge,
+                tone = PillTone.Warning,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 6.dp, y = (-8).dp),
+            )
+        }
+    }
 }
 
 /**
@@ -342,7 +534,17 @@ private fun FlashCard(
                 cameraDistance = 14f * density
             }
             .then(
-                if (isNeobrutalismDesign()) {
+                if (isAnimeDesign()) {
+                    // The toon flashcard: a white sticker card with a 3dp ink
+                    // edge and a hard shadow. The 3D flip is unchanged — the
+                    // camera distance already reads correctly with the flat
+                    // fill because there is no gradient to skew.
+                    Modifier
+                        .inkShadow(offset = 5.dp, shape = shape)
+                        .clip(shape)
+                        .background(scheme.surface)
+                        .inkBorder(3.dp, shape)
+                } else if (isNeobrutalismDesign()) {
                     // Neobrutalist flashcard: a flat raised card with an ink
                     // border and a hard offset shadow instead of the soft
                     // gradient glass. The 3D flip is unchanged.
@@ -408,7 +610,7 @@ private fun FlashCardFront(
             // Which card of today's deck this is — the old "box 1 of 5" text
             // is gone, the boxes are shown by the dots below instead.
             StatusPill(
-                text = if (strings.isEn) "Card $position of $total" else "کارت $position از $total",
+                text = strings.cardPositionLabel(position, total),
                 tone = PillTone.Accent,
             )
         }
@@ -424,6 +626,7 @@ private fun FlashCardFront(
             Text(
                 text = card.word,
                 style = MaterialTheme.typography.headlineMedium.copy(
+                    fontFamily = leitnerFontFor(card.word),
                     textDirection = card.word.autoTextDirection()
                 ),
                 fontWeight = FontWeight.Bold,
@@ -447,6 +650,7 @@ private fun FlashCardBack(card: LeitnerCard, strings: AppStrings) {
         Text(
             text = card.word,
             style = MaterialTheme.typography.titleMedium.copy(
+                fontFamily = leitnerFontFor(card.word),
                 textDirection = card.word.autoTextDirection()
             ),
             fontWeight = FontWeight.Bold,
@@ -459,7 +663,7 @@ private fun FlashCardBack(card: LeitnerCard, strings: AppStrings) {
                 .width(56.dp)
                 .height(if (neo) 4.dp else 3.dp)
                 .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
-                .background(if (neo) NeoBrutalismAccent else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+                .background(if (neo) neoAccent() else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
         )
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -478,6 +682,7 @@ private fun FlashCardBack(card: LeitnerCard, strings: AppStrings) {
                 // Auto RTL/LTR from the definition itself (Persian definition
                 // → right, English → left), independent of the menu language.
                 style = MaterialTheme.typography.bodyLarge.copy(
+                    fontFamily = leitnerFontFor(card.definition),
                     lineHeight = 27.sp,
                     textDirection = card.definition.autoTextDirection()
                 ),
@@ -490,11 +695,26 @@ private fun FlashCardBack(card: LeitnerCard, strings: AppStrings) {
     }
 }
 
+
+/**
+ * The font for a Leitner card's face: the LEITNER scope's Persian choice
+ * when the content (word or definition) is Persian, its English/general
+ * choice otherwise — each inheriting the whole-app font (Settings ▸ Theme ▸
+ * Font) while left on "default" (see [AppFontState.resolvedFamily]).
+ */
+private fun leitnerFontFor(text: String): FontFamily? =
+    if (text.isPersianText()) {
+        AppFontState.resolvedFamily(AppFontScope.LEITNER, fa = true)
+    } else {
+        AppFontState.resolvedFamily(AppFontScope.LEITNER, fa = false)
+    }
+
 /** Five dots showing how far a card has climbed through the boxes. */
 @Composable
 private fun BoxLevelDots(level: Int, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     val neo = isNeobrutalismDesign()
+    val anime = isAnimeDesign()
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -504,15 +724,21 @@ private fun BoxLevelDots(level: Int, modifier: Modifier = Modifier) {
             val filled = index <= level
             Box(
                 modifier = Modifier
-                    .size(if (filled) 8.dp else 6.dp)
+                    // The toon dots are the five "jar" colors of the boxes,
+                    // each with its own ink ring, so a card's progress reads
+                    // as a row of little stickers.
+                    .size(if (anime) 12.dp else if (filled) 8.dp else 6.dp)
                     .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
                     .background(
-                        if (filled) {
-                            if (neo) NeoBrutalismAccent else scheme.primary
-                        } else {
-                            scheme.onSurfaceVariant.copy(alpha = 0.28f)
+                        when {
+                            anime && filled -> AnimeColors.BoxFills[(index - 1) % AnimeColors.BoxFills.size]
+                            anime -> scheme.surface
+                            filled && neo -> neoAccent()
+                            filled -> scheme.primary
+                            else -> scheme.onSurfaceVariant.copy(alpha = 0.28f)
                         }
                     )
+                    .then(if (anime) Modifier.inkBorder(2.dp, CircleShape) else Modifier)
             )
         }
     }
@@ -527,6 +753,19 @@ private fun SoftActionButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (isAnimeDesign()) {
+        // "Again" is a soft sakura outline, "Got it" a solid mint block —
+        // the toon skin's two review verdicts.
+        val error = MaterialTheme.colorScheme.error
+        ToonButton(
+            text = text,
+            onClick = onClick,
+            modifier = modifier,
+            icon = icon,
+            fill = if (color == error) AnimeColors.SakuraSoft else AnimeColors.Mint,
+        )
+        return
+    }
     if (isNeobrutalismDesign()) {
         // Neobrutalism: a flat loud color block ("didn't know" = red) with an
         // ink border, ink-black glyph/text, and a hard offset shadow.

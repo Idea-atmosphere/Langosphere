@@ -29,6 +29,7 @@ import com.example.logic.AiMemoryManager
 import com.example.logic.autoTextDirection
 import com.example.model.SubtitleEntry
 import com.example.ui.theme.AppStrings
+import com.example.ui.theme.LanguagePairState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,14 +44,23 @@ fun TranslationScreen(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val appLanguage by (viewModel?.appLanguage?.collectAsState() ?: remember { mutableStateOf(com.example.ui.theme.AppLanguage.FA) })
-    val strings = remember(appLanguage) { AppStrings(appLanguage) }
+    val strings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
 
     // Settings state
     val sharedPrefs = context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
     var apiKey by remember { mutableStateOf(sharedPrefs.getString("api_key", "") ?: "") }
     var baseUrl by remember { mutableStateOf(sharedPrefs.getString("base_url", "http://localhost:20128/v1") ?: "http://localhost:20128/v1") }
     var model by remember { mutableStateOf(sharedPrefs.getString("model", "gpt-4o-mini") ?: "gpt-4o-mini") }
-    var targetLang by remember { mutableStateOf(sharedPrefs.getString("target_lang", "fa") ?: "fa") }
+    // The target language is the app-wide pair value (ai_prefs.target_lang, the
+    // same one Settings ▸ Tutorial & AI Learning edits), typed by hand and used
+    // exactly as written — the old quick-pick chips are gone.
+    var targetLang by remember { mutableStateOf(LanguagePairState.targetRaw) }
+    val storedTargetLang = LanguagePairState.targetRaw
+    LaunchedEffect(storedTargetLang) {
+        // Compare trimmed: setTarget() stores the trimmed text, and rewriting
+        // the field on every trailing space would fight the keyboard.
+        if (targetLang.trim() != storedTargetLang) targetLang = storedTargetLang
+    }
 
     // UI state
     var showSettings by remember { mutableStateOf(false) }
@@ -209,11 +219,11 @@ fun TranslationScreen(
                                             }
                                         },
                                         onFailure = { e ->
-                                            errorMessage = strings.errorWithMessage(e.message)
+                                            errorMessage = strings.apiErrorMessage(e)
                                         }
                                     )
                                 } catch (e: Exception) {
-                                    errorMessage = strings.errorWithMessage(e.message)
+                                    errorMessage = strings.apiErrorMessage(e)
                                 } finally {
                                     isTranslating = false
                                     translationProgress = ""
@@ -268,10 +278,10 @@ fun TranslationScreen(
 
                                     result.fold(
                                         onSuccess = { translatedLines = it.translatedLines },
-                                        onFailure = { e -> errorMessage = strings.errorWithMessage(e.message) }
+                                        onFailure = { e -> errorMessage = strings.apiErrorMessage(e) }
                                     )
                                 } catch (e: Exception) {
-                                    errorMessage = strings.errorWithMessage(e.message)
+                                    errorMessage = strings.apiErrorMessage(e)
                                 } finally {
                                     isTranslating = false
                                     translationProgress = ""
@@ -400,10 +410,10 @@ fun TranslationScreen(
                                                         currentLineIndex = startIdx
                                                         batchOffset = endIdx
                                                     },
-                                                    onFailure = { e -> errorMessage = strings.errorWithMessage(e.message) }
+                                                    onFailure = { e -> errorMessage = strings.apiErrorMessage(e) }
                                                 )
                                             } catch (e: Exception) {
-                                                errorMessage = strings.errorWithMessage(e.message)
+                                                errorMessage = strings.apiErrorMessage(e)
                                             } finally {
                                                 isTranslating = false
                                                 translationProgress = ""
@@ -597,14 +607,14 @@ fun TranslationScreen(
                             }
                         }
 
-                        val result = AiService.chat(config, newMessages, systemPrompt, context)
+                        val result = AiService.chat(config, newMessages, systemPrompt, context, noteSavedMessage = strings.aiNoteSaved)
                         result.fold(
                             onSuccess = { response ->
                                 chatMessages = newMessages + ("assistant" to response)
                                 chatInput = ""
                             },
                             onFailure = { e ->
-                                chatMessages = chatMessages + ("assistant" to strings.errorWithMessage(e.message))
+                                chatMessages = chatMessages + ("assistant" to strings.apiErrorMessage(e))
                             }
                         )
                         isChatLoading = false
@@ -707,25 +717,26 @@ fun TranslationScreen(
                             singleLine = true
                         )
 
-                        Text("${strings.targetLangLabel}:", style = MaterialTheme.typography.labelMedium)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            listOf("fa" to strings.langFa, "ar" to strings.langAr, "tr" to strings.langTr, "fr" to strings.langFr).forEach { (code, name) ->
-                                FilterChip(
-                                    selected = targetLang == code,
-                                    onClick = { targetLang = code },
-                                    label = { Text(name, fontSize = 12.sp) }
-                                )
-                            }
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            listOf("de" to strings.langDe, "es" to strings.langEs, "ja" to strings.langJa, "ko" to strings.langKo).forEach { (code, name) ->
-                                FilterChip(
-                                    selected = targetLang == code,
-                                    onClick = { targetLang = code },
-                                    label = { Text(name, fontSize = 12.sp) }
-                                )
-                            }
-                        }
+                        OutlinedTextField(
+                            value = targetLang,
+                            onValueChange = {
+                                targetLang = it
+                                LanguagePairState.setTarget(context, it)
+                            },
+                            label = { Text(strings.targetLangLabel) },
+                            placeholder = { Text(strings.targetLanguageHint, fontSize = 12.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodySmall.copy(
+                                textAlign = TextAlign.Start,
+                                textDirection = targetLang.autoTextDirection()
+                            )
+                        )
+                        Text(
+                            text = strings.translateTargetLangHint,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 },
                 confirmButton = {
@@ -734,7 +745,7 @@ fun TranslationScreen(
                             .putString("api_key", apiKey)
                             .putString("base_url", baseUrl)
                             .putString("model", model)
-                            .putString("target_lang", targetLang)
+                            .putString("target_lang", targetLang.trim().ifEmpty { LanguagePairState.DEFAULT_TARGET })
                             .apply()
                         showSettings = false
                     }) {

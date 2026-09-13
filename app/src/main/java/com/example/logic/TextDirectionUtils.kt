@@ -23,16 +23,16 @@ import androidx.compose.ui.text.style.TextDirection
 object TextDirectionUtils {
 
     /**
-     * @return true when [text] contains an RTL script (Persian/Arabic etc.).
-     * Previous implementation used first-strong-char only, which made mixed
-     * strings like "n. سلام" or HTML-wrapped Persian ("<div>سلام") be detected
-     * as LTR because the first strong char is Latin. For user content we want
-     * any Persian to make the whole paragraph RTL, so we scan for *any* RTL
-     * character. Pure English stays LTR, pure Persian (or mixed with Persian)
-     * becomes RTL. Falls back to LTR when no strong char exists.
+     * @return true when the first strong-directional character in [text] is
+     * an RTL script (Persian/Arabic/Hebrew etc.), following the Unicode
+     * "first strong character" rule: weak/neutral characters (digits,
+     * punctuation, whitespace) are skipped while looking for that first
+     * strong character, and the FIRST strong character found (LTR or RTL)
+     * decides the result — a leading Latin word keeps a mixed paragraph LTR
+     * even when RTL text follows later, and vice versa. Falls back to LTR
+     * when no strong character exists.
      */
     fun isRtl(text: String): Boolean {
-        var hasRtl = false
         var i = 0
         while (i < text.length) {
             val codePoint = text.codePointAt(i)
@@ -40,16 +40,20 @@ object TextDirectionUtils {
                 Character.DIRECTIONALITY_LEFT_TO_RIGHT,
                 Character.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING,
                 Character.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE,
-                Character.DIRECTIONALITY_LEFT_TO_RIGHT_ISOLATE -> Unit
+                Character.DIRECTIONALITY_LEFT_TO_RIGHT_ISOLATE -> return false
 
                 Character.DIRECTIONALITY_RIGHT_TO_LEFT,
+                // Persian and Arabic letters are classified by Unicode as
+                // "Arabic Letter" (AL), a distinct bidi class from the plain
+                // Hebrew-style "R" class above. Missing this case was why
+                // pure Persian/Arabic text was silently treated as LTR.
+                Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC,
                 Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING,
                 Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE,
-                Character.DIRECTIONALITY_RIGHT_TO_LEFT_ISOLATE -> hasRtl = true
+                Character.DIRECTIONALITY_RIGHT_TO_LEFT_ISOLATE -> return true
 
                 else -> Unit
             }
-            if (hasRtl) return true
             i += Character.charCount(codePoint)
         }
         return false
@@ -72,3 +76,11 @@ fun String.autoTextDirection(): TextDirection = TextDirectionUtils.direction(thi
 fun String.autoTextAlign(): androidx.compose.ui.text.style.TextAlign =
     if (TextDirectionUtils.isRtl(this)) androidx.compose.ui.text.style.TextAlign.Right
     else androidx.compose.ui.text.style.TextAlign.Left
+
+/**
+ * True when [TextDirectionUtils.isRtl] detects Persian/Arabic script — used
+ * by the per-scope font system (Settings ▸ Theme ▸ Font) to pick the
+ * Persian font for Persian CONTENT (a reader page, a Leitner card, ...)
+ * and the English/general font otherwise, independent of the menu language.
+ */
+fun String.isPersianText(): Boolean = TextDirectionUtils.isRtl(this)
