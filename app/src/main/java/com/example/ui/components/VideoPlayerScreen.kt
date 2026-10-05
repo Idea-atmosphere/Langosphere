@@ -4,24 +4,24 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.net.Uri
 import androidx.annotation.OptIn
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -46,9 +46,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.Visibility
@@ -65,26 +65,32 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -100,22 +106,35 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.MergingMediaSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.example.logic.KnownWordsStore
+import com.example.logic.OnlinePlaybackHeaders
+import com.example.logic.OrientationToggle
+import com.example.logic.SaveWhilePlayingDataSourceFactory
+import com.example.logic.StreamCacheController
+import com.example.logic.StudyModeState
 import com.example.logic.TtsSpeaker
 import com.example.logic.autoTextDirection
 import com.example.model.JsonSubtitle
 import com.example.model.JsonSubtitlePackage
+import com.example.model.LeitnerCard
 import com.example.model.SubtitleEntry
 import com.example.ui.theme.AccentAmber
 import com.example.ui.theme.AppFontState
 import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.AppStrings
+import com.example.ui.theme.LanguageWeightState
 import com.example.ui.theme.SubtitleColorState
 import com.example.ui.theme.resolvedSubtitleFamily
 import androidx.compose.ui.zIndex
@@ -125,12 +144,13 @@ import com.example.ui.components.anime.inkShadow
 import com.example.ui.theme.AnimeColors
 import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
-import com.example.ui.theme.SubtitleEnOnLight
-import com.example.ui.theme.SubtitleFaOnLight
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -191,7 +211,93 @@ fun VideoPlayerScreen(
     jsonPackage: JsonSubtitlePackage? = null,
     // Fired when the user clicks an English subtitle SENTENCE (outside any
     // word) — opens the learning lesson for that sentence.
-    onSentenceClick: (sentence: String, translation: String?) -> Unit = { _, _ -> }
+    onSentenceClick: (sentence: String, translation: String?) -> Unit = { _, _ -> },
+    // Online tab: the container of a network stream cannot always be
+    // inferred from its URL (Invidious/Piped HLS manifests have no .m3u8
+    // suffix), so the caller may name it explicitly
+    // (MimeTypes.APPLICATION_M3U8 / APPLICATION_MPD). null = infer.
+    streamMimeType: String? = null,
+    // Piped/Invidious adaptive formats expose video and audio separately.
+    // Supplying this URI merges both files onto one playback timeline.
+    streamAudioUri: Uri? = null,
+    // Opening a subtitle lesson must pause playback underneath the modal.
+    pauseForLesson: Boolean = false,
+    // Online tab: notified when ExoPlayer cannot open a network rendition so
+    // the caller can try another signed URL or manifest automatically.
+    onPlaybackError: (String) -> Unit = {},
+    // Online tab: stream URLs carry expiring signatures and change with the
+    // chosen quality, so the resume position is keyed by the video id
+    // instead of the URL. null = derive the key from the URI (local files).
+    resumeStateKey: String? = null,
+    /**
+     * The study controls shared with the book reader, offered on every JSON
+     * subtitle line: hear the line, hide the translation, keep one line in
+     * focus and add the whole line to the Leitner box. Optional, so a caller
+     * that does not pass them keeps the list exactly as it was.
+     */
+    studyLabels: SentenceStudyLabels? = null,
+    /** Normalized text of the lines already in the Leitner box. */
+    savedSentenceTexts: Set<String> = emptySet(),
+    /** Builds and stores the sentence card for the line at [index]. */
+    onAddSentenceToLeitner: ((JsonSubtitle, String, Int) -> Unit)? = null,
+    /**
+     * Online tab, «پخش در حالت جایگزین»: when non-null the clip with this
+     * YouTube id is played through the official IFrame embed in a WebView
+     * ([YouTubeWebPlayer]) instead of ExoPlayer. The embed is bridged as a
+     * Media3 Player, so subtitles, smart pause and study tools keep running
+     * off the same `currentPosition` clock. [videoUri] should still be a
+     * non-null placeholder (e.g. the watch URL) so the player chrome shows.
+     */
+    webFallbackVideoId: String? = null,
+    /**
+     * Online tab: if a source has not become ready this many milliseconds
+     * after it was opened (and no error was raised), it is reported through
+     * [onPlaybackError] so the caller can move on instead of leaving an
+     * endless spinner. 0 = no watchdog (local files).
+     */
+    startupTimeoutMs: Long = 0L,
+    /**
+     * Online tab: shows «چرخش صفحه», a manual portrait ⇄ landscape switch
+     * on the player chrome (see [OrientationToggle]). Off by default, so the
+     * Video tab's player is exactly as it was.
+     */
+    showOrientationToggle: Boolean = false,
+    /**
+     * Online tab, «صفحه پخش و مطالعه تعاملی»: the redesigned learning
+     * player — a rounded 16:9 video card and the transcript as [CueCard]s whose
+     * active card is kept centred. Off by default, so the Video tab's player
+     * (split handle, subtitle rows) is exactly as it was.
+     */
+    onlineStudio: Boolean = false,
+    /** Online tab: extra floating buttons on the picture (e.g. ⭐ save), top corner. */
+    overlayActions: (@Composable () -> Unit)? = null,
+    /** Online stream renditions are selected from the action drawer under the video. */
+    streamQualities: List<String> = emptyList(),
+    selectedStreamQuality: Int = 0,
+    onSelectStreamQuality: ((Int) -> Unit)? = null,
+    /** Caller actions that formerly lived in normal-view overflow/toolbars. */
+    fabActions: List<PlayerFabAction> = emptyList(),
+    /**
+     * Online tab: the callbacks behind the collapsible action drawer
+     * (کشوی ابزار) that replaced the interactive transcript beneath the
+     * video. The drawer is rendered only while this is non-null.
+     */
+    onlineDrawerActions: OnlineDrawerActions? = null,
+    /**
+     * Online tab, «ذخیره هنگام پخش»: while on, every byte the player
+     * downloads for viewing is written to the disk cache as it is watched
+     * (see [com.example.logic.OnlineWatchCache]). The flag is read at
+     * data-source open time, so flipping it mid-play applies from the next
+     * opened source (seek, quality switch, next clip) without a player
+     * rebuild. The Video tab never passes true.
+     */
+    saveWhilePlaying: Boolean = false,
+    /**
+     * Online tab: resolves a stream URI to its stable cross-session cache
+     * key — the signed googlevideo URLs rotate between sessions, so the
+     * video id + rendition identity keys the cache instead.
+     */
+    streamCacheKeyFor: (Uri) -> String? = { null },
 ) {
     val context = LocalContext.current
     val strings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
@@ -205,7 +311,7 @@ fun VideoPlayerScreen(
         return formatted.replace("-", strings.negativeMinusReplacement)
     }
 
-    val videoStateKey = remember(videoUri) { "video_state_${videoUri?.hashCode() ?: 0}" }
+    val videoStateKey = remember(videoUri, resumeStateKey) { resumeStateKey ?: "video_state_${videoUri?.hashCode() ?: 0}" }
 
     // ── Playback clock ──
     var currentTime by remember { mutableStateOf(0.0) }
@@ -216,14 +322,21 @@ fun VideoPlayerScreen(
     val isAudio = remember(videoUri, videoFileName) {
         val name = videoFileName.lowercase()
         val uriStr = videoUri?.toString()?.lowercase() ?: ""
+        // The loose "audio" substring test is for local content:// paths;
+        // a network stream URL (Online tab) can contain that word in its
+        // query string while being a plain video.
+        val isNetwork = uriStr.startsWith("http://") || uriStr.startsWith("https://")
         name.endsWith(".mp3") || name.endsWith(".m4a") || name.endsWith(".wav") || name.endsWith(".aac") || name.endsWith(".ogg") || name.endsWith(".flac") ||
             uriStr.endsWith(".mp3") || uriStr.endsWith(".m4a") || uriStr.endsWith(".wav") || uriStr.endsWith(".aac") || uriStr.endsWith(".ogg") || uriStr.endsWith(".flac") ||
-            uriStr.contains("audio")
+            (!isNetwork && uriStr.contains("audio"))
     }
     var albumArtBitmap by remember(videoUri) { mutableStateOf<android.graphics.Bitmap?>(null) }
 
     LaunchedEffect(videoUri) {
-        if (videoUri != null) {
+        // Album art only makes sense for local files; probing a network
+        // stream would download part of it just to look for a cover.
+        val isNetwork = videoUri?.scheme == "http" || videoUri?.scheme == "https"
+        if (videoUri != null && !isNetwork) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 var retriever: android.media.MediaMetadataRetriever? = null
                 try {
@@ -242,27 +355,21 @@ fun VideoPlayerScreen(
         } else albumArtBitmap = null
     }
 
-    // ── Subtitle color resolution (light/dark themes) ──
-    // Two sets of defaults on purpose:
-    //  • Overlay colors (on the video / audio backdrop, always dark):
-    //    bright white + amber with a soft shadow for contrast.
-    //  • List colors (on the THEME background below the player): adaptive,
-    //    so subtitles stay readable in light mode too. A custom
-    //    SubtitleColorState choice always overrides both.
-    val isDarkUi = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    // ── Subtitle color resolution ──
+    // Overlay colors sit on an always-dark picture, while cue cards sit on
+    // the current theme surface. A custom SubtitleColorState choice always
+    // overrides either default.
     val subtitleOverlayColorEn = SubtitleColorState.colorEn ?: Color.White
     val subtitleOverlayColorFa = SubtitleColorState.colorFa ?: AccentAmber
-    val subtitleListColorEn = SubtitleColorState.colorEn ?: if (isDarkUi) Color.White else SubtitleEnOnLight
-    val subtitleListColorFa = SubtitleColorState.colorFa ?: if (isDarkUi) AccentAmber else SubtitleFaOnLight
+    // Cue cards sit on theme surfaces: text / soft text unless the user
+    // picked their own subtitle colours. The same tokens now serve the
+    // Online transcript and the local Video tab.
+    val studioColorEn = SubtitleColorState.colorEn ?: MaterialTheme.colorScheme.onSurface
+    val studioColorFa = SubtitleColorState.colorFa ?: MaterialTheme.colorScheme.onSurfaceVariant
     val overlayTextShadow = Shadow(
         color = Color.Black.copy(alpha = 0.6f),
         offset = Offset(0f, 1.5f),
         blurRadius = 6f
-    )
-    val listTextShadow = Shadow(
-        color = if (isDarkUi) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.85f),
-        offset = Offset(0f, 1f),
-        blurRadius = 4f
     )
     // ── Subtitle fonts (Settings ▸ Theme ▸ Font ▸ Subtitles) ──
     // The player's own EN/FA choice wins; when a language is left on
@@ -282,8 +389,10 @@ fun VideoPlayerScreen(
     }
 
     var showSubtitleSettings by remember { mutableStateOf(false) }
-    var isSyncExpanded by remember { mutableStateOf(false) }
-    var isJsonSyncExpanded by remember { mutableStateOf(false) }
+    // Online tab: the «کارهای دیگر پخش‌کننده» sheet opened from the action
+    // drawer (the extra player actions that used to close the 3-dot
+    // settings sheet).
+    var showOnlineExtraActions by remember { mutableStateOf(false) }
     var containerWidth by remember { mutableStateOf(0) }
     var containerHeightPx by remember { mutableStateOf(1f) }
     var isSplitDragging by remember { mutableStateOf(false) }
@@ -296,6 +405,9 @@ fun VideoPlayerScreen(
     // Everything that is not needed on every single tap now hides behind
     // one button instead of lining up eight icons over the picture.
     var showToolCluster by remember { mutableStateOf(false) }
+    // In normal playback the exact same three-dot cluster lives in the
+    // transcript pane, replacing the old single-purpose settings FAB.
+    var showTranscriptToolCluster by remember { mutableStateOf(false) }
 
     // ── Playback speed & A-B repeat ──
     // The loop markers are per-file on purpose (a range from the previous
@@ -346,6 +458,9 @@ fun VideoPlayerScreen(
     }
 
     var autoPauseAtTime by remember { mutableStateOf<Double?>(null) }
+    // The key remains armed after one pause so replaying the cue can stop at
+    // the same -0.1 s point again until the learner explicitly toggles it off.
+    var cuePauseAtEndKey by remember(videoUri) { mutableStateOf<String?>(null) }
     var skipNextAutoScroll by remember { mutableStateOf(false) }
 
     // ── Free-form overlay buttons (positions persisted) ──
@@ -375,8 +490,74 @@ fun VideoPlayerScreen(
     val smartPauseGearTransform = remember { mutableStateOf(loadTransform("smart_pause_gear", 0f, 0f)) }
 
     val subtitleAlignmentMap = remember(subEnList, subFaList) { alignSubtitles(subEnList, subFaList) }
-    val exoPlayer = remember { ExoPlayer.Builder(context).build().apply { playWhenReady = true } }
+    /*
+     * googlevideo.com and the Piped/Invidious proxies in front of it answer
+     * HTTP 403 to ExoPlayer's default identity (`ExoPlayerLib/…`, no
+     * Referer). Media requests therefore present a regular desktop-Chrome
+     * user agent plus a youtube.com Referer, follow http↔https redirects
+     * (proxies bounce between the two) and give up on a dead host after 15 s
+     * so the fallback chain can move on. Local files are unaffected:
+     * DefaultDataSource only uses the HTTP factory for http(s) URIs.
+     */
+    // «ذخیره هنگام پخش» is read through this volatile holder, not through
+    // the remember keys below: flipping the toggle must NOT rebuild the
+    // player (that would drop the playing position); the running connection
+    // keeps its behaviour and the next opened source honours the new state.
+    val streamCacheController = remember { StreamCacheController() }
+    SideEffect {
+        streamCacheController.enabled = saveWhilePlaying
+        streamCacheController.keyFor = streamCacheKeyFor
+    }
+    val networkDataSourceFactory = remember(context) {
+        val httpFactory = DefaultHttpDataSource.Factory()
+            .setUserAgent(OnlinePlaybackHeaders.USER_AGENT)
+            .setDefaultRequestProperties(OnlinePlaybackHeaders.requestProperties)
+            .setConnectTimeoutMs(OnlinePlaybackHeaders.CONNECT_TIMEOUT_MS)
+            .setReadTimeoutMs(OnlinePlaybackHeaders.READ_TIMEOUT_MS)
+            .setAllowCrossProtocolRedirects(true)
+        SaveWhilePlayingDataSourceFactory(context, httpFactory, streamCacheController)
+    }
+    /*
+     * The player behind every control on this screen. Normally ExoPlayer;
+     * in the Online tab's fallback mode the YouTube IFrame embed bridged as a
+     * Media3 Player. It is typed as the Player interface (and keeps its
+     * historical name) so the subtitle engine, smart pause, A-B repeat and
+     * transport controls drive either one through `currentPosition`,
+     * `seekTo`, `play` and `pause` with no special cases. Switching modes
+     * builds a new player; the lifecycle effect below saves the resume
+     * point of the old one and releases it.
+     */
+    val exoPlayer: Player = remember(networkDataSourceFactory, webFallbackVideoId) {
+        if (webFallbackVideoId != null) {
+            YouTubeWebPlayer(context, webFallbackVideoId)
+        } else {
+            ExoPlayer.Builder(context)
+                .setMediaSourceFactory(DefaultMediaSourceFactory(networkDataSourceFactory))
+                .build()
+                .apply { playWhenReady = true }
+        }
+    }
+    // The web player is started here rather than where it is built, so the
+    // resume point saved by the previous (released) player is picked up.
+    LaunchedEffect(exoPlayer) {
+        val web = exoPlayer as? YouTubeWebPlayer ?: return@LaunchedEffect
+        web.setStartPosition(prefs.savedPosition(videoStateKey))
+        web.playWhenReady = true
+        web.prepare()
+        try {
+            web.setPlaybackSpeed(prefs.playbackSpeed)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+    LaunchedEffect(exoPlayer, pauseForLesson) {
+        if (pauseForLesson) exoPlayer.pause()
+    }
+    val currentOnPlaybackError = rememberUpdatedState(onPlaybackError)
     var isPlaying by remember { mutableStateOf(false) }
+    // Whether the source opened last has reached STATE_READY at least once;
+    // drives the startup watchdog (a later rebuffer is not a startup failure).
+    var sourceReady by remember(exoPlayer, videoUri, streamAudioUri) { mutableStateOf(false) }
     var audioTrackGroups by remember { mutableStateOf<List<Tracks.Group>>(emptyList()) }
 
     fun performSkip(deltaSeconds: Int) {
@@ -439,6 +620,9 @@ fun VideoPlayerScreen(
     // Known words and the speech engine are both shared singletons: they
     // are prepared once here and torn down politely when the player leaves.
     LaunchedEffect(Unit) {
+        // Challenge/blur is shared with the book reader; load its persisted
+        // reader-blur-enabled state before any cue is rendered.
+        StudyModeState.load(context)
         KnownWordsStore.ensureLoaded(context)
         TtsSpeaker.ensureInit(context)
     }
@@ -470,44 +654,103 @@ fun VideoPlayerScreen(
             override fun onTracksChanged(tracks: Tracks) {
                 audioTrackGroups = tracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO }
             }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == androidx.media3.common.Player.STATE_READY) sourceReady = true
+            }
+
+            // Keep listening after STATE_READY as a stream can fail later
+            // while buffering or when a signed segment URL expires.
+            override fun onPlayerError(error: PlaybackException) {
+                val detail = listOfNotNull(
+                    error.errorCodeName.takeIf { it.isNotBlank() },
+                    error.message?.takeIf { it.isNotBlank() && it != error.errorCodeName }
+                ).joinToString(": ")
+                currentOnPlaybackError.value(detail.ifBlank { "Playback failed" })
+            }
         }
         exoPlayer.addListener(listener)
         isPlaying = exoPlayer.isPlaying
+        if (exoPlayer.playbackState == androidx.media3.common.Player.STATE_READY) sourceReady = true
         audioTrackGroups = exoPlayer.currentTracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO }
         onDispose { exoPlayer.removeListener(listener) }
     }
 
-    LaunchedEffect(videoUri) {
+    // Online tab: switching quality swaps the URL of the SAME video, so the
+    // current position is carried over instead of restarting the clip.
+    var lastResumeKey by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(exoPlayer, videoUri, streamAudioUri, streamMimeType) {
+        // The fallback web player loads its clip by id (see above).
+        val nativePlayer = exoPlayer as? ExoPlayer ?: return@LaunchedEffect
         videoUri?.let {
-            exoPlayer.setMediaItem(MediaItem.fromUri(it))
-            val savedPos = prefs.savedPosition(videoStateKey)
-            val wasPlaying = prefs.savedWasPlaying(videoStateKey)
+            val sameVideo = resumeStateKey != null && lastResumeKey == resumeStateKey
+            val carryOverMs = if (sameVideo) nativePlayer.currentPosition else 0L
+            val carryOverPlaying = if (sameVideo) nativePlayer.playWhenReady else true
+            lastResumeKey = resumeStateKey
+            val mediaItem = if (streamMimeType != null) {
+                MediaItem.Builder().setUri(it).setMimeType(streamMimeType).build()
+            } else {
+                MediaItem.fromUri(it)
+            }
+            if (streamAudioUri != null) {
+                val progressiveFactory = ProgressiveMediaSource.Factory(networkDataSourceFactory)
+                val videoSource = progressiveFactory.createMediaSource(mediaItem)
+                val audioSource = progressiveFactory.createMediaSource(MediaItem.fromUri(streamAudioUri))
+                nativePlayer.setMediaSource(MergingMediaSource(videoSource, audioSource))
+            } else {
+                nativePlayer.setMediaItem(mediaItem)
+            }
+            val savedPos = if (sameVideo) carryOverMs else prefs.savedPosition(videoStateKey)
+            val wasPlaying = if (sameVideo) carryOverPlaying else prefs.savedWasPlaying(videoStateKey)
             val readyListener = object : androidx.media3.common.Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == androidx.media3.common.Player.STATE_READY) {
-                        if (savedPos > 0) exoPlayer.seekTo(savedPos)
-                        exoPlayer.playWhenReady = wasPlaying
-                        exoPlayer.removeListener(this)
+                        if (savedPos > 0) nativePlayer.seekTo(savedPos)
+                        nativePlayer.playWhenReady = wasPlaying
+                        nativePlayer.removeListener(this)
                     }
                 }
 
                 // Without this the listener leaked forever whenever a file
                 // failed to open (it was only removed on STATE_READY).
                 override fun onPlayerError(error: PlaybackException) {
-                    exoPlayer.removeListener(this)
+                    nativePlayer.removeListener(this)
                 }
             }
-            exoPlayer.addListener(readyListener)
-            exoPlayer.prepare()
+            nativePlayer.addListener(readyListener)
+            nativePlayer.prepare()
             try {
-                exoPlayer.setPlaybackSpeed(prefs.playbackSpeed)
+                nativePlayer.setPlaybackSpeed(prefs.playbackSpeed)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
+    // Startup watchdog (Online tab): a proxy that accepts the connection but
+    // never sends data leaves ExoPlayer buffering forever without an error.
+    // Treat "not ready after startupTimeoutMs" as a failure of this source.
+    LaunchedEffect(exoPlayer, videoUri, streamAudioUri, startupTimeoutMs) {
+        if (startupTimeoutMs <= 0L || videoUri == null) return@LaunchedEffect
+        delay(startupTimeoutMs)
+        if (!sourceReady && exoPlayer.playerError == null) {
+            currentOnPlaybackError.value("Timed out: the stream did not start within ${startupTimeoutMs / 1000} s")
+        }
+    }
+
     val activity = remember { context.findActivity() }
+    // «چرخش صفحه»: the one rotate handler, shared by every place the
+    // switch lives — the fullscreen 3-dot cluster, the below-video 3-dot
+    // cluster and the corner glass button. The activity handles orientation
+    // changes itself (manifest configChanges), so playback — ExoPlayer or
+    // the embed WebView — keeps running through the turn.
+    val rotateScreen = {
+        activity?.let { act ->
+            val configLandscape = act.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            act.requestedOrientation = OrientationToggle.next(act.requestedOrientation, configLandscape)
+        }
+        controlsVisible = true
+    }
     DisposableEffect(isFullScreen) {
         val controller = activity?.let { WindowCompat.getInsetsController(it.window, it.window.decorView) }
         if (isFullScreen) {
@@ -621,7 +864,25 @@ fun VideoPlayerScreen(
             return@LaunchedEffect
         }
         isAutoScrolling = true
-        listState.animateScrollToItem(target)
+        if (onlineStudio) {
+            // Online cue cards: keep the active card centred on screen.
+            if (listState.layoutInfo.visibleItemsInfo.none { it.index == target }) {
+                listState.scrollToItem(target)
+            }
+            val placed = withTimeoutOrNull(400L) {
+                snapshotFlow { listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == target } }
+                    .filterNotNull()
+                    .first()
+            }
+            if (placed != null) {
+                val info = listState.layoutInfo
+                val viewportCenter = (info.viewportStartOffset + info.viewportEndOffset) / 2f
+                val delta = placed.offset + placed.size / 2f - viewportCenter
+                if (kotlin.math.abs(delta) > 1f) listState.animateScrollBy(delta)
+            }
+        } else {
+            listState.animateScrollToItem(target)
+        }
         isAutoScrolling = false
     }
 
@@ -741,16 +1002,37 @@ fun VideoPlayerScreen(
             // picture.
             val toonTv = isAnimeDesign() && !isFullScreen
             val tvShape = RoundedCornerShape(28.dp)
+            // Online learning player: a rounded 16:9 card with a soft shadow
+            // instead of the draggable split (never taller than ~58 % of
+            // the screen, so landscape still leaves room for the transcript).
+            val studioCard = onlineStudio && !isFullScreen
+            val studioShape = RoundedCornerShape(OnlineStudioTokens.radius)
+            val density = LocalDensity.current
+            val studioMaxHeight = if (containerHeightPx > 1f) with(density) { (containerHeightPx * 0.58f).toDp() } else Dp.Unspecified
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(if (isFullScreen) 1f else prefs.videoWeight)
+                    .then(
+                        if (studioCard) {
+                            Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .heightIn(max = studioMaxHeight)
+                                .then(if (toonTv) Modifier else Modifier.padding(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 6.dp))
+                                .aspectRatio(16f / 9f)
+                        } else {
+                            Modifier.weight(if (isFullScreen) 1f else prefs.videoWeight)
+                        }
+                    )
                     .then(
                         if (toonTv) {
                             Modifier
                                 .padding(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 6.dp)
                                 .inkShadow(offset = 4.dp, shape = tvShape)
                                 .clip(tvShape)
+                        } else if (studioCard) {
+                            Modifier
+                                .shadow(elevation = 10.dp, shape = studioShape)
+                                .clip(studioShape)
                         } else Modifier
                     )
                     .background(Color.Black)
@@ -772,18 +1054,35 @@ fun VideoPlayerScreen(
             // draws its own controls, so the experience (and the seek bar)
             // is identical in smart-pause and normal mode. Before, the
             // smart-pause mode had no timeline at all.
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = {
-                    PlayerView(context).apply {
-                        player = exoPlayer
-                        useController = false
-                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-                        subtitleView?.visibility = android.view.View.GONE
-                    }
-                },
-                update = { playerView -> playerView.useController = false }
-            )
+            val webPlayer = exoPlayer as? YouTubeWebPlayer
+            if (webPlayer != null) {
+                // Fallback mode: the YouTube embed. The gesture layer and the
+                // app's own controls sit on top, exactly as with ExoPlayer.
+                key(webPlayer) {
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
+                        factory = {
+                            (webPlayer.view.parent as? android.view.ViewGroup)?.removeView(webPlayer.view)
+                            webPlayer.view
+                        }
+                    )
+                }
+            } else {
+                key(exoPlayer) {
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
+                        factory = {
+                            PlayerView(context).apply {
+                                player = exoPlayer
+                                useController = false
+                                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                                subtitleView?.visibility = android.view.View.GONE
+                            }
+                        },
+                        update = { playerView -> playerView.useController = false }
+                    )
+                }
+            }
 
             if (isAudio && videoUri != null) {
                 AudioArtworkStage(
@@ -940,14 +1239,18 @@ fun VideoPlayerScreen(
                     // The smart-pause gear is movable like the other overlay
                     // buttons and is NEVER hidden by the "hide subtitles &
                     // buttons" option — it is the way back into the panel.
-                    FreeFormButton(smartPauseGearTransform, "smart_pause_gear", modifier = Modifier.align(Alignment.TopCenter)) {
-                        PlayerGlassButton(
-                            icon = Icons.Default.Settings,
-                            contentDescription = strings.smartPauseSettingsCd,
-                            onClick = { showOverlaySettings = !showOverlaySettings },
-                            modifier = Modifier.padding(top = 10.dp),
-                            size = 38.dp
-                        )
+                    // Normal-view settings live only in the transcript FAB.
+                    // The movable gear remains a fullscreen smart-pause aid.
+                    if (isFullScreen) {
+                        FreeFormButton(smartPauseGearTransform, "smart_pause_gear", modifier = Modifier.align(Alignment.TopCenter)) {
+                            PlayerGlassButton(
+                                icon = Icons.Default.Settings,
+                                contentDescription = strings.smartPauseSettingsCd,
+                                onClick = { showOverlaySettings = !showOverlaySettings },
+                                modifier = Modifier.padding(top = 10.dp),
+                                size = 38.dp
+                            )
+                        }
                     }
 
                     val prevSubEn = if (activeIndex > 0) subEnList[activeIndex - 1] else null
@@ -1093,6 +1396,9 @@ fun VideoPlayerScreen(
             // Box nested in a Column, Kotlin resolves the ColumnScope
             // overload of AnimatedVisibility, which the layout DSL marker
             // then rejects.
+            // Normal playback stays intentionally clean. Its controls are in
+            // the transcript FAB; these picture overlays exist only fullscreen.
+            if (isFullScreen) {
             ChromeFade(
                 visible = showChrome,
                 modifier = Modifier.align(Alignment.TopCenter)
@@ -1108,6 +1414,22 @@ fun VideoPlayerScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Online tab: floating extras such as «⭐ ذخیره ویدیو».
+                    overlayActions?.invoke()
+                    // Online tab: the manual rotation switch stays on the
+                    // picture (not in the cluster) so it is one tap away in
+                    // fullscreen. The activity handles orientation changes
+                    // itself (manifest configChanges), so playback — ExoPlayer
+                    // or the embed WebView — keeps running through the turn.
+                    if (showOrientationToggle && videoUri != null) {
+                        PlayerGlassButton(
+                            icon = Icons.Default.ScreenRotation,
+                            contentDescription = strings.rotateScreenCd,
+                            onClick = rotateScreen,
+                            modifier = Modifier.testTag("btnToggleOrientation"),
+                            active = isFullScreen
+                        )
+                    }
                     // Only two things stay permanently on the picture: the
                     // speed / study pill, which is what a learner touches
                     // most, and one button that unfolds everything else.
@@ -1163,7 +1485,17 @@ fun VideoPlayerScreen(
                                 onClick = { onFullScreenToggle(!isFullScreen) },
                                 active = isFullScreen
                             )
-                        )
+                        ) + if (showOrientationToggle && videoUri != null) {
+                            // Online tab: «چرخش صفحه» lives in the clusters
+                            // now, not in the extra-actions sheet.
+                            listOf(
+                                PlayerToolAction(
+                                    icon = Icons.Default.ScreenRotation,
+                                    contentDescription = strings.rotateScreenCd,
+                                    onClick = rotateScreen
+                                )
+                            )
+                        } else emptyList(),
                     )
                 }
             }
@@ -1220,6 +1552,8 @@ fun VideoPlayerScreen(
                         modifier = Modifier.padding(top = 14.dp, start = 12.dp)
                     )
                 }
+            }
+
             }
 
             // Smart pause keeps the time — and only the time.
@@ -1418,63 +1752,92 @@ fun VideoPlayerScreen(
                     },
                     subEnOffset = subEnOffset,
                     subFaOffset = subFaOffset,
+                    jsonOffset = jsonPackage
+                        ?.takeIf { it.subtitles.any { sub -> sub.start != null && sub.end != null } }
+                        ?.let { jsonOffset },
                     onShiftSubEn = onShiftSubEn,
                     onShiftSubFa = onShiftSubFa,
+                    onResetSubEn = { onShiftSubEn(-subEnOffset) },
+                    onResetSubFa = { onShiftSubFa(-subFaOffset) },
+                    onShiftJson = onShiftJson,
+                    onResetJson = onResetJson,
                     offsetText = { value -> offsetText(value) },
                     canSaveSrt = subFaList.isNotEmpty(),
                     onSaveSrt = onSaveSrt,
+                    focusMode = focusMode,
+                    onToggleFocus = onFocusModeToggle,
+                    // The Online tab's action drawer owns the «کارهای دیگر
+                    // پخش‌کننده» card (and the quality picker); everything
+                    // else — including the subtitle display + sync cards —
+                    // stays in this sheet, as it always was.
+                    includeExtraActions = !onlineStudio,
+                    fabActions = fabActions,
                     onDismiss = { showSubtitleSettings = false }
+                )
+            }
+
+            // Online tab: the «کارهای دیگر پخش‌کننده» opened from the
+            // action drawer's own button — the extra player actions that
+            // used to close the 3-dot settings sheet.
+            if (showOnlineExtraActions && onlineStudio) {
+                PlayerExtraActionsSheet(
+                    actions = fabActions,
+                    strings = strings,
+                    onDismiss = { showOnlineExtraActions = false }
                 )
             }
             }
         }
 
         if (!isFullScreen) {
-            // Draggable divider: the video/list ratio is now up to the user
-            // (and remembered), instead of a hardcoded 38/62 split.
-            SplitDragHandle(
-                active = isSplitDragging,
-                modifier = Modifier.draggable(
-                    orientation = Orientation.Vertical,
-                    state = rememberDraggableState { delta ->
-                        prefs.videoWeight = prefs.videoWeight + delta / containerHeightPx
-                    },
-                    onDragStarted = { isSplitDragging = true },
-                    onDragStopped = { isSplitDragging = false }
+            if (!onlineStudio) {
+                // Draggable divider: the video/list ratio is now up to the user
+                // (and remembered), instead of a hardcoded 38/62 split.
+                SplitDragHandle(
+                    active = isSplitDragging,
+                    modifier = Modifier.draggable(
+                        orientation = Orientation.Vertical,
+                        state = rememberDraggableState { delta ->
+                            prefs.videoWeight = prefs.videoWeight + delta / containerHeightPx
+                        },
+                        onDragStarted = { isSplitDragging = true },
+                        onDragStopped = { isSplitDragging = false }
+                    )
                 )
-            )
+            }
 
-            Column(
+            // One pane beneath the video, shared by both tabs: the Online
+            // tab tops it with the collapsible action drawer (کشوی ابزار)
+            // that replaced the old «متن تعاملی» header, and BOTH tabs keep
+            // the cue-card transcript — the Online tab got its subtitle
+            // cards back beneath the drawer — plus the floating 3-dot
+            // cluster in the lower-right corner (the subtitles toggle, the
+            // player settings and focus mode live there, so they never
+            // depend on the drawer being open).
+            Box(
                 modifier = Modifier
-                    .weight(1f - prefs.videoWeight)
+                    .weight(if (onlineStudio) 1f else 1f - prefs.videoWeight)
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.background)
             ) {
-                val jsonList = jsonPackage?.subtitles
-                SectionHeader(
-                    title = strings.allSubtitlesListTitle,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    trailing = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                            // Coverage at a glance, without opening a panel.
-                            if (coverage.totalTokens > 0) {
-                                StatusPill(
-                                    text = strings.knownPercent(coverage.percent),
-                                    tone = if (coverage.percent >= 90) PillTone.Positive else PillTone.Neutral
-                                )
-                            }
-                            if (listenMode) {
-                                StatusPill(
-                                    text = strings.listenPill,
-                                    tone = PillTone.Warning
-                                )
-                            }
-                            if (jsonList != null && jsonList.isNotEmpty()) {
-                                StatusPill(text = strings.jsonActiveBadge, tone = PillTone.Accent)
-                            }
-                        }
+                Column(modifier = Modifier.fillMaxSize()) {
+                    val jsonList = jsonPackage?.subtitles
+
+                    // Online tab: the drawer sits between the video and the
+                    // cue cards. Focus mode keeps it hidden, like before.
+                    if (onlineStudio && !focusMode && onlineDrawerActions != null) {
+                        OnlineActionDrawer(
+                            qualities = streamQualities,
+                            selectedQuality = selectedStreamQuality,
+                            onSelectQuality = onSelectStreamQuality,
+                            onOpenExtraActions = { showOnlineExtraActions = true },
+                            actions = onlineDrawerActions,
+                            strings = strings,
+                            jsonAttached = jsonPackage != null,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
+                        )
                     }
-                )
+
                 singleTranslateError?.let { error ->
                     Text(
                         text = error,
@@ -1485,83 +1848,105 @@ fun VideoPlayerScreen(
                 }
 
                 if (jsonList != null && jsonList.isNotEmpty()) {
-                    // JSON priority rendering: when a JSON learning package
-                    // is loaded its subtitles replace the normal EN/FA list
-                    // (no duplicated rendering). The EN/FA lists stay in
-                    // memory as a fallback for when the JSON is removed.
-                    if (!focusMode) {
-                        SyncPanel(
-                            title = strings.jsonSyncRowTitle,
-                            expanded = isJsonSyncExpanded,
-                            expandLabel = if (isJsonSyncExpanded) strings.collapseSync else strings.expandSync,
-                            onToggle = { isJsonSyncExpanded = !isJsonSyncExpanded }
-                        ) {
-                            if (jsonList.any { it.start != null && it.end != null }) {
-                                SubtitleShiftControls(
-                                    title = strings.subJsonLabel,
-                                    offsetLabel = strings.shiftValueLabel(offsetText(jsonOffset)),
-                                    currentOffset = jsonOffset,
-                                    onShift = onShiftJson,
-                                    footer = {
-                                        Surface(
-                                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
-                                            contentColor = MaterialTheme.colorScheme.error,
-                                            shape = RoundedCornerShape(12.dp),
-                                            modifier = Modifier.fillMaxWidth(),
-                                            enabled = jsonOffset != 0.0,
-                                            onClick = onResetJson
-                                        ) {
-                                            Text(
-                                                text = strings.jsonResetBtn,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                textAlign = TextAlign.Center,
-                                                modifier = Modifier.padding(vertical = 10.dp)
-                                            )
-                                        }
-                                    }
-                                )
-                            } else {
-                                Text(
-                                    text = strings.jsonSyncNoTimings,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
+                    // One cue-card renderer is shared by online and local
+                    // playback. This removes the dense local-only row shell
+                    // (metadata pills, wide action buttons and a second
+                    // sync panel) while keeping every study action on the
+                    // card that owns its subtitle.
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize().fadingEdges(),
-                        contentPadding = PaddingValues(top = 4.dp, bottom = 20.dp)
+                        // Leave a clear landing area for the transcript
+                        // settings FAB below the last cue.
+                        contentPadding = PaddingValues(top = 4.dp, bottom = 84.dp)
                     ) {
                         items(jsonList) { jsonSub: JsonSubtitle ->
-                            JsonSubtitleRow(
-                                timeLabel = jsonSub.start?.let { formatTime(it) },
-                                idLabel = jsonSub.id?.let { "ID $it" },
-                                level = jsonSub.level,
-                                difficulty = jsonSub.difficulty,
+                            val cueIndex = jsonList.indexOf(jsonSub)
+                            val cueStart = jsonSub.start
+                            val cueEnd = jsonSub.end
+                            val grammarTopic = jsonSub.lesson?.grammar?.takeIf { it.isNotBlank() }
+                            val lessonLabel = when {
+                                grammarTopic != null -> grammarTopic
+                                jsonSub.lesson != null || jsonSub.words.isNotEmpty() -> strings.onlineCueLessonBadge
+                                // A local JSON row has always opened its
+                                // lesson; keep that as the small cue-card badge.
+                                !onlineStudio -> strings.lessonSheetTitle
+                                else -> null
+                            }
+                            CueCard(
+                                timeLabel = cueStart?.let { formatTime(it) },
                                 englishText = jsonSub.english,
                                 translationText = jsonSub.translation,
-                                isActive = jsonSub.start != null && jsonSub.end != null &&
-                                    jsonSub.start!! <= currentTime && currentTime <= jsonSub.end!!,
-                                enColor = subtitleListColorEn,
-                                faColor = subtitleListColorFa,
-                                textShadow = listTextShadow,
+                                isActive = cueStart != null && cueEnd != null && cueStart <= currentTime && currentTime <= cueEnd,
+                                enColor = studioColorEn,
+                                faColor = studioColorFa,
                                 enFont = subtitleFamilyEn,
                                 faFont = subtitleFamilyFa,
                                 strings = strings,
                                 onSeek = {
-                                    jsonSub.start?.let { start ->
-                                        exoPlayer.seekTo((start * 1000).toLong())
+                                    if (cueStart != null) {
+                                        val cueKey = "json-${jsonSub.id ?: cueIndex}-${cueStart}-${cueEnd}"
+                                        autoPauseAtTime = if (cueEnd != null && cuePauseAtEndKey == cueKey) {
+                                            (cueEnd - 0.1).coerceAtLeast(cueStart)
+                                        } else null
+                                        exoPlayer.seekTo((cueStart * 1000).toLong())
                                         exoPlayer.play()
                                     }
                                 },
+                                onReplay = if (cueStart != null && cueEnd != null) {
+                                    {
+                                        val cueKey = "json-${jsonSub.id ?: cueIndex}-${cueStart}-${cueEnd}"
+                                        autoPauseAtTime = if (cuePauseAtEndKey == cueKey) {
+                                            (cueEnd - 0.1).coerceAtLeast(cueStart)
+                                        } else null
+                                        exoPlayer.seekTo((cueStart * 1000).toLong())
+                                        exoPlayer.play()
+                                    }
+                                } else null,
+                                onToggleLoop = if (cueStart != null && cueEnd != null) {
+                                    {
+                                        val startMs = (cueStart * 1000).toLong()
+                                        val endMs = (cueEnd * 1000).toLong()
+                                        if (loopStartMs == startMs && loopEndMs == endMs) {
+                                            loopStartMs = null; loopEndMs = null
+                                        } else {
+                                            loopStartMs = startMs; loopEndMs = endMs
+                                            exoPlayer.seekTo(startMs); exoPlayer.play()
+                                        }
+                                    }
+                                } else null,
+                                loopActive = cueStart != null && cueEnd != null &&
+                                    loopStartMs == (cueStart * 1000).toLong() && loopEndMs == (cueEnd * 1000).toLong(),
+                                onTogglePauseAtEnd = if (cueStart != null && cueEnd != null) {
+                                    {
+                                        val cueKey = "json-${jsonSub.id ?: cueIndex}-${cueStart}-${cueEnd}"
+                                        if (cuePauseAtEndKey == cueKey) {
+                                            cuePauseAtEndKey = null
+                                            autoPauseAtTime = null
+                                        } else {
+                                            cuePauseAtEndKey = cueKey
+                                            autoPauseAtTime = (cueEnd - 0.1).coerceAtLeast(cueStart)
+                                        }
+                                    }
+                                } else null,
+                                pauseAtEndActive = cuePauseAtEndKey == "json-${jsonSub.id ?: cueIndex}-${cueStart}-${cueEnd}",
                                 onWordClick = { word ->
                                     exoPlayer.pause()
                                     onWordClick(word, jsonSub.english, jsonSub.translation)
                                 },
-                                onSentenceClick = { onSentenceClick(jsonSub.english, jsonSub.translation) }
+                                onAddToLeitner = onAddSentenceToLeitner?.let { add ->
+                                    { add(jsonSub, cueStart?.let { formatTime(it) } ?: "", cueIndex) }
+                                },
+                                leitnerSaved = LeitnerCard.normalizeFront(jsonSub.english) in savedSentenceTexts,
+                                lessonLabel = lessonLabel,
+                                onLesson = lessonLabel?.let {
+                                    {
+                                        exoPlayer.pause()
+                                        onSentenceClick(jsonSub.english, jsonSub.translation)
+                                    }
+                                },
+                                studyLabels = studyLabels,
+                                focusKey = "sub-${jsonSub.id ?: cueIndex}"
                             )
                         }
                     }
@@ -1573,75 +1958,206 @@ fun VideoPlayerScreen(
                         )
                     }
                 } else {
-                    if (!focusMode) {
-                        SyncPanel(
-                            title = strings.syncSettingsRowTitle,
-                            expanded = isSyncExpanded,
-                            expandLabel = if (isSyncExpanded) strings.collapseSync else strings.expandSync,
-                            onToggle = { isSyncExpanded = !isSyncExpanded }
-                        ) {
-                            SubtitleShiftControls(
-                                title = strings.langCodeEn,
-                                offsetLabel = strings.shiftValueLabel(offsetText(subEnOffset)),
-                                currentOffset = subEnOffset,
-                                onShift = onShiftSubEn
-                            )
-                            Spacer(modifier = Modifier.height(14.dp))
-                            SubtitleShiftControls(
-                                title = strings.langCodeFa,
-                                offsetLabel = strings.shiftValueLabel(offsetText(subFaOffset)),
-                                currentOffset = subFaOffset,
-                                onShift = onShiftSubFa
-                            )
-                        }
-                    }
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize().fadingEdges(),
-                        contentPadding = PaddingValues(top = 4.dp, bottom = 20.dp)
+                        // Leave a clear landing area for the transcript
+                        // settings FAB below the last cue.
+                        contentPadding = PaddingValues(top = 4.dp, bottom = 84.dp)
                     ) {
                         itemsIndexed(subEnList) { index, enSub ->
                             val faMatch = subtitleAlignmentMap[enSub]
-                            SubtitleLineRow(
-                                timeLabel = formatTime(enSub.start),
+                            val cueTime = formatTime(enSub.start)
+                            CueCard(
+                                timeLabel = cueTime,
                                 englishText = enSub.text,
                                 translationText = faMatch?.text,
                                 isActive = enSub.start <= currentTime && enSub.end >= currentTime,
-                                enColor = subtitleListColorEn,
-                                faColor = subtitleListColorFa,
-                                textShadow = listTextShadow,
+                                enColor = studioColorEn,
+                                faColor = studioColorFa,
                                 enFont = subtitleFamilyEn,
                                 faFont = subtitleFamilyFa,
                                 strings = strings,
-                                isTranslating = isTranslatingSingle && translatingIndex == index,
-                                translateEnabled = !isTranslatingSingle,
                                 onSeek = {
-                                    autoPauseAtTime = null
+                                    val cueKey = "sub-$index-${enSub.start}-${enSub.end}"
+                                    autoPauseAtTime = if (cuePauseAtEndKey == cueKey) {
+                                        (enSub.end - 0.1).coerceAtLeast(enSub.start)
+                                    } else null
                                     exoPlayer.seekTo((enSub.start * 1000).toLong())
                                     exoPlayer.play()
                                 },
-                                onPlayWithAutoStop = {
-                                    autoPauseAtTime = enSub.end
+                                onReplay = {
+                                    val cueKey = "sub-$index-${enSub.start}-${enSub.end}"
+                                    autoPauseAtTime = if (cuePauseAtEndKey == cueKey) {
+                                        (enSub.end - 0.1).coerceAtLeast(enSub.start)
+                                    } else null
                                     exoPlayer.seekTo((enSub.start * 1000).toLong())
                                     exoPlayer.play()
                                 },
+                                onToggleLoop = {
+                                    val startMs = (enSub.start * 1000).toLong()
+                                    val endMs = (enSub.end * 1000).toLong()
+                                    if (loopStartMs == startMs && loopEndMs == endMs) {
+                                        loopStartMs = null; loopEndMs = null
+                                    } else {
+                                        loopStartMs = startMs; loopEndMs = endMs
+                                        exoPlayer.seekTo(startMs); exoPlayer.play()
+                                    }
+                                },
+                                loopActive = loopStartMs == (enSub.start * 1000).toLong() && loopEndMs == (enSub.end * 1000).toLong(),
+                                onTogglePauseAtEnd = {
+                                    val cueKey = "sub-$index-${enSub.start}-${enSub.end}"
+                                    if (cuePauseAtEndKey == cueKey) {
+                                        cuePauseAtEndKey = null
+                                        autoPauseAtTime = null
+                                    } else {
+                                        cuePauseAtEndKey = cueKey
+                                        autoPauseAtTime = (enSub.end - 0.1).coerceAtLeast(enSub.start)
+                                    }
+                                },
+                                pauseAtEndActive = cuePauseAtEndKey == "sub-$index-${enSub.start}-${enSub.end}",
                                 onWordClick = { word ->
                                     exoPlayer.pause()
                                     onWordClick(word, enSub.text, faMatch?.text)
                                 },
-                                onSentenceClick = {
-                                    exoPlayer.pause()
-                                    onSentenceClick(enSub.text, faMatch?.text)
-                                },
-                                onTranslate = { onTranslateSubtitle(index) },
-                                onStopTranslation = onStopTranslation
+                                // Existing local rows already had a speaker;
+                                // the compact cue header keeps it. The extra
+                                // Leitner shortcut stays available online,
+                                // where it was part of the original flow.
+                                onAddToLeitner = if (onlineStudio) {
+                                    onAddSentenceToLeitner?.let { add ->
+                                        {
+                                            add(
+                                                JsonSubtitle(start = enSub.start, end = enSub.end, english = enSub.text, translation = faMatch?.text),
+                                                cueTime,
+                                                index
+                                            )
+                                        }
+                                    }
+                                } else null,
+                                leitnerSaved = LeitnerCard.normalizeFront(enSub.text) in savedSentenceTexts,
+                                // Translation is an exception action: show
+                                // it only when the cue still lacks one,
+                                // instead of placing an AI button on every
+                                // local subtitle card.
+                                onTranslate = if (faMatch?.text.isNullOrBlank()) { { onTranslateSubtitle(index) } } else null,
+                                isTranslating = isTranslatingSingle && translatingIndex == index,
+                                translateEnabled = !isTranslatingSingle,
+                                onStopTranslation = onStopTranslation,
+                                studyLabels = studyLabels,
+                                focusKey = if (onlineStudio) "cue-$index" else null
                             )
                         }
                     }
                 }
             }
+
+                // The normal transcript keeps the identical three-dot
+                // player cluster rather than a one-off settings FAB. It
+                // opens leftward from the lower-right corner, exactly like
+                // the player chrome — the very cluster the Online tab's
+                // drawer pane reuses below the video.
+                BelowVideoToolCluster(
+                    strings = strings,
+                    expanded = showTranscriptToolCluster,
+                    onToggleExpanded = { showTranscriptToolCluster = !showTranscriptToolCluster },
+                    settingsOpen = showSubtitleSettings,
+                    onOpenSettings = {
+                        showSubtitleSettings = true
+                        showTranscriptToolCluster = false
+                    },
+                    abRepeatActive = loopStartMs != null,
+                    onCycleAbRepeat = { cycleAbRepeat() },
+                    subtitlesEnabled = prefs.subtitlesEnabled,
+                    onToggleSubtitles = { prefs.subtitlesEnabled = !prefs.subtitlesEnabled },
+                    // The Online tab's rotation switch, moved here from the
+                    // extra-actions sheet (the Video tab never passes it).
+                    showRotation = showOrientationToggle && videoUri != null,
+                    onRotate = rotateScreen,
+                    focusMode = focusMode,
+                    onToggleFocus = onFocusModeToggle,
+                    onEnterFullscreen = { onFullScreenToggle(true) },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 16.dp)
+                )
+            } // shared below-video pane: Online drawer above the cue cards
         }
     }
+}
+
+/**
+ * The three-dot cluster that floats at the lower-right corner of the pane
+ * beneath the video — the one pane both tabs share (the Online tab's cue
+ * cards sit under its action drawer), so both keep the same one-tap access
+ * to the player settings, the subtitles toggle, AB repeat, focus mode and
+ * fullscreen. (The video-player settings themselves — subtitle display and
+ * sync included — live in the sheet this cluster opens, not in the drawer.)
+ */
+@Composable
+private fun BelowVideoToolCluster(
+    strings: AppStrings,
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    settingsOpen: Boolean,
+    onOpenSettings: () -> Unit,
+    abRepeatActive: Boolean,
+    onCycleAbRepeat: () -> Unit,
+    subtitlesEnabled: Boolean,
+    onToggleSubtitles: () -> Unit,
+    /** Online tab: show the «چرخش صفحه» action in this cluster too. */
+    showRotation: Boolean = false,
+    onRotate: () -> Unit = {},
+    focusMode: Boolean,
+    onToggleFocus: () -> Unit,
+    onEnterFullscreen: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    PlayerToolCluster(
+        expanded = expanded,
+        onToggle = onToggleExpanded,
+        toggleDescription = strings.moreControlsCd,
+        actions = listOf(
+            PlayerToolAction(
+                icon = Icons.Default.Settings,
+                contentDescription = strings.playerSettingsCd,
+                onClick = onOpenSettings,
+                active = settingsOpen
+            ),
+            PlayerToolAction(
+                icon = Icons.Default.Refresh,
+                contentDescription = strings.abRepeatCd,
+                onClick = onCycleAbRepeat,
+                active = abRepeatActive
+            ),
+            PlayerToolAction(
+                icon = Icons.Default.Subtitles,
+                contentDescription = strings.showSubtitlesTitle,
+                onClick = onToggleSubtitles,
+                active = subtitlesEnabled
+            ),
+            PlayerToolAction(
+                icon = if (focusMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                contentDescription = strings.focusModeCd,
+                onClick = onToggleFocus,
+                active = focusMode
+            ),
+            PlayerToolAction(
+                icon = Icons.Default.Fullscreen,
+                contentDescription = strings.fullscreenCd,
+                onClick = onEnterFullscreen
+            )
+        ) + if (showRotation) {
+            listOf(
+                PlayerToolAction(
+                    icon = Icons.Default.ScreenRotation,
+                    contentDescription = strings.rotateScreenCd,
+                    onClick = onRotate
+                )
+            )
+        } else emptyList(),
+        modifier = modifier
+    )
 }
 
 /**
@@ -1690,6 +2206,10 @@ private fun SubtitleOverlayContent(
     onWordClick: (String) -> Unit,
     onSentenceClick: () -> Unit
 ) {
+    // Source language weight -> English overlay, target -> translation overlay
+    // (default pair EN->FA; user swaps weights if they swapped languages).
+    val enWeight = LanguageWeightState.sourceWeight.weight
+    val faWeight = LanguageWeightState.targetWeight.weight
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         if (!english.isNullOrBlank()) {
             ClickableWordText(
@@ -1698,7 +2218,7 @@ private fun SubtitleOverlayContent(
                     color = enColor,
                     shadow = shadow,
                     fontFamily = enFont,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = enWeight,
                     textAlign = TextAlign.Center,
                     fontSize = MaterialTheme.typography.titleLarge.fontSize * fontScale
                 ),
@@ -1712,12 +2232,10 @@ private fun SubtitleOverlayContent(
             Text(
                 text = translation,
                 color = faColor,
-                // Centered on the video, but the paragraph direction still
-                // must follow the translation's own script.
                 style = MaterialTheme.typography.titleMedium.copy(
                     shadow = shadow,
                     fontFamily = faFont,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = faWeight,
                     fontSize = MaterialTheme.typography.titleMedium.fontSize * fontScale,
                     textDirection = translation.autoTextDirection()
                 ),
@@ -1767,58 +2285,6 @@ private fun SmartPauseChip(
                     maxLines = 1
                 )
             }
-        }
-    }
-}
-
-/** Collapsible glass panel used by the EN/FA and JSON time-sync controls. */
-@Composable
-private fun SyncPanel(
-    title: String,
-    expanded: Boolean,
-    expandLabel: String,
-    onToggle: () -> Unit,
-    content: @Composable () -> Unit
-) {
-    val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
-        animationSpec = tween(durationMillis = 220),
-        label = "syncArrow"
-    )
-    GlassCard(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        cornerRadius = 20.dp,
-        contentPadding = PaddingValues(14.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().clickable { onToggle() },
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = expandLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = arrowRotation }
-                )
-            }
-        }
-        AnimatedVisibility(visible = expanded, enter = fadeIn(), exit = fadeOut()) {
-            Column(modifier = Modifier.padding(top = 12.dp)) { content() }
         }
     }
 }

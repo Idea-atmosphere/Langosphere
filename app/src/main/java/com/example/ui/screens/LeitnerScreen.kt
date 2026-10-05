@@ -47,6 +47,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,7 +70,6 @@ import com.example.logic.autoTextDirection
 import com.example.model.LeitnerCard
 import com.example.ui.components.EmptyState
 import com.example.ui.components.JsonQuizBetaCard
-import com.example.ui.components.JsonQuizBetaDialog
 import com.example.ui.components.GlassCard
 import com.example.ui.components.GradientButton
 import com.example.ui.components.PillTone
@@ -84,6 +85,7 @@ import com.example.logic.isPersianText
 import com.example.ui.theme.AppFontScope
 import com.example.ui.theme.AppFontState
 import com.example.ui.theme.AppStrings
+import com.example.ui.theme.LanguageWeightState
 import com.example.ui.theme.neoAccent
 import com.example.ui.components.anime.ToonButton
 import com.example.ui.components.anime.ToonCard
@@ -114,7 +116,7 @@ import kotlin.math.roundToInt
  * you are looking at.
  */
 @Composable
-fun LeitnerScreen(viewModel: AppViewModel) {
+fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
     val allCards by viewModel.leitnerCards.collectAsState()
     val dueCards by viewModel.leitnerDueCards.collectAsState()
     val appLanguage by viewModel.appLanguage.collectAsState()
@@ -131,10 +133,11 @@ fun LeitnerScreen(viewModel: AppViewModel) {
 
     // This tab is a small toolbox ("Better learning tools"): the Leitner box
     // itself, and the beta quiz built from the imported JSON package.
-    var tool by remember { mutableStateOf(LearningTool.LEITNER) }
+    // Saveable: a trip to Recents (or the system reclaiming the activity)
+    // keeps the learner on the tool they had open.
+    var tool by rememberSaveable(stateSaver = ToolSaver) { mutableStateOf(LearningTool.LEITNER) }
 
     // BETA: the "quiz from JSON" dialog (see JsonQuizBetaDialog).
-    var showJsonQuiz by remember { mutableStateOf(false) }
 
     // The review deck. pageCount is read lazily, so answering a card (which
     // removes it from dueCards) shrinks the deck without resetting anything.
@@ -197,7 +200,7 @@ fun LeitnerScreen(viewModel: AppViewModel) {
                 strings = strings,
                 pkg = jsonSubtitles,
                 fileName = jsonSubFileName,
-                onOpen = { showJsonQuiz = true },
+                onOpen = onOpenQuiz,
             )
             Spacer(modifier = Modifier.weight(1f))
             return@Column
@@ -219,7 +222,7 @@ fun LeitnerScreen(viewModel: AppViewModel) {
                     contentPadding = PaddingValues(12.dp),
                 ) {
                     Text(
-                        "🔥 " + strings.reviewTodayChip(dueCards.size),
+                        strings.reviewTodayChip(dueCards.size),
                         style = MaterialTheme.typography.labelMedium,
                         color = toonOn(dueFill),
                     )
@@ -235,7 +238,7 @@ fun LeitnerScreen(viewModel: AppViewModel) {
                     contentPadding = PaddingValues(12.dp),
                 ) {
                     Text(
-                        "✦ " + strings.allCardsChip(allCards.size),
+                        strings.allCardsChip(allCards.size),
                         style = MaterialTheme.typography.labelMedium,
                         color = toonOn(learnedFill),
                     )
@@ -444,17 +447,16 @@ fun LeitnerScreen(viewModel: AppViewModel) {
         }
     }
 
-    if (showJsonQuiz) {
-        JsonQuizBetaDialog(
-            viewModel = viewModel,
-            strings = strings,
-            onDismiss = { showJsonQuiz = false },
-        )
-    }
 }
 
 /** The two tools inside the "Better learning tools" tab. */
 private enum class LearningTool { LEITNER, JSON_QUIZ }
+
+/** Persists the tool tab across Recents / activity recreation. */
+private val ToolSaver = Saver<LearningTool, String>(
+    save = { it.name },
+    restore = { name -> LearningTool.entries.firstOrNull { it.name == name } ?: LearningTool.LEITNER }
+)
 
 /**
  * One of the tab's two tools, drawn as a button: the active tool is tinted
@@ -596,6 +598,7 @@ private fun FlashCardFront(
     total: Int,
     strings: AppStrings,
 ) {
+    val wordWeight = if (card.word.isPersianText()) LanguageWeightState.targetWeight.weight else LanguageWeightState.sourceWeight.weight
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -604,32 +607,38 @@ private fun FlashCardFront(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            // Which card of today's deck this is — the old "box 1 of 5" text
-            // is gone, the boxes are shown by the dots below instead.
-            StatusPill(
-                text = strings.cardPositionLabel(position, total),
-                tone = PillTone.Accent,
+            StatusPill(text = strings.cardPositionLabel(position, total), tone = PillTone.Accent)
+            // A sentence card says where it came from and where it sat in the
+            // book or the film. Word cards show nothing here, exactly as before.
+            if (card.isSentence) {
+                StatusPill(
+                    text = card.sourceLabel(fa = !strings.isEn),
+                    tone = if (card.source == LeitnerCard.SOURCE_BOOK) PillTone.Positive else PillTone.Warning,
+                )
+            }
+        }
+        if (card.isSentence && card.location.isNotBlank()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = card.location,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Spacer(modifier = Modifier.height(10.dp))
         BoxLevelDots(level = card.boxLevel)
 
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentAlignment = Alignment.Center,
-        ) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Text(
                 text = card.word,
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontFamily = leitnerFontFor(card.word),
                     textDirection = card.word.autoTextDirection()
                 ),
-                fontWeight = FontWeight.Bold,
+                fontWeight = wordWeight,
                 textAlign = TextAlign.Center,
             )
         }
@@ -641,6 +650,8 @@ private fun FlashCardFront(
 @Composable
 private fun FlashCardBack(card: LeitnerCard, strings: AppStrings) {
     val neo = isNeobrutalismDesign()
+    val wordWeight = if (card.word.isPersianText()) LanguageWeightState.targetWeight.weight else LanguageWeightState.sourceWeight.weight
+    val defWeight = if (card.definition.isPersianText()) LanguageWeightState.targetWeight.weight else LanguageWeightState.sourceWeight.weight
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -653,7 +664,7 @@ private fun FlashCardBack(card: LeitnerCard, strings: AppStrings) {
                 fontFamily = leitnerFontFor(card.word),
                 textDirection = card.word.autoTextDirection()
             ),
-            fontWeight = FontWeight.Bold,
+            fontWeight = wordWeight,
             color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Center,
         )
@@ -679,17 +690,14 @@ private fun FlashCardBack(card: LeitnerCard, strings: AppStrings) {
         ) {
             Text(
                 text = card.definition,
-                // Auto RTL/LTR from the definition itself (Persian definition
-                // → right, English → left), independent of the menu language.
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontFamily = leitnerFontFor(card.definition),
                     lineHeight = 27.sp,
-                    textDirection = card.definition.autoTextDirection()
+                    textDirection = card.definition.autoTextDirection(),
+                    fontWeight = defWeight
                 ),
                 textAlign = TextAlign.Right,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
             )
         }
     }
@@ -816,20 +824,13 @@ private fun SoftActionButton(
 
 @Composable
 private fun LeitnerCardRow(card: LeitnerCard, onDelete: () -> Unit, strings: AppStrings) {
-    GlassCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 20.dp,
-        contentPadding = PaddingValues(14.dp),
-    ) {
-        // Keep word left / definition right absolute even when app is RTL (FA).
-        // The outer Row would otherwise mirror in RTL and put the word on the right.
+    val wordWeight = if (card.word.isPersianText()) LanguageWeightState.targetWeight.weight else LanguageWeightState.sourceWeight.weight
+    val defWeight = if (card.definition.isPersianText()) LanguageWeightState.targetWeight.weight else LanguageWeightState.sourceWeight.weight
+    GlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp, contentPadding = PaddingValues(14.dp)) {
         androidx.compose.runtime.CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = card.word,
                             modifier = Modifier.weight(1f),
@@ -837,7 +838,7 @@ private fun LeitnerCardRow(card: LeitnerCard, onDelete: () -> Unit, strings: App
                                 textAlign = TextAlign.Left,
                                 textDirection = card.word.autoTextDirection()
                             ),
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = wordWeight,
                         )
                     Spacer(modifier = Modifier.width(8.dp))
                     StatusPill(
@@ -853,7 +854,8 @@ private fun LeitnerCardRow(card: LeitnerCard, onDelete: () -> Unit, strings: App
                     modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.bodySmall.copy(
                         textAlign = TextAlign.Right,
-                        textDirection = card.definition.autoTextDirection()
+                        textDirection = card.definition.autoTextDirection(),
+                        fontWeight = defWeight
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,

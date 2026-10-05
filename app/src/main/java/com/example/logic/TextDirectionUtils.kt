@@ -73,6 +73,68 @@ object TextDirectionUtils {
  */
 fun String.autoTextDirection(): TextDirection = TextDirectionUtils.direction(this)
 
+/**
+ * Language-name tokens of the right-to-left script family — ISO codes
+ * ("fa", "ar", "he", ...) and common English/native names ("persian",
+ * "farsi", "arabic", "hebrew", "urdu", ...). Used to honour a language
+ * DECLARED by a learning JSON (metadata.language / targetLanguage):
+ * a declared language overrides the per-text script guess, so a mixed
+ * line still reads as a whole in the declared direction.
+ */
+private val RTL_LANGUAGE_TOKENS = setOf(
+    "fa", "fas", "pes", "prs", "persian", "farsi", "dari",                  // Persian family
+    "ar", "ara", "arabic", "arabi",                                        // Arabic
+    "he", "iw", "heb", "hebrew",                                           // Hebrew
+    "ur", "urd", "urdu",                                                   // Urdu
+    "ps", "pus", "pashto", "pushto",                                       // Pashto
+    "sd", "snd", "sindhi",                                                 // Sindhi
+    "ug", "uig", "uighur", "uyghur",                                       // Uyghur
+    "yi", "yid", "yiddish",                                                // Yiddish
+    "dv", "div", "dhivehi", "divehi", "maldivian",                         // Maldivian
+    "ckb", "sorani",                                                       // Kurdish (Sorani, Arabic script)
+    "syr", "syriac", "aramaic"                                             // Syriac / Aramaic
+)
+
+/**
+ * True when [name] names a right-to-left language. The check is tolerant:
+ * the name may be an ISO code, an English name, a compound ("fa-IR",
+ * "Persian (Farsi)"), or written in the language's own RTL script — any
+ * strong RTL character in the name itself also counts.
+ */
+fun isRtlLanguageName(name: String): Boolean {
+    val trimmed = name.trim()
+    if (trimmed.isEmpty()) return false
+    // A name written in its own script ("فارسی", "العربية") is itself RTL.
+    if (TextDirectionUtils.isRtl(trimmed)) return true
+    val lower = trimmed.lowercase()
+    return lower.split(Regex("[^a-z0-9]+")).any { it in RTL_LANGUAGE_TOKENS }
+}
+
+/**
+ * The declared direction for a JSON metadata language field: null when the
+ * field is absent/blank (nothing declared — callers fall back to per-text
+ * detection), otherwise whether that language reads right-to-left.
+ */
+fun declaredLanguageRtl(name: String?): Boolean? =
+    if (name.isNullOrBlank()) null else isRtlLanguageName(name)
+
+/**
+ * Content direction for a text whose language the learning JSON DECLARES:
+ * the declaration wins (whole paragraphs of that language read in its
+ * direction, even lines that open with a Latin word); with no declaration
+ * ([declaredRtl] == null) the text's own first strong character decides,
+ * exactly like [autoTextDirection].
+ */
+fun resolveDirection(text: String, declaredRtl: Boolean?): TextDirection =
+    if (declaredRtl == null) TextDirectionUtils.direction(text)
+    else if (declaredRtl) TextDirection.Rtl else TextDirection.Ltr
+
+/** [resolveDirection]'s alignment counterpart. */
+fun resolveAlign(text: String, declaredRtl: Boolean?): androidx.compose.ui.text.style.TextAlign =
+    if (declaredRtl == null) text.autoTextAlign()
+    else if (declaredRtl) androidx.compose.ui.text.style.TextAlign.Right
+    else androidx.compose.ui.text.style.TextAlign.Left
+
 fun String.autoTextAlign(): androidx.compose.ui.text.style.TextAlign =
     if (TextDirectionUtils.isRtl(this)) androidx.compose.ui.text.style.TextAlign.Right
     else androidx.compose.ui.text.style.TextAlign.Left

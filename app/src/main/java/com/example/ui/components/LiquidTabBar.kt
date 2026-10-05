@@ -57,6 +57,8 @@ import com.example.ui.components.anime.ToonTabItem
 import com.example.ui.components.anime.ToonTabRail
 import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isMaterial3Design
+import com.example.ui.theme.isFriendlyNeobrutalismDesign
+import com.example.ui.theme.appCorner
 import com.example.ui.theme.isNeobrutalismDesign
 import kotlin.math.PI
 import kotlin.math.abs
@@ -181,6 +183,10 @@ fun LiquidTabBar(
     val travel = position - floor(position)
     val stretch = sin(travel * PI.toFloat())
 
+    // The bar's own pill follows the user's corner-roundness choice.
+    val barCorner = appCorner(28.dp)
+    val itemCorner = appCorner(24.dp)
+
     val blobStart = scheme.primary
     val blobMid = scheme.tertiary
     val blobEnd = scheme.secondary
@@ -191,7 +197,7 @@ fun LiquidTabBar(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(28.dp))
+            .clip(RoundedCornerShape(barCorner))
             .background(
                 Brush.linearGradient(
                     colors = listOf(trackTop, trackMid, trackTop),
@@ -206,7 +212,7 @@ fun LiquidTabBar(
                         scheme.tertiary.copy(alpha = 0.26f),
                     )
                 ),
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(barCorner),
             )
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
@@ -294,7 +300,7 @@ fun LiquidTabBar(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(RoundedCornerShape(itemCorner))
                         .selectable(
                             selected = index == selectedIndex,
                             interactionSource = interactionSource,
@@ -339,13 +345,22 @@ fun LiquidTabBar(
     }
 }
 
+/** Default index of the assistant tab (Reader, Video, Online, Assistant, Tools). */
+const val ASSISTANT_TAB_INDEX = 3
+
 /**
- * Maps the app's shared tab model onto the toon one. The third destination
- * (the assistant) is marked as an avatar tab so [ToonTabBar] draws Sora's
+ * Maps the app's shared tab model onto the toon one. The assistant
+ * destination is marked as an avatar tab so [ToonTabBar] draws Sora's
  * headshot there instead of a glyph — she *is* the assistant's identity.
+ *
+ * The position is passed in rather than assumed: the user can reorder the
+ * app's sections (Settings ▸ Theme ▸ Customize ▸ Layout & shapes), so the
+ * caller resolves where the assistant currently sits.
  */
-fun List<LiquidTabItem>.toToonItems(): List<ToonTabItem> = mapIndexed { index, item ->
-    ToonTabItem(title = item.title, icon = item.icon, avatar = index == 2)
+fun List<LiquidTabItem>.toToonItems(
+    avatarIndex: Int = ASSISTANT_TAB_INDEX,
+): List<ToonTabItem> = mapIndexed { index, item ->
+    ToonTabItem(title = item.title, icon = item.icon, avatar = index == avatarIndex)
 }
 
 /**
@@ -385,12 +400,23 @@ private fun NeoTopTabBar(
     val haptics = LocalHapticFeedback.current
     val ink = scheme.outline
     val safeIndex = selectedIndex.coerceIn(0, items.size - 1)
+    val friendly = isFriendlyNeobrutalismDesign()
+    // Even the square skin honours the roundness override, so "round the
+    // corners off a little" works on neobrutalism too without turning it
+    // into a different design.
+    val barCorner = appCorner(if (friendly) 10.dp else 0.dp)
+    val itemCorner = appCorner(if (friendly) 6.dp else 0.dp)
+    val barShape = RoundedCornerShape(barCorner)
+    val itemShape = RoundedCornerShape(itemCorner)
 
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .padding(horizontal = if (friendly) 12.dp else 0.dp, vertical = if (friendly) 6.dp else 0.dp)
+            .neoHardShadow(color = if (friendly) ink else Color.Transparent, offset = 4.dp, cornerRadius = barCorner)
+            .clip(barShape)
             .background(scheme.surfaceContainerLowest)
-            .border(2.dp, ink)
+            .border(2.dp, ink, barShape)
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -402,8 +428,9 @@ private fun NeoTopTabBar(
                     .weight(1f)
                     .height(46.dp)
                     .neoHardShadow(color = if (isSelected) ink else Color.Transparent, offset = 3.dp)
+                    .clip(itemShape)
                     .background(if (isSelected) neoAccent() else Color.Transparent)
-                    .border(if (isSelected) 2.dp else 0.dp, ink)
+                    .border(if (isSelected) 2.dp else 0.dp, ink, itemShape)
                     .selectable(
                         selected = isSelected,
                         interactionSource = interaction,
@@ -425,7 +452,7 @@ private fun NeoTopTabBar(
                     Icon(
                         imageVector = item.icon,
                         contentDescription = item.title,
-                        tint = if (isSelected) Color.Black else scheme.onSurface,
+                        tint = if (isSelected && friendly) scheme.onPrimary else if (isSelected) Color.Black else scheme.onSurface,
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(modifier = Modifier.height(2.dp))
@@ -433,7 +460,7 @@ private fun NeoTopTabBar(
                         text = item.title,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color.Black else scheme.onSurface,
+                        color = if (isSelected && friendly) scheme.onPrimary else if (isSelected) Color.Black else scheme.onSurface,
                         maxLines = 1,
                         textAlign = TextAlign.Center,
                     )

@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
@@ -23,7 +24,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import android.content.res.Configuration
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.lazy.LazyColumn
@@ -39,9 +43,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 import com.example.model.DictionaryEntry
 import com.example.model.JsonWord
@@ -88,7 +95,6 @@ fun DictionaryBottomSheet(
     val context = LocalContext.current
     val strings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
 
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var queryInput by remember(searchedWord) { mutableStateOf(searchedWord) }
 
     // When 2+ dictionary files are imported, let the user narrow the shown
@@ -100,40 +106,72 @@ fun DictionaryBottomSheet(
         else results?.filter { it.source.equals(selectedSourceFilter, ignoreCase = true) }
     }
 
-    val matchResult = remember(results, contextPersian) {
+    val matchResult = remember(results, contextPersian, searchedWord) {
         if (contextPersian != null && !results.isNullOrEmpty()) {
             TranslationDetector.detectTranslation(results.map { it.html }, contextPersian)
         } else null
     }
 
-    ModalBottomSheet(
+    val popupShape = when {
+        isNeobrutalismDesign() -> RoundedCornerShape(0.dp)
+        isAnimeDesign() -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        else -> RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
+    }
+    /*
+     * A draggable ModalBottomSheet competes with LazyColumn and WebView for
+     * vertical gestures. Use a fixed bottom-aligned dialog instead: scrolling
+     * always belongs to the content and can no longer collapse/dismiss the
+     * popup halfway through a definition.
+     */
+    Dialog(
         onDismissRequest = onDismissRequest,
-        sheetState = sheetState,
-        shape = when {
-            isNeobrutalismDesign() -> RoundedCornerShape(0.dp)
-            // The toon sheet's 28dp top corners come with a 3dp ink edge,
-            // applied as a border on the sheet content below.
-            isAnimeDesign() -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-            else -> RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
-        },
-        containerColor = MaterialTheme.colorScheme.surface,
-        // The sheet draws its own gradient handle below; without this the
-        // Material default handle was rendered on top of it.
-        dragHandle = null,
-        modifier = Modifier.fillMaxHeight(if (isLandscape) 0.95f else 0.88f)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(if (isLandscape) 0.95f else 0.90f),
+                shape = popupShape,
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
+            ) {
         val toonSheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .navigationBarsPadding()
+                .imePadding()
                 .then(
                     if (isAnimeDesign()) Modifier.inkBorder(3.dp, toonSheetShape) else Modifier
                 )
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            SheetHandle()
-            WordHeadline(word = searchedWord)
+            Spacer(modifier = Modifier.height(8.dp))
+            // Only the popup's header mirrors for Persian (the word reads
+            // from the right, the close button lands on the left). The
+            // dictionary CONTENT keeps its designed layout — definitions
+            // and examples already pick their own direction per text.
+            CompositionLocalProvider(
+                LocalLayoutDirection provides if (strings.isEn) LayoutDirection.Ltr else LayoutDirection.Rtl
+            ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                WordHeadline(word = searchedWord, modifier = Modifier.weight(1f))
+                SoftIconButton(
+                    icon = Icons.Filled.Close,
+                    contentDescription = strings.close,
+                    onClick = onDismissRequest,
+                    size = 36.dp
+                )
+            }
+            }  // header RTL
             Spacer(modifier = Modifier.height(10.dp))
 
             if (isLandscape) {
@@ -144,7 +182,12 @@ fun DictionaryBottomSheet(
                     Column(
                         modifier = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())
                     ) {
-                        SearchField(queryInput, strings, onSearchQueryChange)
+                        SearchField(
+                            query = queryInput,
+                            strings = strings,
+                            onQueryChange = { queryInput = it },
+                            onSearch = onSearchQueryChange
+                        )
                         Spacer(modifier = Modifier.height(12.dp))
                         ContextSection(contextEnglish, searchedWord, queryInput, contextPersian, matchResult, strings) { clickedWord ->
                             queryInput = clickedWord; onSearchQueryChange(clickedWord)
@@ -181,7 +224,14 @@ fun DictionaryBottomSheet(
                     contentPadding = PaddingValues(bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    item { SearchField(queryInput, strings, onSearchQueryChange) }
+                    item {
+                        SearchField(
+                            query = queryInput,
+                            strings = strings,
+                            onQueryChange = { queryInput = it },
+                            onSearch = onSearchQueryChange
+                        )
+                    }
                     item {
                         ContextSection(contextEnglish, searchedWord, queryInput, contextPersian, matchResult, strings) { clickedWord ->
                             queryInput = clickedWord; onSearchQueryChange(clickedWord)
@@ -231,6 +281,8 @@ fun DictionaryBottomSheet(
             }
         }
     }
+        }
+    }
 }
 
 /** Gradient grab handle, replacing the default Material one. */
@@ -263,9 +315,9 @@ private fun SheetHandle() {
 
 /** The looked-up word as the sheet's headline, with a brand underline. */
 @Composable
-private fun WordHeadline(word: String) {
+private fun WordHeadline(word: String, modifier: Modifier = Modifier) {
     if (word.isBlank()) return
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = word,
             // User-provided word: render RTL if it's Persian/Arabic.
@@ -575,8 +627,22 @@ private fun AddToLeitnerButton(isAdded: Boolean, strings: AppStrings, onClick: (
 }
 
 @Composable
-private fun SearchField(initialQuery: String, strings: AppStrings, onSearch: (String) -> Unit) {
-    var query by remember(initialQuery) { mutableStateOf(initialQuery) }
+private fun SearchField(
+    query: String,
+    strings: AppStrings,
+    onQueryChange: (String) -> Unit,
+    onSearch: (String) -> Unit
+) {
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val submit = {
+        val value = query.trim()
+        if (value.isNotEmpty()) {
+            keyboard?.hide()
+            focusManager.clearFocus()
+            onSearch(value)
+        }
+    }
     val neo = isNeobrutalismDesign()
     val anime = isAnimeDesign()
     // The toon search box is a fully rounded pill with a thick ink edge —
@@ -588,7 +654,7 @@ private fun SearchField(initialQuery: String, strings: AppStrings, onSearch: (St
     }
     OutlinedTextField(
         value = query,
-        onValueChange = { query = it },
+        onValueChange = onQueryChange,
         modifier = Modifier.fillMaxWidth(),
         shape = fieldShape,
         placeholder = { Text(strings.searchWordPlaceholder) },
@@ -602,7 +668,7 @@ private fun SearchField(initialQuery: String, strings: AppStrings, onSearch: (St
             SoftIconButton(
                 icon = Icons.Default.Search,
                 contentDescription = strings.searchCd,
-                onClick = { onSearch(query.trim()) },
+                onClick = submit,
                 size = 34.dp,
             )
         },
@@ -618,7 +684,7 @@ private fun SearchField(initialQuery: String, strings: AppStrings, onSearch: (St
             },
         ),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions = KeyboardActions(onSearch = { onSearch(query.trim()) }),
+        keyboardActions = KeyboardActions(onSearch = { submit() }),
         singleLine = true
     )
 }

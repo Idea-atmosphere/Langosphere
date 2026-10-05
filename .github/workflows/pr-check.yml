@@ -58,8 +58,13 @@ jobs:
           java-version: "17"
           distribution: temurin
 
+      # `packages: ''` is deliberate -- see the same step in release.yml. The
+      # action's default list still asks for the retired `tools` package, which
+      # makes sdkmanager exit 1 and kills the job in seconds.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: ''
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -82,7 +87,25 @@ jobs:
       - name: Unit tests, debug build, unsigned release build
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --stacktrace testDebugUnitTest assembleDebug assembleRelease
+          set +e
+          ./gradlew --no-daemon --stacktrace testDebugUnitTest assembleDebug assembleRelease 2>&1 | tee gradle-output.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          if [ "$code" -ne 0 ]; then
+            # Also surface the failure as check-run annotations, so compiler
+            # errors and failing tests are readable through the checks API
+            # (e.g. `gh api .../check-runs/<id>/annotations`) without the log.
+            annotate() {
+              local title="$1"; shift
+              local body
+              body=$(cat | head -n 40 | cut -c1-300 | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}')
+              if [ -n "$body" ]; then echo "::error title=${title}::${body}"; fi
+            }
+            grep -E '^e: ' gradle-output.txt | sort -u | annotate "Kotlin compile errors" || true
+            grep -E ' FAILED$|AssertionError|Exception at ' gradle-output.txt | annotate "Failing tests" || true
+            grep -A12 'What went wrong' gradle-output.txt | annotate "Gradle failure" || true
+            exit "$code"
+          fi
 
       - name: Upload reports on failure
         if: failure()

@@ -70,9 +70,14 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Velocity
 import com.example.ui.theme.AccentAmber
+import com.example.logic.autoTextAlign
+import com.example.logic.autoTextDirection
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.AccentRed
 import com.example.ui.theme.AppDesignStyle
@@ -92,6 +97,8 @@ import com.example.ui.components.anime.inkShadow
 import com.example.ui.theme.AnimeColors
 import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isMaterial3Design
+import com.example.ui.theme.isFriendlyNeobrutalismDesign
+import com.example.ui.theme.appCorner
 import com.example.ui.theme.isNeobrutalismDesign
 import com.example.ui.theme.showSoraMascot
 import kotlin.math.PI
@@ -137,12 +144,14 @@ import kotlin.math.sin
 fun Modifier.neoHardShadow(
     color: Color,
     offset: Dp = 4.dp,
+    cornerRadius: Dp = 0.dp,
 ): Modifier = drawBehind {
     val o = offset.toPx()
-    drawRect(
+    drawRoundRect(
         color = color,
         topLeft = Offset(o, o),
         size = Size(size.width, size.height),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius.toPx()),
     )
 }
 
@@ -177,15 +186,22 @@ fun NeoBlock(
     )
     val haptics = LocalHapticFeedback.current
     val resolved = if (enabled) container else borderColor.copy(alpha = 0.30f)
+    val shape = if (isFriendlyNeobrutalismDesign()) MaterialTheme.shapes.medium else RoundedCornerShape(0.dp)
+    val shadowRadius = if (isFriendlyNeobrutalismDesign()) 10.dp else 0.dp
     Box(
         modifier = modifier
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
             }
-            .neoHardShadow(color = borderColor, offset = if (pressed) shadowOffset / 2 else shadowOffset)
+            .neoHardShadow(
+                color = borderColor,
+                offset = if (pressed) shadowOffset / 2 else shadowOffset,
+                cornerRadius = shadowRadius,
+            )
+            .clip(shape)
             .background(resolved)
-            .border(borderWidth, borderColor)
+            .border(borderWidth, borderColor, shape)
             .then(
                 if (onClick != null) {
                     Modifier.clickable(
@@ -253,7 +269,11 @@ fun brandBrush(alpha: Float = 1f): Brush {
 fun GlassCard(
     modifier: Modifier = Modifier,
     tint: Color? = null,
-    cornerRadius: Dp = 22.dp,
+    // The default radius follows the user's corner-roundness choice
+    // (Settings ▸ Theme ▸ Customize ▸ Layout & shapes); callers that pass
+    // their own radius keep full control, and appCorner() is a no-op while
+    // the setting is on the design's default.
+    cornerRadius: Dp = appCorner(22.dp),
     contentPadding: PaddingValues = PaddingValues(16.dp),
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
@@ -378,7 +398,7 @@ fun SectionHeader(
                     .height(if (subtitle == null) 20.dp else 34.dp)
                     // The neobrutalist accent bar is a square yellow block
                     // (SolidColor so the branch stays a Brush like brandBrush).
-                    .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
+                    .clip(if (neo && !isFriendlyNeobrutalismDesign()) RoundedCornerShape(0.dp) else CircleShape)
                     .background(
                         if (neo) SolidColor(neoAccent())
                         else brandBrush()
@@ -389,7 +409,13 @@ fun SectionHeader(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = if (material3) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
+                style = (if (material3) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium).copy(
+                    // The header's own wording picks its reading direction —
+                    // a Persian title reads from the right, an English one
+                    // from the left, whatever surface embeds this header.
+                    textAlign = title.autoTextAlign(),
+                    textDirection = title.autoTextDirection()
+                ),
                 fontWeight = if (material3) FontWeight.Normal else FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -397,7 +423,10 @@ fun SectionHeader(
             if (subtitle != null) {
                 Text(
                     text = subtitle,
-                    style = if (material3) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.labelSmall,
+                    style = (if (material3) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.labelSmall).copy(
+                        textAlign = subtitle.autoTextAlign(),
+                        textDirection = subtitle.autoTextDirection()
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                 )
@@ -480,7 +509,12 @@ fun StatusPill(
             }
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    // The pill's own wording picks its reading direction —
+                    // fixes mixed labels like «سطح: B1» under an LTR layout.
+                    textAlign = text.autoTextAlign(),
+                    textDirection = text.autoTextDirection()
+                ),
                 color = content,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -527,7 +561,12 @@ fun StatusPill(
             }
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    // The pill's own wording picks its reading direction —
+                    // fixes mixed labels like «سطح: B1» under an LTR layout.
+                    textAlign = text.autoTextAlign(),
+                    textDirection = text.autoTextDirection()
+                ),
                 color = onContainer,
                 maxLines = 1,
             )
@@ -557,7 +596,12 @@ fun StatusPill(
         }
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelSmall.copy(
+                // The pill's own wording picks its reading direction —
+                // fixes mixed labels like «سطح: B1» under an LTR layout.
+                textAlign = text.autoTextAlign(),
+                textDirection = text.autoTextDirection()
+            ),
             color = color,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
@@ -619,7 +663,7 @@ fun GradientButton(
                         imageVector = icon,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
-                        tint = if (enabled) Color.Black else scheme.onSurfaceVariant,
+                        tint = if (enabled && isFriendlyNeobrutalismDesign()) scheme.onPrimary else if (enabled) Color.Black else scheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
@@ -627,7 +671,7 @@ fun GradientButton(
                     text = text,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (enabled) Color.Black else scheme.onSurfaceVariant,
+                    color = if (enabled && isFriendlyNeobrutalismDesign()) scheme.onPrimary else if (enabled) Color.Black else scheme.onSurfaceVariant,
                     maxLines = 1,
                 )
             }
@@ -1391,4 +1435,24 @@ fun Modifier.fadingEdges(topFade: Dp = 18.dp, bottomFade: Dp = 24.dp): Modifier 
                 )
             }
         }
+}
+
+/**
+ * Rows the learner swipes horizontally to pick an option (quality chips,
+ * channel trays, study-mode strips…) sit inside the tab pager. At the row's
+ * edge the leftover drag used to escape upward and turn into a page turn —
+ * «رفتن به تب بعدی» — which is maddening mid-selection. This connection
+ * eats exactly that leftover horizontal delta (and the release fling) once
+ * the row cannot scroll any further, so the swipe stays confined to the
+ * row; vertical scrolling passes through untouched.
+ */
+@Composable
+fun rememberConfinedSwipeConnection(): NestedScrollConnection = remember {
+    object : NestedScrollConnection {
+        override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset =
+            if (available.x != 0f) Offset(available.x, 0f) else Offset.Zero
+
+        override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity =
+            if (available.x != 0f) Velocity(available.x, 0f) else Velocity.Zero
+    }
 }

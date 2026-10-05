@@ -152,5 +152,15 @@ data class SubtitleLearningState(
     /** JSON learning data for [targetWord], or null when the JSON has no entry. */
     val jsonWord: JsonWord? = null,
     /** Fallback vocabulary (word -> dictionary definition) used when no JSON lesson exists. */
-    val fallbackVocab: Map<String, String> = emptyMap()
+    val fallbackVocab: Map<String, String> = emptyMap(),
+    /**
+     * Whether the package's DECLARED source language (metadata.language,
+     * e.g. "English" or "Arabic") reads right-to-left — null when the JSON
+     * declares no language, in which case every text picks its own
+     * direction by script. A declaration overrides the per-line guess, so
+     * mixed source lines still read as a whole.
+     */
+    val sourceLanguageRtl: Boolean? = null,
+    /** The same for the declared TARGET language (metadata.targetLanguage). */
+    val targetLanguageRtl: Boolean? = null
 )

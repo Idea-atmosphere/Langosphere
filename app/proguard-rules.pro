@@ -55,3 +55,9 @@
 # is deliberately absent: it would replace LeitnerBoxManager.kt with the
 # useless literal "SourceFile" in every trace.)
 -keepattributes SourceFile,LineNumberTable
+
+# ---- Fallback web player (YouTube IFrame embed) ----
+# The embed page calls these by name from JavaScript.
+-keepclassmembers class com.example.ui.components.YouTubeWebPlayer$Bridge {
+    @android.webkit.JavascriptInterface <methods>;
+}

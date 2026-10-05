@@ -43,7 +43,7 @@ class AppStrings(
     // ── The configurable learning language pair ──
     // Every label below that used to hardcode "English" (the language being
     // learned) or "Persian" (the language everything is explained in) now reads
-    // the pair typed in Settings ▸ Tutorial & AI Learning, so a German → Persian
+    // the pair typed in Settings ▸ Prompts, so a German → Persian
     // or Persian → English learner never sees a lying label.
     //
     // The typed text is used EXACTLY as written — nothing renames "آلمانی" to
@@ -133,6 +133,7 @@ class AppStrings(
     val ok = res.getString(R.string.ok)
     val textColorCd = res.getString(R.string.text_color_cd)
     val exitFullscreenCd = res.getString(R.string.exit_fullscreen_cd)
+    val rotateScreenCd = res.getString(R.string.rotate_screen_cd)
     val fullscreenCd = res.getString(R.string.fullscreen_cd)
     val dictLoadedActive = res.getString(R.string.dict_loaded_active)
     val dictEmpty = res.getString(R.string.dict_empty)
@@ -301,6 +302,14 @@ class AppStrings(
     fun audioTrackFallbackName(n: Int) = res.getString(R.string.audio_track_fallback_name, n)
     val audioPlayingHint = res.getString(R.string.audio_playing_hint)
     val playerSettingsTitle = res.getString(R.string.player_settings_title)
+    val cueReplayCd = res.getString(R.string.cue_replay_cd)
+    val cueLoopCd = res.getString(R.string.cue_loop_cd)
+    val cuePauseAtEndCd = res.getString(R.string.cue_pause_at_end_cd)
+    val playerLearningTitle = res.getString(R.string.player_learning_title)
+    val playerFocusMode = res.getString(R.string.player_focus_mode)
+    val playerFontSmaller = res.getString(R.string.player_font_smaller)
+    val playerFontLarger = res.getString(R.string.player_font_larger)
+    val playerExtraActions = res.getString(R.string.player_extra_actions)
     val showSubtitlesTitle = res.getString(R.string.show_subtitles_title)
     val showSubtitlesDesc = res.getString(R.string.show_subtitles_desc)
     val smartPauseTitle = res.getString(R.string.smart_pause_title)
@@ -374,6 +383,50 @@ class AppStrings(
     val back = res.getString(R.string.back)
     val backToThemeBtn = res.getString(R.string.back_to_theme_btn)
 
+    // ── Theme settings: the Customize step (holds colors + font) ──
+    /** Row/dialog title of the Customize section of the Theme hub. */
+    val themeCustomizeTitle = res.getString(R.string.theme_customize_title)
+    /** Trailing label of the Customize row: what lives behind it. */
+    val themeCustomizeRowSubtitle = res.getString(R.string.theme_customize_row_subtitle)
+    /** Lead paragraph of the Customize dialog. */
+    val themeCustomizeDesc = res.getString(R.string.theme_customize_desc)
+
+    // ── Theme settings: layout & shapes (tab edge, corners, tab order) ──
+    /** Row/dialog title of the Layout & shapes section. */
+    val layoutSectionTitle = res.getString(R.string.layout_section_title)
+    /** Trailing label of the Layout row inside Customize. */
+    val layoutSectionRowSubtitle = res.getString(R.string.layout_section_row_subtitle)
+    val layoutSectionDesc = res.getString(R.string.layout_section_desc)
+    /** Shared label of every "keep what the design does" option. */
+    val layoutValueDesignDefault = res.getString(R.string.layout_value_design_default)
+    val layoutTabBarTitle = res.getString(R.string.layout_tabbar_title)
+    val layoutTabBarDesc = res.getString(R.string.layout_tabbar_desc)
+    val layoutTabBarTop = res.getString(R.string.layout_tabbar_top)
+    val layoutTabBarBottom = res.getString(R.string.layout_tabbar_bottom)
+    val layoutCornersTitle = res.getString(R.string.layout_corners_title)
+    val layoutCornersDesc = res.getString(R.string.layout_corners_desc)
+    val layoutCornerSharp = res.getString(R.string.layout_corner_sharp)
+    val layoutCornerCrisp = res.getString(R.string.layout_corner_crisp)
+    val layoutCornerRound = res.getString(R.string.layout_corner_round)
+    val layoutCornerExtra = res.getString(R.string.layout_corner_extra)
+    val layoutTabOrderTitle = res.getString(R.string.layout_tab_order_title)
+    val layoutTabOrderDesc = res.getString(R.string.layout_tab_order_desc)
+    val layoutMoveEarlier = res.getString(R.string.layout_move_earlier)
+    val layoutMoveLater = res.getString(R.string.layout_move_later)
+    val layoutResetOrder = res.getString(R.string.layout_reset_order)
+    /** The live preview of the layout choices. */
+    val layoutPreviewTitle = res.getString(R.string.layout_preview_title)
+    val layoutPreviewDesc = res.getString(R.string.layout_preview_desc)
+    val layoutPreviewCardTitle = res.getString(R.string.layout_preview_card_title)
+    val layoutPreviewCardBody = res.getString(R.string.layout_preview_card_body)
+    val layoutPreviewPrimaryBtn = res.getString(R.string.layout_preview_primary_btn)
+    val layoutPreviewSecondaryBtn = res.getString(R.string.layout_preview_secondary_btn)
+    val layoutPreviewChip = res.getString(R.string.layout_preview_chip)
+    /** Heading of the extras that only the named design has. */
+    fun layoutDesignExtrasTitle(design: String) =
+        res.getString(R.string.layout_design_extras_title, design)
+    val layoutDesignExtrasNone = res.getString(R.string.layout_design_extras_none)
+
     // ── Theme settings: app colors (palettes + custom hex) ──
     val themeColorsTitle = res.getString(R.string.theme_colors_title)
     val themeColorsDesc = res.getString(R.string.theme_colors_desc)
@@ -400,7 +453,7 @@ class AppStrings(
     val expandImportSection = res.getString(R.string.expand_import_section)
     val importSectionScrollHint = res.getString(R.string.import_section_scroll_hint)
 
-    // ── Tutorial & AI Learning section ──
+    // ── Prompts section ──
     val tutorialMenu = res.getString(R.string.tutorial_menu)
     val tutorialTitle = res.getString(R.string.tutorial_title)
     val tutorialLearningLevelTitle = res.getString(R.string.tutorial_learning_level_title)
@@ -449,6 +502,9 @@ class AppStrings(
 
     // ── JSON subtitle import ──
     val subJsonLabel = res.getString(R.string.sub_json_label)
+    val jsonImportSheetTitle = res.getString(R.string.json_import_sheet_title)
+    val jsonImportSheetDesc = res.getString(R.string.json_import_sheet_desc)
+    fun jsonPartialImportWarning(count: Int) = res.getString(R.string.json_partial_import_warning, count)
     fun addJsonSubtitleTitle(label: String) = res.getString(R.string.add_json_subtitle_title, label)
     val selectJsonFileOption = res.getString(R.string.select_json_file_option)
     val selectJsonFileDesc = res.getString(R.string.select_json_file_desc)
@@ -495,7 +551,7 @@ class AppStrings(
         res.getString(R.string.json_export_saved, path, lines)
     val noJsonToExport = res.getString(R.string.no_json_to_export)
 
-    // ── Settings ▸ Tutorial & AI Learning: the source → target language pair ──
+    // ── Settings ▸ Prompts: the source → target language pair ──
     val sourceLanguageLabel = res.getString(R.string.source_language_label)
     val targetLanguageLabel = res.getString(R.string.target_language_label)
     val sourceLanguageHint = res.getString(R.string.source_language_hint)
@@ -551,6 +607,12 @@ class AppStrings(
     val jsonQuizRetryBtn = res.getString(R.string.json_quiz_retry_btn)
     val jsonQuizNewQuestionsBtn = res.getString(R.string.json_quiz_new_questions_btn)
     val jsonQuizBackToSourceBtn = res.getString(R.string.json_quiz_back_to_source_btn)
+    fun jsonQuizStatVocab(correct: Int, total: Int) = res.getString(R.string.json_quiz_stat_vocab, correct, total)
+    fun jsonQuizStatSentence(correct: Int, total: Int) = res.getString(R.string.json_quiz_stat_sentence, correct, total)
+    fun jsonQuizStatGrammar(correct: Int, total: Int) = res.getString(R.string.json_quiz_stat_grammar, correct, total)
+    val jsonQuizAddAllLeitner = res.getString(R.string.json_quiz_add_all_leitner)
+    val jsonQuizRevealOptions = res.getString(R.string.json_quiz_reveal_options)
+    val jsonQuizAllAdded = res.getString(R.string.json_quiz_all_added)
 
     // ── Subtitle learning sheet (sentence lesson / word analysis) ──
     val lessonSheetTitle = res.getString(R.string.lesson_sheet_title)
@@ -598,7 +660,45 @@ class AppStrings(
     fun wordAddedToLeitner(word: String) = res.getString(R.string.word_added_to_leitner, word)
     fun wordUpdatedInLeitner(word: String) = res.getString(R.string.word_updated_in_leitner, word)
     val leitnerBoxEmpty = res.getString(R.string.leitner_box_empty)
-    fun ankiExportSaved(path: String) = res.getString(R.string.anki_export_saved, path)
+    // The summary names both card kinds, because a sentence card export is a
+    // different thing from a vocabulary export and the learner should see which
+    // one they just produced.
+    fun ankiExportSaved(path: String, wordCards: Int, sentenceCards: Int) =
+        res.getString(R.string.anki_export_saved_detail, path, wordCards, sentenceCards)
+
+    val sentenceAddedToLeitner = res.getString(R.string.sentence_added_to_leitner)
+    val sentenceUpdatedInLeitner = res.getString(R.string.sentence_updated_in_leitner)
+
+    // ── Shared study switches (book reader + subtitles) ──
+    val studyChallengeMode = res.getString(R.string.study_challenge_mode)
+    val studyFocusMode = res.getString(R.string.study_focus_mode)
+    val studyLessonDisplay = res.getString(R.string.study_lesson_display)
+    val studyLessonStyle = res.getString(R.string.study_lesson_style)
+
+    // ── Quiz setup: source filter and quiz type ──
+    val quizSourceTitle = res.getString(R.string.quiz_source_title)
+    val quizSourceBook = res.getString(R.string.quiz_source_book)
+    val quizSourceMovie = res.getString(R.string.quiz_source_movie)
+    val quizSourceOnline = res.getString(R.string.quiz_source_online)
+    val quizSourceBoth = res.getString(R.string.quiz_source_both)
+    val quizModeTitle = res.getString(R.string.quiz_mode_title)
+    val quizModeStandard = res.getString(R.string.quiz_mode_standard)
+    val quizModeBlur = res.getString(R.string.quiz_mode_blur)
+    val quizBlurHint = res.getString(R.string.quiz_blur_hint)
+    val quizSourceBadgeBook = res.getString(R.string.quiz_source_badge_book)
+    val quizSourceBadgeMovie = res.getString(R.string.quiz_source_badge_movie)
+    val quizSourceBadgeOnline = res.getString(R.string.quiz_source_badge_online)
+    val quizNoBookMaterial = res.getString(R.string.quiz_no_book_material)
+    val quizNoOnlineMaterial = res.getString(R.string.quiz_no_online_material)
+
+    // ── Smart page batching ──
+    fun copyNextPages(count: Int) = res.getString(R.string.copy_next_pages, count)
+    fun copyNextPagesRange(first: Int, last: Int, firstId: Int, lastId: Int) =
+        res.getString(R.string.copy_next_pages_range, first, last, firstId, lastId)
+    fun copyNextPagesDone(first: Int, last: Int, sentences: Int) =
+        res.getString(R.string.copy_next_pages_done, first, last, sentences)
+    val copyNextPagesEmpty = res.getString(R.string.copy_next_pages_empty)
+    val copyNextPagesNoDocument = res.getString(R.string.copy_next_pages_no_document)
 
     // ── Donate popup / About dialog ──
     val socialTitle = res.getString(R.string.social_title)
@@ -617,6 +717,32 @@ class AppStrings(
     val donateDontShowAgainBtn = res.getString(R.string.donate_dont_show_again_btn)
     val aboutDialogTitle = res.getString(R.string.about_dialog_title)
     fun aboutVersionLabel(version: String) = res.getString(R.string.about_version_label, version)
+
+    // ── In-app update ──
+    val updateMenu = res.getString(R.string.update_menu)
+    val updateDialogTitle = res.getString(R.string.update_dialog_title)
+    fun updateCurrentVersionLabel(version: String) =
+        res.getString(R.string.update_current_version_label, version)
+    fun updateNewVersionLabel(version: String) =
+        res.getString(R.string.update_new_version_label, version)
+    fun updateSizeLabel(size: String) = res.getString(R.string.update_size_label, size)
+    val updateChangelogTitle = res.getString(R.string.update_changelog_title)
+    val updateNowBtn = res.getString(R.string.update_now_btn)
+    val updateLaterBtn = res.getString(R.string.update_later_btn)
+    fun updateDownloadingLabel(percent: Int) =
+        res.getString(R.string.update_downloading_label, percent)
+    val updateDownloadingNoProgress = res.getString(R.string.update_downloading_no_progress)
+    val updateDownloadedLabel = res.getString(R.string.update_downloaded_label)
+    val updatePermissionHint = res.getString(R.string.update_permission_hint)
+    val updateFailedMessage = res.getString(R.string.update_failed_message)
+    val updateRetryBtn = res.getString(R.string.update_retry_btn)
+    val updateCancelBtn = res.getString(R.string.update_cancel_btn)
+    val updateCloseBtn = res.getString(R.string.update_close_btn)
+    val updateOpenReleasePage = res.getString(R.string.update_open_release_page)
+    val updateUpToDateToast = res.getString(R.string.update_uptodate_toast)
+    fun updateCheckFailedToast(detail: String) =
+        res.getString(R.string.update_check_failed_toast, detail)
+
     val bitcoinTitle = res.getString(R.string.bitcoin_title)
     val tetherTitle = res.getString(R.string.tether_title)
     val tonTitle = res.getString(R.string.ton_title)
@@ -641,8 +767,14 @@ class AppStrings(
     val designSectionDesc = res.getString(R.string.design_section_desc)
     val designLangosphere = res.getString(R.string.design_langosphere)
     val designMaterial3 = res.getString(R.string.design_material3)
+    val designMaterial3NavTitle = res.getString(R.string.design_material3_nav_title)
+    val designMaterial3NavDesc = res.getString(R.string.design_material3_nav_desc)
+    val designMaterial3Top = res.getString(R.string.design_material3_top)
+    val designMaterial3Bottom = res.getString(R.string.design_material3_bottom)
     val designMaterialYou = res.getString(R.string.design_material_you)
     val designNeobrutalism = res.getString(R.string.design_neobrutalism)
+    val designFriendlyNeo = res.getString(R.string.design_friendly_neo)
+    val designFriendlyNeoDesc = res.getString(R.string.design_friendly_neo_desc)
     val designAnime = res.getString(R.string.design_anime)
     val designAnimeMascot = res.getString(R.string.design_anime_mascot)
     val designAnimeMascotDesc = res.getString(R.string.design_anime_mascot_desc)
@@ -750,6 +882,175 @@ class AppStrings(
     val guideTipsTitle = res.getString(R.string.guide_tips_title)
     val guideTipsSummary = res.getString(R.string.guide_tips_summary)
     val guideTipsPoints: List<String> = res.getStringArray(R.array.guide_tips_points).toList()
+    val guideOnlineTabTitle = res.getString(R.string.guide_online_tab_title)
+    val guideOnlineTabSummary = res.getString(R.string.guide_online_tab_summary)
+    val guideOnlineTabPoints: List<String> = res.getStringArray(R.array.guide_online_tab_points).toList()
+
+    // ── Online tab (Invidious / Piped) ──
+    val tabOnline = res.getString(R.string.tab_online)
+    val onlineTitle = res.getString(R.string.online_title)
+    val onlineSubtitle = res.getString(R.string.online_subtitle)
+    val onlineSearchPlaceholder = res.getString(R.string.online_search_placeholder)
+    val onlineFeedChip = res.getString(R.string.online_feed_chip)
+    val onlineFeedTitle = res.getString(R.string.online_feed_title)
+    fun onlineSearchResultsFor(query: String) = res.getString(R.string.online_search_results_for, query)
+    val onlineRefresh = res.getString(R.string.online_refresh)
+    val onlineRetry = res.getString(R.string.online_retry)
+    val onlineLoadMore = res.getString(R.string.online_load_more)
+    val onlineLiveBadge = res.getString(R.string.online_live_badge)
+    fun onlineViews(count: String) = res.getString(R.string.online_views, count)
+    val onlineErrorTitle = res.getString(R.string.online_error_title)
+    val onlineAllInstancesFailed = res.getString(R.string.online_all_instances_failed)
+    val onlineFeedUnavailable = res.getString(R.string.online_feed_unavailable)
+    val onlineBotBlockedHint = res.getString(R.string.online_bot_blocked_hint)
+    val onlineFeedFallbackNote = res.getString(R.string.online_feed_fallback_note)
+    val onlineOpenExternally = res.getString(R.string.online_open_externally)
+    val onlineManageInstancesBtn = res.getString(R.string.online_manage_instances_btn)
+    val onlineNoChannelsTitle = res.getString(R.string.online_no_channels_title)
+    val onlineNoChannelsDesc = res.getString(R.string.online_no_channels_desc)
+    val onlineNoVideosTitle = res.getString(R.string.online_no_videos_title)
+    val onlineNoVideosDesc = res.getString(R.string.online_no_videos_desc)
+    val onlineInstancesTitle = res.getString(R.string.online_instances_title)
+    val onlineInstancesDesc = res.getString(R.string.online_instances_desc)
+    fun onlineInstancesSummary(configured: Int, enabled: Int) =
+        res.getString(R.string.online_instances_summary, configured, enabled)
+    val onlineCheckAll = res.getString(R.string.online_check_all)
+    val onlineCheckInstance = res.getString(R.string.online_check_instance)
+    val onlineInstanceChecking = res.getString(R.string.online_instance_checking)
+    val onlineInstancePlayable = res.getString(R.string.online_instance_playable)
+    val onlineInstanceFailedDisabled = res.getString(R.string.online_instance_failed_disabled)
+    val onlineInstanceNotChecked = res.getString(R.string.online_instance_not_checked)
+    fun onlineInstancesChecked(total: Int, playable: Int, disabled: Int) =
+        res.getString(R.string.online_instances_checked, total, playable, disabled)
+    val onlineInstanceUrlPlaceholder = res.getString(R.string.online_instance_url_placeholder)
+    val onlineInstanceUrlInvalid = res.getString(R.string.online_instance_url_invalid)
+    val onlineKindAuto = res.getString(R.string.online_kind_auto)
+    val onlineAddInstance = res.getString(R.string.online_add_instance)
+    val onlineInstanceActive = res.getString(R.string.online_instance_active)
+    val onlineMoveToTop = res.getString(R.string.online_move_to_top)
+    val onlineResetInstances = res.getString(R.string.online_reset_instances)
+    val onlineFollowChannelBtn = res.getString(R.string.online_follow_channel_btn)
+    val onlineFollowChannelTitle = res.getString(R.string.online_follow_channel_title)
+    val onlineFollowChannelDesc = res.getString(R.string.online_follow_channel_desc)
+    val onlineFollowPlaceholder = res.getString(R.string.online_follow_placeholder)
+    val onlineDefaultChannelsHint = res.getString(R.string.online_default_channels_hint)
+    val onlineRestoreDefaultChannels = res.getString(R.string.online_restore_default_channels)
+    val onlineFollowBtn = res.getString(R.string.online_follow_btn)
+    val onlineUnfollowBtn = res.getString(R.string.online_unfollow_btn)
+    fun onlineUnfollowConfirmTitle(name: String) = res.getString(R.string.online_unfollow_confirm_title, name)
+    val onlineUnfollowConfirmDesc = res.getString(R.string.online_unfollow_confirm_desc)
+    fun onlineChannelFollowed(name: String) = res.getString(R.string.online_channel_followed, name)
+    fun onlineChannelUnfollowed(name: String) = res.getString(R.string.online_channel_unfollowed, name)
+    val onlineChannelLinkInvalid = res.getString(R.string.online_channel_link_invalid)
+    val onlineLoadingVideo = res.getString(R.string.online_loading_video)
+    val onlineResolvingStream = res.getString(R.string.online_resolving_stream)
+    val onlineNoPlayableStream = res.getString(R.string.online_no_playable_stream)
+    val onlineFallbackPlayer = res.getString(R.string.online_fallback_player)
+    val onlineFallbackActive = res.getString(R.string.online_fallback_active)
+    val onlineDirectPlayback = res.getString(R.string.online_direct_playback)
+    val onlineFallbackAutoReason = res.getString(R.string.online_fallback_auto_reason)
+    val onlineFallbackFailed = res.getString(R.string.online_fallback_failed)
+    val onlineFallbackHost = res.getString(R.string.online_fallback_host)
+    val onlineDirectSource = res.getString(R.string.online_direct_source)
+    val onlineHubSearchHint = res.getString(R.string.online_hub_search_hint)
+    val onlinePasteCd = res.getString(R.string.online_paste_cd)
+    val onlineClipboardEmpty = res.getString(R.string.online_clipboard_empty)
+    val onlineTabFollowing = res.getString(R.string.online_tab_following)
+    val onlineTabSaved = res.getString(R.string.online_tab_saved)
+    val onlineTabHistory = res.getString(R.string.online_tab_history)
+    val onlineTrayFollow = res.getString(R.string.online_tray_follow)
+    val onlineTrayAll = res.getString(R.string.online_tray_all)
+    val onlineChannelNewCd = res.getString(R.string.online_channel_new_cd)
+    val onlineSavedEmptyTitle = res.getString(R.string.online_saved_empty_title)
+    val onlineSavedEmptyDesc = res.getString(R.string.online_saved_empty_desc)
+    val onlineHistoryEmptyTitle = res.getString(R.string.online_history_empty_title)
+    val onlineHistoryEmptyDesc = res.getString(R.string.online_history_empty_desc)
+    val onlineStatusSmart = res.getString(R.string.online_status_smart)
+    val onlineStatusRaw = res.getString(R.string.online_status_raw)
+    val onlineMenuSave = res.getString(R.string.online_menu_save)
+    val onlineMenuUnsave = res.getString(R.string.online_menu_unsave)
+    val onlineMenuCopyUrl = res.getString(R.string.online_menu_copy_url)
+    val onlineMenuReextract = res.getString(R.string.online_menu_reextract)
+    val onlineMenuRemoveHistory = res.getString(R.string.online_menu_remove_history)
+    val onlineClearHistory = res.getString(R.string.online_clear_history)
+    val onlineMoreCd = res.getString(R.string.online_more_cd)
+    val onlineSavedToast = res.getString(R.string.online_saved_toast)
+    val onlineUnsavedToast = res.getString(R.string.online_unsaved_toast)
+    val onlineBookmarkCd = res.getString(R.string.online_bookmark_cd)
+    val onlineTbImportJson = res.getString(R.string.online_tb_import_json)
+    val onlineTbLoop = res.getString(R.string.online_tb_loop)
+    val onlineTbChallenge = res.getString(R.string.online_tb_challenge)
+    val onlineCuePlayCd = res.getString(R.string.online_cue_play_cd)
+    val onlineCueLeitner = res.getString(R.string.online_cue_leitner)
+    val onlineCueLeitnerSaved = res.getString(R.string.online_cue_leitner_saved)
+    val onlineCueLeitnerCd = res.getString(R.string.online_cue_leitner_cd)
+    val onlineCueLessonBadge = res.getString(R.string.online_cue_lesson_badge)
+    val onlineCueTranslateCd = res.getString(R.string.online_cue_translate_cd)
+    val onlineCaptionsMenu = res.getString(R.string.online_captions_menu)
+    val onlineQualityLabel = res.getString(R.string.online_quality_label)
+    val onlineVideoInfo = res.getString(R.string.online_video_info)
+    val onlineNoCaptions = res.getString(R.string.online_no_captions)
+    val onlineNoCaptionsAvailable = res.getString(R.string.online_no_captions_available)
+    val onlineCaptionsEmpty = res.getString(R.string.online_captions_empty)
+    val onlineNoCaptionsLoaded = res.getString(R.string.online_no_captions_loaded)
+    val onlineExportChip = res.getString(R.string.online_export_chip)
+    val onlineExportTitle = res.getString(R.string.online_export_title)
+    fun onlineExportDesc(lines: Int) = res.getString(R.string.online_export_desc, lines)
+    val onlineCopySrt = res.getString(R.string.online_copy_srt)
+    val onlineCopyText = res.getString(R.string.online_copy_text)
+    val onlineSaveSrt = res.getString(R.string.online_save_srt)
+    val onlineSaveText = res.getString(R.string.online_save_text)
+    val onlineSendToVideoTab = res.getString(R.string.online_send_to_video_tab)
+    val onlineCopyLink = res.getString(R.string.online_copy_link)
+    fun onlineCaptionsCopied(lines: Int) = res.getString(R.string.online_captions_copied, lines)
+    val onlineAiCopyLoading = res.getString(R.string.online_ai_copy_loading)
+    val onlineAiCopyNoCaptions = res.getString(R.string.online_ai_copy_no_captions)
+
+    // ── Online tab: the action drawer under the video ──
+    val onlineDrawerTitle = res.getString(R.string.online_drawer_title)
+    val onlineDrawerToggleCd = res.getString(R.string.online_drawer_toggle_cd)
+    val onlineSaveWhilePlaying = res.getString(R.string.online_save_while_playing)
+    val onlineSaveWhilePlayingCd = res.getString(R.string.online_save_while_playing_cd)
+    val onlineWatchCacheCd = res.getString(R.string.online_watch_cache_cd)
+    val onlineWatchCacheGlobalDesc = res.getString(R.string.online_watch_cache_global_desc)
+    val onlineWatchCacheStorage = res.getString(R.string.online_watch_cache_storage)
+    val onlineWatchCacheEmpty = res.getString(R.string.online_watch_cache_empty)
+    val onlineWatchCacheDeleteAll = res.getString(R.string.online_watch_cache_delete_all)
+    val onlineWatchCacheDeleteOneCd = res.getString(R.string.online_watch_cache_delete_one_cd)
+    val onlineWatchCacheOpenCd = res.getString(R.string.online_watch_cache_open_cd)
+    val onlineWatchCacheDefaultQuality = res.getString(R.string.online_watch_cache_default_quality)
+    val onlineWatchCacheDefaultQualityDesc = res.getString(R.string.online_watch_cache_default_quality_desc)
+    val onlineQualityAuto = res.getString(R.string.online_quality_auto)
+    val onlineQualityHighest = res.getString(R.string.online_quality_highest)
+    fun onlineWatchCacheTotal(size: String) = res.getString(R.string.online_watch_cache_total, size)
+    val onlineQualityBtn = res.getString(R.string.online_quality_btn)
+    val onlineQualityNone = res.getString(R.string.online_quality_none)
+    val onlineCopyRawBtn = res.getString(R.string.online_copy_raw_btn)
+    fun onlineRawCopiedVtt(lines: Int) = res.getString(R.string.online_raw_copied_vtt, lines)
+    fun onlineRawCopiedSrt(lines: Int) = res.getString(R.string.online_raw_copied_srt, lines)
+    val onlineImportMainBtn = res.getString(R.string.online_import_main_btn)
+    val onlineImportTranslationBtn = res.getString(R.string.online_import_translation_btn)
+    val onlineImportPastedName = res.getString(R.string.online_import_pasted_name)
+    fun onlineImportSubtitleLoaded(name: String, lines: Int) =
+        res.getString(R.string.online_import_subtitle_loaded, name, lines)
+    val onlineImportFailed = res.getString(R.string.online_import_failed)
+    val onlineCaptionsLoadingChip = res.getString(R.string.online_captions_loading_chip)
+    val onlineLinkCopied = res.getString(R.string.online_link_copied)
+    val onlineAttachJsonChip = res.getString(R.string.online_attach_json_chip)
+    fun onlineJsonAttached(lines: Int) = res.getString(R.string.online_json_attached, lines)
+    val onlinePickCaptionTitle = res.getString(R.string.online_pick_caption_title)
+    val onlinePickCaptionDesc = res.getString(R.string.online_pick_caption_desc)
+    val onlinePickTranslationTitle = res.getString(R.string.online_pick_translation_title)
+    val onlinePickTranslationDesc = res.getString(R.string.online_pick_translation_desc)
+    val onlineMainTrackChip = res.getString(R.string.online_main_track_chip)
+    val onlineTranslationTrackChip = res.getString(R.string.online_translation_track_chip)
+    val onlineNoTranslationTrack = res.getString(R.string.online_no_translation_track)
+    val onlineAutoGenerated = res.getString(R.string.online_auto_generated)
+    val onlineHideCaptions = res.getString(R.string.online_hide_captions)
+    fun onlineStreamsInfo(progressive: Int, hls: Boolean, captions: Int) = res.getString(
+        R.string.online_streams_info, progressive,
+        res.getString(if (hls) R.string.online_yes else R.string.online_no), captions
+    )
 
     // ── Phase 2: ai_service ──
     val aiNothingToTranslate = res.getString(R.string.ai_nothing_to_translate)

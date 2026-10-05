@@ -166,6 +166,15 @@ object SubtitleJsonParser {
     fun hasChunkMarker(text: String): Boolean = detectChunkMarker(text) != null
 
     /**
+     * Heuristic for an unbalanced remainder: was it meant to be a JSON
+     * document at all? Prose that merely carries a stray brace must not
+     * become a phantom "skipped document" in the import report.
+     */
+    private fun looksLikeIntendedJson(body: String): Boolean =
+        body.contains('"') &&
+            (body.length >= 80 || body.lowercase().contains(KEY_SUBTITLES))
+
+    /**
      * Finds every complete JSON document inside an AI answer, each paired with
      * the chunk marker written in the prose right before it (or, for a single
      * document, right after it — models do both).
@@ -189,9 +198,12 @@ object SubtitleJsonParser {
             val close = findMatchingClose(cleaned, open)
             if (close < 0) {
                 // Unbalanced: the answer was cut off mid-JSON. Keep the rest as
-                // one candidate so [parse] can report a precise syntax error.
+                // one candidate — ALSO when complete documents were found
+                // before it, which is exactly what a paste of "chunk 1 whole +
+                // chunk 2 truncated" looks like — so [parseWithReport] can count
+                // the broken half instead of silently losing it.
                 val body = cleaned.substring(open).trim()
-                if (body.isNotEmpty() && found.isEmpty()) {
+                if (body.isNotEmpty() && looksLikeIntendedJson(body)) {
                     found.add(FoundChunk(chunkMarker(cleaned.substring(proseFrom, open)), body))
                     lastJsonEnd = cleaned.length
                 }
@@ -388,7 +400,25 @@ object SubtitleJsonParser {
      *    (see [mergePackages]), with each chunk recorded in
      *    [JsonSubtitlePackage.chunks].
      */
-    fun parse(text: String): JsonSubtitlePackage {
+    fun parse(text: String): JsonSubtitlePackage = parseWithReport(text).pkg
+
+    /**
+     * [parse] plus what happened to the documents that could not be read.
+     *
+     * A paste can contain one complete chunk AND one truncated chunk; the
+     * complete half imports fine, and [skippedDocuments] is how the importer
+     * tells the user that half of their paste was dropped instead of losing
+     * it silently.
+     */
+    data class ParseOutcome(
+        val pkg: JsonSubtitlePackage,
+        /** Documents found in the input that could not be read (usually truncated AI answers). */
+        val skippedDocuments: Int,
+        /** Why the last skipped document failed, when one did. */
+        val skippedReason: String? = null,
+    )
+
+    fun parseWithReport(text: String): ParseOutcome {
         val raw = stripBom(text)
         if (raw.trim().isEmpty()) {
             throw SubtitleJsonParseException("The JSON content is empty.")
@@ -401,7 +431,7 @@ object SubtitleJsonParser {
             detectChunkMarker(trimmed) == null &&
             findMatchingClose(trimmed, 0) == trimmed.length - 1
         ) {
-            return parseDocument(trimmed, null)
+            return ParseOutcome(parseDocument(trimmed, null), 0)
         }
 
         val documents = extractChunks(raw)
@@ -414,16 +444,19 @@ object SubtitleJsonParser {
 
         var result: JsonSubtitlePackage? = null
         var lastError: SubtitleJsonParseException? = null
+        var skipped = 0
         for (document in documents) {
             try {
                 val pkg = parseDocument(document.json, document.marker)
                 result = result?.let { mergePackages(it, pkg) } ?: pkg
             } catch (e: SubtitleJsonParseException) {
+                skipped++
                 lastError = e
             }
         }
-        return result
+        val merged = result
             ?: throw (lastError ?: SubtitleJsonParseException(NO_SUBTITLES_ERROR))
+        return ParseOutcome(merged, skipped, lastError?.message)
     }
 
     private const val NO_SUBTITLES_ERROR =
@@ -637,6 +670,11 @@ object SubtitleJsonParser {
         for (key in keys) {
             val v = obj.opt(key) ?: continue
             if (v == JSONObject.NULL) continue
+            // A structural value where a string was expected (the model nested
+            // an object/array) is treated as missing: showing its raw JSON dump
+            // as "subtitle text" is never useful, while dropping it yields the
+            // specific "missing english text" error instead of garbage cards.
+            if (v is JSONObject || v is JSONArray) continue
             val s = v.toString().trim()
             if (s.isNotEmpty()) return s
         }
@@ -668,6 +706,7 @@ object SubtitleJsonParser {
         for (key in keys) {
             val v = obj.opt(key) ?: continue
             if (v == JSONObject.NULL) continue
+            if (v is JSONObject || v is JSONArray) continue
             val s = v.toString().trim()
             if (s.isNotEmpty()) return s
         }

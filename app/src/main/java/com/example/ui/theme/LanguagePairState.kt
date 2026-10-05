@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 
 /**
  * The learner's "source → target" language pair, edited inside
- * Settings ▸ Tutorial & AI Learning (the two fields right above the prompt
+ * Settings ▸ Prompts (the two fields right above the prompt
  * generator) and used everywhere the app used to say "English" / "Persian" as
  * if they were the only option:
  *

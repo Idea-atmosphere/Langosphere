@@ -8,30 +8,30 @@
     <string name="tab_agent">Assistant</string>
     <string name="tab_leitner">Better Learning Tools</string>
     <string name="change_theme_cd">Change theme</string>
-    <string name="theme_light_menu">☀️ Light</string>
-    <string name="theme_dark_menu">🌙 Dark</string>
-    <string name="theme_system_menu">📱 System</string>
-    <string name="app_language_menu">🌐 App language</string>
+    <string name="theme_light_menu">Light</string>
+    <string name="theme_dark_menu">Dark</string>
+    <string name="theme_system_menu">System</string>
+    <string name="app_language_menu">App language</string>
     <string name="app_language_dialog_title">App language</string>
     <string name="unlimited_label">Unlimited</string>
-    <string name="max_words_menu_unlimited">📝 Word count: Unlimited</string>
-    <string name="max_words_menu_count">📝 Word count: %1$s</string>
-    <string name="file_manager_menu">📁 File manager</string>
-    <string name="about_menu">ℹ️ About</string>
+    <string name="max_words_menu_unlimited">Word count: Unlimited</string>
+    <string name="max_words_menu_count">Word count: %1$s</string>
+    <string name="file_manager_menu">File manager</string>
+    <string name="about_menu">About</string>
     <string name="video_audio_label">Video / Audio</string>
     <string name="sub_en_label">%1$s subtitle</string>
     <string name="sub_fa_label">%1$s subtitle</string>
     <string name="add_subtitle_title">Add %1$s</string>
     <string name="choose_subtitle_source_title">Choose how to add the subtitle</string>
-    <string name="select_subtitle_file_option">📂 Select subtitle file</string>
+    <string name="select_subtitle_file_option">Select subtitle file</string>
     <string name="select_subtitle_file_desc">From device storage (SRT, VTT, LRC...)</string>
-    <string name="paste_from_clipboard_option">📋 Paste from clipboard</string>
+    <string name="paste_from_clipboard_option">Paste from clipboard</string>
     <string name="paste_from_clipboard_desc">If you copied subtitle text or a subtitle file</string>
     <string name="clipboard_subtitle_default_name_en">%1$s subtitle (clipboard).srt</string>
     <string name="clipboard_subtitle_default_name_fa">%1$s subtitle (clipboard).srt</string>
     <string name="clipboard_empty_error">Clipboard is empty; copy a subtitle file or text first.</string>
     <string name="clipboard_no_subtitle_error">The clipboard content is not a valid subtitle (SRT/VTT/LRC).</string>
-    <string name="subtitle_loaded_from_clipboard">✅ Subtitle loaded from clipboard: %1$s</string>
+    <string name="subtitle_loaded_from_clipboard">Subtitle loaded from clipboard: %1$s</string>
     <string name="max_words_dialog_title">Imported word count</string>
     <string name="max_words_unlimited_all">Unlimited (all words)</string>
     <string name="max_words_count_text">%1$s words</string>
@@ -45,12 +45,12 @@
     <!-- ── Sora, the ANIME skin's mascot ── -->
     <string name="sora_name">Sora</string>
     <string name="sora_tagline">your language buddy</string>
-    <string name="sora_greet_hello">Hi! I\'m Sora ✦</string>
+    <string name="sora_greet_hello">Hi! I\'m Sora</string>
     <string name="sora_greet_tap_words">Tap the words and I\'ll tell you what they mean!</string>
     <string name="sora_greet_leitner">Your Leitner box has %1$s cards ready!</string>
     <string name="sora_greet_episode">Wanna watch an episode?</string>
     <string name="sora_open_pdf_hint">Open a PDF and tap any word!</string>
-    <string name="file_manager_title">📁 File manager</string>
+    <string name="file_manager_title">File manager</string>
     <string name="file_manager_saved_label">Files saved in app storage:</string>
     <string name="export_all">Export all</string>
     <string name="no_files_saved">No files saved.</string>
@@ -63,6 +63,7 @@
     <string name="ok">OK</string>
     <string name="text_color_cd">Text color</string>
     <string name="exit_fullscreen_cd">Exit fullscreen</string>
+    <string name="rotate_screen_cd">Rotate screen</string>
     <string name="fullscreen_cd">Fullscreen</string>
     <string name="dict_loaded_active">Offline dictionary active</string>
     <string name="dict_empty">Database is empty</string>
@@ -71,8 +72,8 @@
     <string name="clear_all">Clear all</string>
     <string name="imported_files_count">Imported files (%1$s)</string>
     <string name="select_text_pdf">Select text / PDF</string>
-    <string name="prev_page">◀ Previous</string>
-    <string name="next_page">Next ▶</string>
+    <string name="prev_page">Previous</string>
+    <string name="next_page">Next</string>
     <string name="page_of_count">of %1$s pages</string>
     <string name="empty_reader_hint">Load a document to start reading.</string>
     <string name="color_dialog_subtitle">Choose one of the colors below, or mix your own:</string>
@@ -90,14 +91,14 @@
     <string name="preset_indigo">Indigo</string>
     <string name="preset_amber">Amber</string>
     <!-- ── LeitnerScreen ── -->
-    <string name="tool_leitner_box">📦 Leitner Box</string>
-    <string name="tool_json_quiz">🧪 Quiz from JSON</string>
+    <string name="tool_leitner_box">Leitner Box</string>
+    <string name="tool_json_quiz">Quiz from JSON</string>
     <string name="export_anki">Export to Anki (txt)</string>
     <string name="leitner_summary">%1$s cards total, %2$s due for review today.</string>
     <string name="review_today_chip">Review today (%1$s)</string>
     <string name="all_cards_chip">All cards (%1$s)</string>
     <string name="leitner_empty_add_hint">You haven\'t added any words to the Leitner box yet. Tap a word in the dictionary and choose "Add to Leitner box".</string>
-    <string name="leitner_empty_done_today">No cards left to review today. 🎉</string>
+    <string name="leitner_empty_done_today">No cards left to review today.</string>
     <string name="leitner_empty_no_cards">You haven\'t added any words to the Leitner box yet.</string>
     <string name="box_of_five">Box %1$s of 5</string>
     <string name="box_label">Box %1$s</string>
@@ -110,15 +111,15 @@
     <string name="agent_memory_cd">AI memory</string>
     <string name="agent_settings_cd">Settings</string>
     <string name="agent_no_file_loaded">No file loaded</string>
-    <string name="agent_memory_active">🧠 Memory active</string>
+    <string name="agent_memory_active">Memory active</string>
     <string name="target_lang_label">Target language</string>
     <string name="bubble_color_title">Message bubble color</string>
     <string name="bubble_color_hint">Choose separate colors for the messages you send and the ones you receive from the Agent</string>
     <string name="sent_messages_label">Your messages (sent)</string>
     <string name="received_messages_label">Assistant messages (received)</string>
     <string name="default_cd">Default</string>
-    <string name="learn_from_subtitles_btn">🧠 Learn from subtitles</string>
-    <string name="learn_from_dictionary_btn">📖 Learn from dictionary</string>
+    <string name="learn_from_subtitles_btn">Learn from subtitles</string>
+    <string name="learn_from_dictionary_btn">Learn from dictionary</string>
     <string name="stop_cd">Stop</string>
     <string name="agent_thinking">Thinking...</string>
     <string name="ask_agent_placeholder">Ask the Agent...</string>
@@ -133,7 +134,7 @@
     <string name="prompt_translate">Translate</string>
     <string name="prompt_chat">Chat</string>
     <string name="prompt_translate_empty">Translate blanks</string>
-    <string name="custom_badge">Custom ✓</string>
+    <string name="custom_badge">Custom</string>
     <string name="edit_btn">Edit</string>
     <string name="reset_btn">Reset</string>
     <string name="editing_prompt_title">Editing prompt: %1$s</string>
@@ -157,10 +158,10 @@
     <string name="category_dictionary_tip">Dictionary tip</string>
     <string name="export_import_title">AI memory export/import</string>
     <string name="export_import_desc">All memory data (prompts, corrections, skills) as a single JSON file.</string>
-    <string name="export_to_downloads_btn">📥 Export to Downloads</string>
+    <string name="export_to_downloads_btn">Export to Downloads</string>
     <string name="import_from_file_label">Import from file:</string>
-    <string name="select_file_import_btn">📤 Select file and import</string>
-    <string name="clear_all_memory_btn">🗑 Clear all memory</string>
+    <string name="select_file_import_btn">Select file and import</string>
+    <string name="clear_all_memory_btn">Clear all memory</string>
     <!-- ── TranslationScreen ── -->
     <string name="sub_en_chip">%1$s subtitle</string>
     <string name="sub_fa_chip">%1$s subtitle</string>
@@ -178,13 +179,13 @@
     <string name="next_line_cd">Next line</string>
     <string name="batch_info">Batch %1$s of %2$s (lines %3$s to %4$s)</string>
     <string name="next_batch_btn">Next 100 lines</string>
-    <string name="all_done_label">✅ Done</string>
+    <string name="all_done_label">Done</string>
     <string name="no_subtitle_loaded_title">No subtitle loaded</string>
     <string name="no_subtitle_loaded_hint">Add a subtitle from the Video Player tab</string>
     <string name="more_lines_label">... and %1$s more lines</string>
     <string name="ask_about_subtitle_placeholder">Ask about the subtitle...</string>
     <string name="translation_settings_title">Smart translation settings</string>
-    <string name="translate_target_lang_hint">This is the same "target language" as Settings ▸ Tutorial &amp; AI Learning — whatever you type is used exactly as written.</string>
+    <string name="translate_target_lang_hint">This is the same "target language" as Settings › Prompts — whatever you type is used exactly as written.</string>
     <string name="translation_processing">Processing...</string>
     <!-- ── VideoPlayerScreen ── -->
     <string name="reset_positions_title">Reset button positions</string>
@@ -195,18 +196,18 @@
     <string name="player_settings_cd">Player settings</string>
     <string name="focus_mode_cd">Focus mode</string>
     <string name="smart_pause_settings_cd">Smart pause settings</string>
-    <string name="smart_pause_panel_title">⚙️ Smart pause settings</string>
+    <string name="smart_pause_panel_title">Smart pause settings</string>
     <string name="pause_dim_title">Dim overlay when paused</string>
     <string name="pause_dim_desc">Show the dark layer over the video while it is paused</string>
     <string name="pause_hide_ui_title">Hide subtitles &amp; buttons</string>
     <string name="pause_hide_ui_desc">While paused, hide the subtitle text and smart-pause buttons so the video frame can be inspected clearly (the gear stays)</string>
     <string name="pause_require_continue_title">Resume only via the Continue button</string>
     <string name="pause_require_continue_desc">Tapping anywhere does not resume playback; the Continue button must be pressed to resume</string>
-    <string name="audio_track_title">🎧 Audio track</string>
+    <string name="audio_track_title">Audio track</string>
     <string name="audio_track_desc">For multi-language videos (e.g. dubbed + original) choose the audio track you want</string>
     <string name="audio_track_unavailable">This video has no selectable audio tracks.</string>
     <string name="audio_track_fallback_name">Track %1$s</string>
-    <string name="audio_playing_hint">🎵 Now playing... tap words to translate</string>
+    <string name="audio_playing_hint">Now playing... tap words to translate</string>
     <string name="player_settings_title">Player and subtitle settings</string>
     <string name="show_subtitles_title">Show subtitles</string>
     <string name="show_subtitles_desc">Show or hide subtitle text over the video</string>
@@ -224,57 +225,89 @@
     <string name="font_fa_label">%1$s font (target)</string>
     <string name="font_default">Default</string>
     <string name="font_custom_label">Custom</string>
-    <string name="import_custom_font_btn">📂 Import custom font</string>
+    <string name="import_custom_font_btn">Import custom font</string>
     <string name="remove_custom_font_btn">Remove custom font</string>
-    <string name="sync_title">⏱️ Subtitle time sync (shift forward/back)</string>
+    <string name="sync_title">Subtitle time sync (shift forward/back)</string>
     <string name="sync_current_offset">%1$s — current shift: %2$s sec</string>
     <string name="shift_value_label">Shift: %1$s sec</string>
     <string name="lang_code_en">%1$s (source)</string>
     <string name="lang_code_fa">%1$s (target)</string>
-    <string name="json_sync_row_title">⏱️ JSON time sync (shift forward/back)</string>
+    <string name="json_sync_row_title">JSON time sync (shift forward/back)</string>
     <string name="json_sync_no_timings">This JSON has no timing data; sync is text-based only, so time shifting is unavailable.</string>
     <string name="json_reset_btn">Reset time shift</string>
     <string name="exact_time_label">Exact time (seconds)</string>
     <string name="apply_btn">Apply</string>
     <string name="sync_hint">Tip: a positive number shows the subtitle earlier (compensating for delay); a negative number shows it later.</string>
-    <string name="save_srt_btn">💾 Save SRT file</string>
+    <string name="save_srt_btn">Save SRT file</string>
     <string name="no_fa_subtitle_to_save">No %1$s subtitle to save</string>
     <string name="confirm_return_btn">Confirm and return</string>
     <string name="all_subtitles_list_title">All subtitles (tap to jump)</string>
     <string name="load_subtitle_hint">Once a subtitle file is loaded, the line list will appear here.</string>
     <string name="sync_settings_row_title">Adjust and sync subtitle timing</string>
-    <string name="collapse_sync">Collapse settings ▲</string>
-    <string name="expand_sync">Tap to adjust timing ▼</string>
+    <string name="collapse_sync">Collapse settings</string>
+    <string name="expand_sync">Tap to adjust timing</string>
     <string name="playing_label">Playing</string>
     <string name="play_from_start_btn">Play from start</string>
     <string name="play_auto_stop_btn">Play with auto-stop</string>
     <string name="translating_label">Translating...</string>
-    <string name="ai_translate_btn">🤖 AI translate</string>
+    <string name="ai_translate_btn">AI translate</string>
     <!-- ── DictionaryBottomSheet ── -->
     <string name="all_filter_chip">All</string>
-    <string name="added_to_leitner_label">Saved to Leitner box ✓</string>
+    <string name="added_to_leitner_label">Saved to Leitner box</string>
     <string name="add_to_leitner_btn">Add to Leitner box</string>
     <string name="search_word_placeholder">Search a word...</string>
     <string name="word_label">Word</string>
     <string name="search_cd">Search</string>
     <string name="subtitle_and_translation_label">Subtitle text and translation</string>
     <string name="matched_translation_label">Matched translation: %1$s</string>
-    <string name="auto_detect_warning">⚠️ Auto-detected — may be inaccurate</string>
+    <string name="auto_detect_warning">Auto-detected — may be inaccurate</string>
     <string name="no_results_found">No word found. Try removing suffixes (s, ed, ing) and search again.</string>
     <!-- ── Theme settings section ── -->
-    <string name="theme_section_menu">🎨 Theme</string>
-    <string name="theme_section_title">🎨 Theme</string>
+    <string name="theme_section_menu">Theme</string>
+    <string name="theme_section_title">Theme</string>
     <string name="theme_mode_title">Main theme mode</string>
     <string name="theme_mode_desc">Light, dark, or follow the system. Colors follow Material You (dynamic wallpaper colors on Android 12+).</string>
     <!-- ── Theme settings: the section hub (design / colors / font buttons) ── -->
     <string name="theme_sections_title">Appearance sections</string>
     <string name="theme_sections_desc">Each section opens on its own screen from a button here, and the Back button brings you right back.</string>
-    <string name="theme_design_title">🖌️ App design</string>
+    <string name="theme_design_title">App design</string>
     <string name="theme_active_value">Active: %1$s</string>
     <string name="back">Back</string>
     <string name="back_to_theme_btn">Back to Theme</string>
     <!-- ── Theme settings: app colors (palettes + custom hex) ── -->
-    <string name="theme_colors_title">🎨 App colors</string>
+    <!-- ── Theme settings ▸ Customize ▸ Layout & shapes ── -->
+    <string name="layout_section_title">Layout &amp; shapes</string>
+    <string name="layout_section_row_subtitle">Tab bar, corners and section order</string>
+    <string name="layout_section_desc">Adjust the design you are already using: which edge the tab bar sits on, how round every corner is, and in which order the app’s sections appear. Every change applies right away and shows up in the preview.</string>
+    <string name="layout_value_design_default">Design default</string>
+    <string name="layout_tabbar_title">Tab bar position</string>
+    <string name="layout_tabbar_desc">Each design keeps its own tab bar; this only moves it to the top or the bottom edge. On wide windows the designs that use a side rail keep it.</string>
+    <string name="layout_tabbar_top">Top</string>
+    <string name="layout_tabbar_bottom">Bottom</string>
+    <string name="layout_corners_title">Corner roundness</string>
+    <string name="layout_corners_desc">Applies to the whole shape scale of the active design: buttons, cards, dialogs, sheets and the tab bar all follow.</string>
+    <string name="layout_corner_sharp">Square</string>
+    <string name="layout_corner_crisp">Crisp</string>
+    <string name="layout_corner_round">Round</string>
+    <string name="layout_corner_extra">Extra round</string>
+    <string name="layout_tab_order_title">Section order</string>
+    <string name="layout_tab_order_desc">Move any section of the app wherever you want it. The tab bar and the swipe order both follow.</string>
+    <string name="layout_move_earlier">Move earlier</string>
+    <string name="layout_move_later">Move later</string>
+    <string name="layout_reset_order">Restore the default order</string>
+    <string name="layout_preview_title">Preview</string>
+    <string name="layout_preview_desc">Built from the app’s real components in the active design, so this is exactly what your choices look like.</string>
+    <string name="layout_preview_card_title">Sample card</string>
+    <string name="layout_preview_card_body">The corners of this card, its buttons and the tab bar above follow your choices.</string>
+    <string name="layout_preview_primary_btn">Button</string>
+    <string name="layout_preview_secondary_btn">Secondary</string>
+    <string name="layout_preview_chip">Chip</string>
+    <string name="layout_design_extras_title">Extras for %1$s</string>
+    <string name="layout_design_extras_none">This design has no extra options of its own yet.</string>
+    <string name="theme_customize_title">Customize</string>
+    <string name="theme_customize_row_subtitle">App colors and font</string>
+    <string name="theme_customize_desc">Fine-tune the look: the app colors and the fonts used across the app.</string>
+    <string name="theme_colors_title">App colors</string>
     <string name="theme_colors_desc">Pick a palette suited to the active design, or mix your own custom colors.</string>
     <string name="palette_presets_title">Preset palettes</string>
     <string name="custom_palette_title">Custom palette</string>
@@ -285,20 +318,20 @@
     <string name="hex_input_label">Hex code (e.g. #3A5AD4)</string>
     <string name="hex_invalid_error">Invalid hex code</string>
     <!-- ── Theme settings: fonts (per scope) ── -->
-    <string name="theme_font_title">✍️ Font</string>
+    <string name="theme_font_title">Font</string>
     <string name="theme_font_desc">Change the font of the whole app or just one part of it; you can also import a custom font (.ttf/.otf).</string>
     <string name="font_scope_app">Whole app</string>
     <string name="font_scope_subtitles">Subtitles only</string>
     <string name="font_scope_reader">Reading files (PDF…)</string>
     <string name="font_scope_leitner">Leitner cards</string>
     <!-- ── Video import section (collapsible) ── -->
-    <string name="video_import_section_title">🎬 Video &amp; subtitles</string>
-    <string name="collapse_import_section">Collapse ▲</string>
-    <string name="expand_import_section">Expand ▼</string>
-    <string name="import_section_scroll_hint">💡 Scroll the subtitle list up to auto-fold this section; scroll back to the top of the list to reopen it.</string>
-    <!-- ── Tutorial & AI Learning section ── -->
-    <string name="tutorial_menu">🧠 Tutorial &amp; AI Learning</string>
-    <string name="tutorial_title">🧠 Tutorial &amp; AI Learning</string>
+    <string name="video_import_section_title">Video &amp; subtitles</string>
+    <string name="collapse_import_section">Collapse</string>
+    <string name="expand_import_section">Expand</string>
+    <string name="import_section_scroll_hint">Scroll the subtitle list up to auto-fold this section; scroll back to the top of the list to reopen it.</string>
+    <!-- ── Prompts section ── -->
+    <string name="tutorial_menu">Prompts</string>
+    <string name="tutorial_title">Prompts</string>
     <string name="tutorial_learning_level_title">Your learning level</string>
     <string name="tutorial_learning_level_desc">Learning explanations, examples, and prompts are tuned to this level.</string>
     <string name="dictionary_json_toggle_title">Use Dictionary When JSON Learning Data Exists</string>
@@ -317,8 +350,8 @@
     <string name="mode_word_analysis_title">Word Analysis</string>
     <string name="mode_word_analysis_desc">Translation, word role, meaning in the sentence, examples, and level-appropriate explanation — for when you tap a word</string>
     <string name="prompt_preview_title">Prompt text (ready to copy)</string>
-    <string name="copy_prompt_btn">📋 Copy prompt</string>
-    <string name="prompt_copied_toast">✅ Prompt copied</string>
+    <string name="copy_prompt_btn">Copy prompt</string>
+    <string name="prompt_copied_toast">Prompt copied</string>
     <string name="level_a1">A1 — Beginner</string>
     <string name="level_a2">A2 — Elementary</string>
     <string name="level_b1">B1 — Intermediate</string>
@@ -338,49 +371,52 @@
     <string name="pos_phrasal_verb">phrasal verb</string>
     <!-- ── JSON subtitle import ── -->
     <string name="sub_json_label">JSON subtitle</string>
+    <string name="json_import_sheet_title">Learning JSON</string>
+    <string name="json_import_sheet_desc">One learning JSON for the video player, the Online tab and the quiz — pick a file or paste an AI answer.</string>
+    <string name="json_partial_import_warning">%1$d truncated or broken document(s) in this paste were skipped.</string>
     <string name="add_json_subtitle_title">Add %1$s</string>
-    <string name="select_json_file_option">📂 Select JSON file</string>
+    <string name="select_json_file_option">Select JSON file</string>
     <string name="select_json_file_desc">A subtitle-learning JSON file (AI output) from device storage</string>
-    <string name="paste_json_option">📋 Paste JSON content</string>
+    <string name="paste_json_option">Paste JSON content</string>
     <string name="paste_json_desc">Enter JSON text directly; the app auto-detects it</string>
     <string name="json_paste_dialog_title">Import subtitle JSON</string>
     <string name="json_paste_placeholder">Paste the JSON content here...</string>
     <string name="json_import_btn">Import JSON</string>
     <string name="json_load_sample_btn">Sample JSON</string>
-    <string name="json_detected_label">✅ Subtitle-learning JSON format detected</string>
+    <string name="json_detected_label">Subtitle-learning JSON format detected</string>
     <string name="json_not_subtitle_json">Not a valid subtitle-learning JSON; it needs the subtitles / english / translation keys.</string>
     <string name="json_parse_error">JSON error: %1$s</string>
     <string name="json_empty_file_error">The JSON file is empty</string>
-    <string name="json_imported_success">✅ JSON imported: %1$s (%2$s subtitles)</string>
+    <string name="json_imported_success">JSON imported: %1$s (%2$s subtitles)</string>
     <string name="json_default_name">Learning subtitle (JSON).json</string>
     <string name="json_active_badge">JSON active — highest priority</string>
-    <string name="remove_imported_subtitles_btn">🗑 Remove imported subtitles</string>
+    <string name="remove_imported_subtitles_btn">Remove imported subtitles</string>
     <string name="remove_subs_confirm_title">Remove all imported subtitles?</string>
     <string name="remove_subs_confirm_desc">The source subtitle, the target subtitle, and the JSON subtitle will be removed.</string>
     <string name="subtitle_removed_all">All imported subtitles were removed</string>
     <!-- ── JSON chunks: AI answers ("CHUNK 1-50") merged into one file ── -->
-    <string name="json_chunks_title">🧩 JSON chunks (CHUNK)</string>
+    <string name="json_chunks_title">JSON chunks (CHUNK)</string>
     <string name="json_chunks_summary">%1$s AI answers merged into one file — %2$s lines in total.</string>
     <string name="json_chunk_merged_badge">Merged</string>
     <string name="json_chunks_hint">Chunked AI answers (first line "CHUNK 1-50") are detected, cleaned and merged automatically. If one chunk is wrong, delete just that one.</string>
-    <string name="json_chunk_imported">✅ %1$s detected and imported: %2$s (%3$s subtitles)</string>
-    <string name="json_chunk_merged">✅ %1$s merged — %2$s chunks, %3$s lines in total. If that was a mistake, remove just that chunk from the CHUNK list.</string>
-    <string name="json_chunk_reimported">🔁 %1$s re-imported, replacing its previous version — %2$s lines in total.</string>
-    <string name="json_chunk_removed">🗑 %1$s removed — %2$s lines left.</string>
-    <string name="json_chunk_removed_last">🗑 %1$s removed; nothing was left, so the JSON subtitle was cleared.</string>
+    <string name="json_chunk_imported">%1$s detected and imported: %2$s (%3$s subtitles)</string>
+    <string name="json_chunk_merged">%1$s merged — %2$s chunks, %3$s lines in total. If that was a mistake, remove just that chunk from the CHUNK list.</string>
+    <string name="json_chunk_reimported">%1$s re-imported, replacing its previous version — %2$s lines in total.</string>
+    <string name="json_chunk_removed">%1$s removed — %2$s lines left.</string>
+    <string name="json_chunk_removed_last">%1$s removed; nothing was left, so the JSON subtitle was cleared.</string>
     <string name="json_chunk_lines">%1$s lines</string>
-    <string name="json_chunk_detected_label">🧩 Chunked AI answer detected:</string>
+    <string name="json_chunk_detected_label">Chunked AI answer detected:</string>
     <string name="json_chunk_auto_strip_hint">The CHUNK line, ``` fences and any extra prose are stripped automatically; only the JSON is imported.</string>
     <string name="json_chunk_merge_hint">Another JSON is loaded, so this chunk is merged into it automatically.</string>
     <string name="json_chunk_replace_hint">No CHUNK marker: this content replaces the currently loaded JSON file.</string>
     <string name="json_remove_chunk_cd">Remove this chunk</string>
-    <string name="json_remove_only_json_btn">🗑 Remove JSON subtitle only</string>
+    <string name="json_remove_only_json_btn">Remove JSON subtitle only</string>
     <string name="json_removed_all">The JSON subtitle was removed</string>
-    <string name="json_export_btn">📥 Export JSON to Downloads</string>
-    <string name="json_export_saved">✅ JSON file saved: %1$s (%2$s lines)</string>
-    <string name="json_export_saved_merged">✅ JSON file saved: %1$s (%2$s lines, %3$s merged chunks)</string>
+    <string name="json_export_btn">Export JSON to Downloads</string>
+    <string name="json_export_saved">JSON file saved: %1$s (%2$s lines)</string>
+    <string name="json_export_saved_merged">JSON file saved: %1$s (%2$s lines, %3$s merged chunks)</string>
     <string name="no_json_to_export">There is no JSON subtitle to export</string>
-    <!-- ── Settings ▸ Tutorial & AI Learning: the source → target language pair ── -->
+    <!-- ── Settings ▸ Prompts: the source → target language pair ── -->
     <string name="source_language_label">Source language (the content)</string>
     <string name="target_language_label">Target language (translation &amp; explanation)</string>
     <string name="source_language_hint">e.g. English</string>
@@ -392,15 +428,15 @@
     <string name="language_pair_subtitle_preview">Subtitle labels: "%1$s subtitle" and "%2$s subtitle"</string>
     <string name="language_pair_prompt_preview">AI prompt: translates and explains a %1$s file into %2$s.</string>
     <string name="language_pair_quiz_preview">JSON quiz: questions go from %1$s to %2$s.</string>
-    <string name="language_same_warning">⚠️ Source and target are the same language; they usually should differ.</string>
+    <string name="language_same_warning">Source and target are the same language; they usually should differ.</string>
     <!-- ── Leitner tab ▸ beta: quiz built from an imported JSON package ── -->
-    <string name="json_quiz_card_title">🧪 Quiz from JSON file</string>
+    <string name="json_quiz_card_title">Quiz from JSON file</string>
     <string name="json_quiz_card_desc">Beta section: builds a multiple-choice quiz from the words and sentences of that same JSON learning file. Hand it a file or an AI answer (CHUNK line included) and it is imported and used automatically.</string>
-    <string name="json_quiz_open_btn">🧪 Start the JSON quiz</string>
-    <string name="json_quiz_dialog_title">🧪 Quiz from JSON</string>
+    <string name="json_quiz_open_btn">Start the JSON quiz</string>
+    <string name="json_quiz_dialog_title">Quiz from JSON</string>
     <string name="json_quiz_source_title">Quiz source</string>
-    <string name="json_quiz_pick_file_btn">📂 Select JSON file</string>
-    <string name="json_quiz_paste_btn">📋 Paste AI answer (with CHUNK)</string>
+    <string name="json_quiz_pick_file_btn">Select JSON file</string>
+    <string name="json_quiz_paste_btn">Paste AI answer (with CHUNK)</string>
     <string name="json_quiz_paste_hint">Paste the whole AI answer; the "CHUNK 1-50" line, fences and extra prose are stripped automatically and the JSON is imported.</string>
     <string name="json_quiz_paste_field_label">JSON content / AI answer</string>
     <string name="json_quiz_import_paste_btn">Import and build the quiz</string>
@@ -409,30 +445,36 @@
     <string name="json_quiz_no_source">No JSON file imported yet. Pick a file or paste an AI answer.</string>
     <string name="json_quiz_count_title">Number of questions</string>
     <string name="json_quiz_count_chip">%1$s questions</string>
-    <string name="json_quiz_start_btn">▶ Start quiz</string>
+    <string name="json_quiz_start_btn">Start quiz</string>
     <string name="json_quiz_empty">This JSON file has no quiz material; it needs words or translated sentences.</string>
     <string name="json_quiz_progress">Question %1$s of %2$s</string>
     <string name="json_quiz_score_live">Correct: %1$s of %2$s</string>
-    <string name="json_quiz_type_word">Word ⟶ translation</string>
-    <string name="json_quiz_type_reverse">Translation ⟶ word</string>
-    <string name="json_quiz_type_sentence">Sentence ⟶ translation</string>
-    <string name="json_quiz_type_grammar">Sentence ⟶ grammar</string>
+    <string name="json_quiz_type_word">Word to translation</string>
+    <string name="json_quiz_type_reverse">Translation to word</string>
+    <string name="json_quiz_type_sentence">Sentence to translation</string>
+    <string name="json_quiz_type_grammar">Sentence to grammar</string>
     <string name="json_quiz_context_label">In the sentence:</string>
-    <string name="json_quiz_correct">✅ Correct!</string>
-    <string name="json_quiz_wrong">❌ Wrong — the answer was: %1$s</string>
+    <string name="json_quiz_correct">Correct!</string>
+    <string name="json_quiz_wrong">Wrong — the answer was: %1$s</string>
     <string name="json_quiz_select_hint">Pick one option</string>
-    <string name="json_quiz_next_btn">Next question ⟶</string>
-    <string name="json_quiz_finish_title">🏁 Quiz finished</string>
+    <string name="json_quiz_next_btn">Next question</string>
+    <string name="json_quiz_finish_title">Quiz finished</string>
     <string name="json_quiz_result">%1$s correct out of %2$s (%3$s%%).</string>
     <string name="json_quiz_wrong_list_title">Wrong answers — add to the Leitner box</string>
-    <string name="json_quiz_add_to_leitner_btn">➕ Leitner</string>
+    <string name="json_quiz_add_to_leitner_btn">Add to Leitner</string>
     <string name="json_quiz_added_to_leitner">Added to the Leitner box</string>
-    <string name="json_quiz_retry_btn">🔁 Retry the same quiz</string>
-    <string name="json_quiz_new_questions_btn">🎲 New questions</string>
-    <string name="json_quiz_back_to_source_btn">⟵ Back to the source</string>
+    <string name="json_quiz_retry_btn">Retry the same quiz</string>
+    <string name="json_quiz_new_questions_btn">New questions</string>
+    <string name="json_quiz_back_to_source_btn">Back to the source</string>
+    <string name="json_quiz_stat_vocab">Words %1$d of %2$d</string>
+    <string name="json_quiz_stat_sentence">Sentences %1$d of %2$d</string>
+    <string name="json_quiz_stat_grammar">Grammar %1$d of %2$d</string>
+    <string name="json_quiz_add_all_leitner">Add all mistakes to Leitner</string>
+    <string name="json_quiz_reveal_options">Made your guess? Tap to reveal the options</string>
+    <string name="json_quiz_all_added">All added to the Leitner box</string>
     <!-- ── Subtitle learning sheet (sentence lesson / word analysis) ── -->
-    <string name="lesson_sheet_title">🎓 Subtitle lesson</string>
-    <string name="word_lesson_sheet_title">📖 Word learning</string>
+    <string name="lesson_sheet_title">Subtitle lesson</string>
+    <string name="word_lesson_sheet_title">Word learning</string>
     <string name="lesson_translation_label">Translation</string>
     <string name="lesson_grammar_label">Grammar</string>
     <string name="lesson_explanation_label">Explanation</string>
@@ -463,9 +505,9 @@
     <string name="dict_not_loaded_for_learning">Dictionary not loaded.</string>
     <string name="learned_words_count">Learned from dictionary: %1$s words saved (of %2$s)</string>
     <string name="file_not_found_error">File not found</string>
-    <string name="saved_at_path">✅ Saved: %1$s</string>
+    <string name="saved_at_path">Saved: %1$s</string>
     <string name="no_files_to_export">No files to export</string>
-    <string name="exported_files_summary">✅ %1$s of %2$s files saved to Downloads:\n%3$s</string>
+    <string name="exported_files_summary">%1$s of %2$s files saved to Downloads:\n%3$s</string>
     <string name="no_fa_subtitle_exists">No %1$s subtitle exists</string>
     <string name="srt_create_error">Error creating SRT file</string>
     <string name="downloads_create_error">Error creating file in Downloads</string>
@@ -475,7 +517,35 @@
     <string name="word_added_to_leitner">"%1$s" added to the Leitner box</string>
     <string name="word_updated_in_leitner">The meaning of "%1$s" was updated in the Leitner box</string>
     <string name="leitner_box_empty">The Leitner box is empty</string>
-    <string name="anki_export_saved">✅ Anki export saved: %1$s</string>
+    <string name="anki_export_saved">Anki export saved: %1$s</string>
+    <string name="anki_export_saved_detail">Anki export saved: %1$s (%2$d word cards, %3$d sentence cards)</string>
+    <string name="sentence_added_to_leitner">The sentence was added to the Leitner box</string>
+    <string name="sentence_updated_in_leitner">The sentence card was already in the box; its lesson was refreshed</string>
+    <!-- ── Shared study switches (book reader + subtitles) ── -->
+    <string name="study_challenge_mode">Challenge mode: hide the translation</string>
+    <string name="study_focus_mode">Focus mode: dim every other line</string>
+    <string name="study_lesson_display">Sentence lesson: inline or floating window</string>
+    <string name="study_lesson_style">Lesson display</string>
+    <string name="quiz_source_title">Question source</string>
+    <string name="quiz_source_book">Book reader</string>
+    <string name="quiz_source_movie">Film subtitles</string>
+    <string name="quiz_source_online">Online subtitles</string>
+    <string name="quiz_source_both">All sources</string>
+    <string name="quiz_mode_title">Quiz type</string>
+    <string name="quiz_mode_standard">Standard</string>
+    <string name="quiz_mode_blur">Sentence meanings</string>
+    <string name="quiz_blur_hint">Sentences only: the sentence stays visible while the meanings stay covered — recall the meaning first, then tap to reveal the options. A wrong answer offers a one-tap export to the Leitner box.</string>
+    <string name="quiz_source_badge_book">Book</string>
+    <string name="quiz_source_badge_movie">Film</string>
+    <string name="quiz_source_badge_online">Online</string>
+    <string name="quiz_no_book_material">No book sentences have been imported yet, so this source has nothing to ask about.</string>
+    <string name="quiz_no_online_material">No learning JSON has been imported for an online video yet; open one in the Online tab and paste its AI answer.</string>
+    <!-- ── Smart page batching ── -->
+    <string name="copy_next_pages">Copy the next %1$d pages for the AI</string>
+    <string name="copy_next_pages_range">Pages %1$d-%2$d • ids %3$d-%4$d</string>
+    <string name="copy_next_pages_done">Pages %1$d-%2$d copied (%3$d sentences)</string>
+    <string name="copy_next_pages_empty">There is nothing left to copy in this document</string>
+    <string name="copy_next_pages_no_document">Open a PDF or an EPUB first</string>
     <!-- ── Donate popup / About dialog ── -->
     <string name="social_title">Connect with us</string>
     <string name="social_description">Follow us for news, suggestions, and support.</string>
@@ -488,6 +558,26 @@
     <string name="donate_dont_show_again_btn">Don\'t show again</string>
     <string name="about_dialog_title">About</string>
     <string name="about_version_label">Version %1$s</string>
+    <!-- ── In-app update ── -->
+    <string name="update_menu">Check for updates</string>
+    <string name="update_dialog_title">A new version is available</string>
+    <string name="update_current_version_label">Current version: %1$s</string>
+    <string name="update_new_version_label">New version: %1$s</string>
+    <string name="update_size_label">Size: %1$s</string>
+    <string name="update_changelog_title">What\'s new</string>
+    <string name="update_now_btn">Update now</string>
+    <string name="update_later_btn">Later</string>
+    <string name="update_downloading_label">Downloading the update… %1$d%%</string>
+    <string name="update_downloading_no_progress">Downloading the update…</string>
+    <string name="update_downloaded_label">Download complete. Opening the installer…</string>
+    <string name="update_permission_hint">Android needs your permission before this app can install packages. In the screen that just opened, allow \"Install unknown apps\" for Langosphere, then tap \"Update now\" again.</string>
+    <string name="update_failed_message">The download or the installation failed. Check your connection and try again.</string>
+    <string name="update_retry_btn">Try again</string>
+    <string name="update_cancel_btn">Cancel download</string>
+    <string name="update_close_btn">Close</string>
+    <string name="update_open_release_page">Open the release page on GitHub</string>
+    <string name="update_uptodate_toast">You already have the latest version</string>
+    <string name="update_check_failed_toast">Update check failed: %1$s</string>
     <string name="bitcoin_title">Bitcoin</string>
     <string name="tether_title">Tether (USDT)</string>
     <string name="ton_title">TON</string>
@@ -507,11 +597,17 @@
     <string name="study_top_unknown_hint">Most frequent unknown words — tap the ones you know:</string>
     <!-- Phase 2: design -->
     <string name="design_section_title">App design</string>
-    <string name="design_section_desc">Five complete, deliberately different designs. This changes far more than colors: shapes, type, buttons, cards, the tab bar, the icons and the way every option is shown all change together.</string>
+    <string name="design_section_desc">Four complete, deliberately different designs. Material 3 lets you choose top or bottom tabs; every design also changes shapes, type, buttons, cards and icons.</string>
     <string name="design_langosphere">Langosphere</string>
-    <string name="design_material3">M3 top bar</string>
-    <string name="design_material_you">M3 bottom bar</string>
+    <string name="design_material3">Material 3</string>
+    <string name="design_material3_nav_title">Material 3 tabs</string>
+    <string name="design_material3_nav_desc">Where should the main tabs appear?</string>
+    <string name="design_material3_top">Top tabs</string>
+    <string name="design_material3_bottom">Bottom tabs</string>
+    <string name="design_material_you">Material You</string>
     <string name="design_neobrutalism">Neubrutalism</string>
+    <string name="design_friendly_neo">Friendly Neobrutalism</string>
+    <string name="design_friendly_neo_desc">Warm cream surfaces, rounded corners, coral and pastel accents, plus selective hard shadows.</string>
     <string name="design_anime">Anime (Toon)</string>
     <string name="design_anime_mascot">Show Sora</string>
     <string name="design_anime_mascot_desc">Show the Sora mascot across the app. Turning it off keeps Sora only as the assistant\'s avatar.</string>
@@ -628,9 +724,9 @@
     <string name="ai_no_test_lines">No lines to test</string>
     <string name="ai_server_error">Server error %1$s: %2$s</string>
     <string name="ai_empty_response">Empty response from server</string>
-    <string name="ai_note_saved">✓ Note/rule saved.</string>
+    <string name="ai_note_saved">Note/rule saved.</string>
     <string name="sqlite_no_word_table">No recognizable word/definition table found in this database file</string>
-    <string name="memory_summary">AI memory:\n  Custom prompts: %1$s\n  Corrections: %2$s\n  Rules &amp; notes: %3$s\n  Glossary: %4$s\n  Dictionary notes: %5$s\n  Cached translations: %6$s</string>
+    <string name="memory_summary">AI memory:\n Custom prompts: %1$s\n Corrections: %2$s\n Rules &amp; notes: %3$s\n Glossary: %4$s\n Dictionary notes: %5$s\n Cached translations: %6$s</string>
     <!-- Phase 2: chat -->
     <string name="chat_new_title">New chat</string>
     <string name="chat_untitled">Chat</string>
@@ -684,7 +780,7 @@
         <item>English slot: the original subtitle. Translated slot: the same film in your language. Together they build the two-line view.</item>
         <item>Each slot accepts a file from storage or a subtitle you copied to the clipboard.</item>
         <item>The JSON slot is the rich one: besides the translation it carries the lesson, grammar, structure, word list, pronunciation and examples for every line.</item>
-        <item>Build that JSON with the prompt generator in Settings ▸ Tutorial &amp; AI learning: choose a mode and a level, copy the prompt, run it on your subtitle in any AI chat, then paste the result back into the JSON slot.</item>
+        <item>Build that JSON with the prompt generator in Settings ▸ Prompts: choose a mode and a level, copy the prompt, run it on your subtitle in any AI chat, then paste the result back into the JSON slot.</item>
         <item>The paste dialog detects the format live and offers a sample JSON so you can test the import before doing the whole film.</item>
         <item>The dictionary-vs-JSON switch decides what a word tap opens when a JSON package is loaded: the offline dictionary, or the JSON explanation.</item>
         <item>"Remove imported subtitles" clears the English, translated and JSON data in one tap, and the player can export the current translation as an SRT file.</item>
@@ -730,7 +826,7 @@
         <item>Word limit protects the reader from gigantic files; zero means no limit.</item>
         <item>File manager lists everything the app saved (exports, subtitles, backups) and can export or delete each one.</item>
         <item>Theme section holds the full theme picker and the accent and subtitle colours.</item>
-        <item>Tutorial &amp; AI learning is the prompt studio: the two language fields (source = the language you are learning, target = the language you want to be taught in), learning level, dictionary-vs-JSON switch, six prompt modes, chunk size, a worked example and the copy button. The circled ! beside each field explains it, and whatever you type is used exactly as written — the app never renames a language for you. The pair also drives the subtitle labels everywhere else in the app.</item>
+        <item>The Prompts section is the prompt studio: the two language fields (source = the language you are learning, target = the language you want to be taught in), learning level, dictionary-vs-JSON switch, six prompt modes, chunk size, a worked example and the copy button. The circled ! beside each field explains it, and whatever you type is used exactly as written — the app never renames a language for you. The pair also drives the subtitle labels everywhere else in the app.</item>
         <item>App guide is this window.</item>
         <item>About shows the version and the support links.</item>
     </string-array>
@@ -744,4 +840,190 @@
         <item>The player controls fade away on their own. One tap brings them back, and the tool cluster folds itself when the controls hide.</item>
         <item>Nothing is uploaded anywhere except your own AI endpoint; dictionaries, cards and memory all live on the device.</item>
     </string-array>
+    <!-- ── Online tab (Invidious / Piped) ── -->
+    <string name="tab_online">Online</string>
+    <string name="online_title">Online lessons</string>
+    <string name="online_subtitle">YouTube through Invidious / Piped instances</string>
+    <string name="online_search_placeholder">Search videos or paste a YouTube link…</string>
+    <string name="online_feed_chip">Followed</string>
+    <string name="online_feed_title">Latest from the channels you follow</string>
+    <string name="online_search_results_for">Results for “%1$s”</string>
+    <string name="online_refresh">Refresh</string>
+    <string name="online_retry">Try again</string>
+    <string name="online_load_more">Load more</string>
+    <string name="online_live_badge">LIVE</string>
+    <string name="online_views">%1$s views</string>
+    <string name="online_error_title">The instances did not answer</string>
+    <string name="online_all_instances_failed">None of the enabled instances answered. Public instances come and go — open the instance list and add or enable another one.</string>
+    <string name="online_feed_unavailable">Could not load the channels’ latest videos. Check your connection or try another instance.</string>
+    <string name="online_bot_blocked_hint">YouTube is currently rate-limiting these public instances (“sign in to confirm you’re not a bot”). That happens on the instance’s side — try again in a few minutes, move another instance to the top, or add a self-hosted one.</string>
+    <string name="online_open_externally">Open in another app</string>
+    <string name="online_feed_fallback_note">When no instance can list a channel’s videos, the channel’s public feed on youtube.com is used for the list only. Captions always come from an instance.</string>
+    <string name="online_manage_instances_btn">Manage instances</string>
+    <string name="online_no_channels_title">You are not following any channel</string>
+    <string name="online_no_channels_desc">Tap + to search for a channel or paste its link, or restore the built-in list of English teachers.</string>
+    <string name="online_no_videos_title">Nothing here yet</string>
+    <string name="online_no_videos_desc">No videos were returned for this list.</string>
+    <string name="online_instances_title">Instances</string>
+    <string name="online_instances_desc">The app streams through these free-software front-ends, trying them in order until one answers. Add your own (a self-hosted one works too), switch one off, or move it to the top. Piped entries must be the API address (e.g. pipedapi.example.org). Addresses must use HTTPS (plain http only for localhost).</string>
+    <string name="online_instances_summary">%1$d configured · %2$d enabled</string>
+    <string name="online_check_all">Check all</string>
+    <string name="online_check_instance">Check this instance</string>
+    <string name="online_instance_checking">Checking…</string>
+    <string name="online_instance_playable">Playable</string>
+    <string name="online_instance_failed_disabled">Failed · disabled</string>
+    <string name="online_instance_not_checked">Not checked</string>
+    <string name="online_instances_checked">Checked %1$d instances: %2$d playable, %3$d disabled.</string>
+    <string name="online_instance_url_placeholder">https://instance.example.org</string>
+    <string name="online_instance_url_invalid">That does not look like a valid address</string>
+    <string name="online_kind_auto">Auto-detect</string>
+    <string name="online_add_instance">Add instance</string>
+    <string name="online_instance_active">Active</string>
+    <string name="online_move_to_top">Try first</string>
+    <string name="online_reset_instances">Reset list</string>
+    <string name="online_follow_channel_btn">Follow a channel</string>
+    <string name="online_follow_channel_title">Follow a channel</string>
+    <string name="online_follow_channel_desc">Search by name, or paste a channel link, a UC… id or an @handle.</string>
+    <string name="online_follow_placeholder">Channel name, link or @handle</string>
+    <string name="online_default_channels_hint">The app starts with a curated list of English teachers (BBC Learning English, English with Lucy, Rachel’s English, …). Unfollowed ones can be brought back here.</string>
+    <string name="online_restore_default_channels">Restore the built-in teachers</string>
+    <string name="online_follow_btn">Follow</string>
+    <string name="online_unfollow_btn">Unfollow</string>
+    <string name="online_unfollow_confirm_title">Unfollow %1$s?</string>
+    <string name="online_unfollow_confirm_desc">The channel disappears from your list; you can follow it again any time.</string>
+    <string name="online_channel_followed">Following %1$s</string>
+    <string name="online_channel_unfollowed">Unfollowed %1$s</string>
+    <string name="online_channel_link_invalid">Paste a channel link, a UC… id or an @handle — or search by name.</string>
+    <string name="online_loading_video">Loading…</string>
+    <string name="online_resolving_stream">Asking the instance for the stream…</string>
+    <string name="online_no_playable_stream">This instance returned no playable stream for the video. Try another instance or another quality.</string>
+    <string name="online_fallback_player">Fallback web player</string>
+    <string name="online_fallback_active">Fallback web player (YouTube embed)</string>
+    <string name="online_direct_playback">Try direct playback</string>
+    <string name="online_fallback_auto_reason">Direct streams were blocked on the instances tried, so the clip plays in the fallback web player. Subtitles and JSON lessons stay in sync.</string>
+    <string name="online_fallback_failed">The fallback web player could not play this clip either.</string>
+    <string name="online_fallback_host">YouTube embed</string>
+    <string name="online_direct_source">YouTube (direct, clean)</string>
+    <string name="online_hub_search_hint">Search or paste a YouTube link…</string>
+    <string name="online_paste_cd">Paste from clipboard</string>
+    <string name="online_clipboard_empty">The clipboard is empty</string>
+    <string name="online_tab_following">Following</string>
+    <string name="online_tab_saved">Saved</string>
+    <string name="online_tab_history">History</string>
+    <string name="online_tray_follow">Follow</string>
+    <string name="online_tray_all">All</string>
+    <string name="online_channel_new_cd">New videos</string>
+    <string name="online_saved_empty_title">No saved videos yet</string>
+    <string name="online_saved_empty_desc">Tap on a playing video, or “Save” in a card’s menu, to keep it here for study.</string>
+    <string name="online_history_empty_title">Nothing watched yet</string>
+    <string name="online_history_empty_desc">Videos you open appear here, newest first.</string>
+    <string name="online_status_smart">Smart · translated</string>
+    <string name="online_status_raw">English subtitles</string>
+    <string name="online_menu_save">Save video</string>
+    <string name="online_menu_unsave">Remove from saved</string>
+    <string name="online_menu_copy_url">Copy link</string>
+    <string name="online_menu_reextract">Re-extract</string>
+    <string name="online_menu_remove_history">Remove from history</string>
+    <string name="online_clear_history">Clear history</string>
+    <string name="online_more_cd">More options</string>
+    <string name="online_saved_toast">Saved to your library</string>
+    <string name="online_unsaved_toast">Removed from saved</string>
+    <string name="online_bookmark_cd">Save video</string>
+    <string name="online_tb_import_json">Import JSON</string>
+    <string name="online_tb_loop">Repeat line</string>
+    <string name="online_tb_challenge">Challenge (blur)</string>
+    <string name="online_cue_play_cd">Play this part</string>
+    <string name="online_cue_leitner">+ Leitner</string>
+    <string name="online_cue_leitner_saved">In Leitner</string>
+    <string name="online_cue_leitner_cd">Add the whole sentence to Leitner</string>
+    <string name="online_cue_lesson_badge">Grammar note</string>
+    <string name="online_cue_translate_cd">Translate this line with AI</string>
+    <string name="online_captions_menu">Captions</string>
+    <string name="online_quality_label">Quality</string>
+    <string name="online_video_info">Video details</string>
+    <string name="online_no_captions">Captions</string>
+    <string name="online_no_captions_available">No captions</string>
+    <string name="online_captions_empty">The caption track was empty</string>
+    <string name="online_no_captions_loaded">Load a caption track first</string>
+    <string name="online_export_chip">Export / copy</string>
+    <string name="online_export_title">Captions</string>
+    <string name="online_export_desc">%1$s lines are loaded. Copy them or save them to Downloads.</string>
+    <string name="online_copy_srt">Copy as SRT</string>
+    <string name="online_copy_text">Copy as plain text</string>
+    <string name="online_save_srt">Save SRT to Downloads</string>
+    <string name="online_save_text">Save transcript (.txt) to Downloads</string>
+    <string name="online_send_to_video_tab">Use as the Video tab’s subtitles</string>
+    <string name="online_copy_link">Copy the video link</string>
+    <string name="online_captions_copied">%1$s lines copied to the clipboard</string>
+    <string name="online_ai_copy_loading">Fetching subtitles… please wait a moment</string>
+    <string name="online_ai_copy_no_captions">This video has no captions that could be fetched</string>
+    <!-- ── Online tab: the action drawer under the video ── -->
+    <string name="online_drawer_title">Playback tools</string>
+    <string name="online_drawer_toggle_cd">Show or hide the playback tools</string>
+    <string name="online_save_while_playing">Save while playing</string>
+    <string name="online_save_while_playing_cd">Save the watched parts of the video and its subtitles for later viewing</string>
+    <string name="online_watch_cache_cd">Manage the watch cache: the saving switch, storage and the default quality</string>
+    <string name="online_watch_cache_global_desc">While on, the watched parts of every online video and its subtitles are saved for later viewing.</string>
+    <string name="online_watch_cache_storage">Saved on this device</string>
+    <string name="online_watch_cache_empty">Nothing saved yet — watch something with the switch on.</string>
+    <string name="online_watch_cache_delete_all">Delete all</string>
+    <string name="online_watch_cache_delete_one_cd">Delete this video\'s saved data</string>
+    <string name="online_watch_cache_open_cd">Open this video</string>
+    <string name="online_watch_cache_default_quality">Default quality</string>
+    <string name="online_watch_cache_default_quality_desc">The quality new videos are played and saved with.</string>
+    <string name="online_quality_auto">Auto</string>
+    <string name="online_quality_highest">Highest</string>
+    <string name="online_watch_cache_total">Total: %1$s</string>
+    <string name="online_quality_btn">Quality</string>
+    <string name="online_quality_none">Unavailable in fallback playback</string>
+    <string name="online_copy_raw_btn">Copy raw subtitles</string>
+    <string name="online_raw_copied_vtt">Raw subtitles (VTT) copied — %1$d lines, no prompt attached</string>
+    <string name="online_raw_copied_srt">Raw subtitles (SRT) copied — %1$d lines, no prompt attached</string>
+    <string name="online_import_main_btn">Primary subtitle</string>
+    <string name="online_import_translation_btn">Secondary subtitle</string>
+    <string name="online_import_pasted_name">Pasted from clipboard</string>
+    <string name="online_import_subtitle_loaded">%1$s loaded (%2$d lines)</string>
+    <string name="online_import_failed">Could not read the subtitle file</string>
+    <string name="online_captions_loading_chip">Fetching captions…</string>
+    <string name="online_link_copied">Link copied</string>
+    <string name="online_attach_json_chip">Attach JSON lesson</string>
+    <string name="online_json_attached">JSON lesson (%1$s lines)</string>
+    <string name="online_pick_caption_title">Caption tracks</string>
+    <string name="online_pick_caption_desc">The main track is shown as the source-language subtitle — tap words for the dictionary, tap a line for the lesson.</string>
+    <string name="online_pick_translation_title">Translation track</string>
+    <string name="online_pick_translation_desc">An optional second track shown as the translation under each line.</string>
+    <string name="online_main_track_chip">Main</string>
+    <string name="online_translation_track_chip">Translation</string>
+    <string name="online_no_translation_track">No translation track</string>
+    <string name="online_auto_generated">auto-generated</string>
+    <string name="online_hide_captions">Hide captions</string>
+    <string name="online_streams_info">%1$s progressive streams · HLS: %2$s · %3$s caption tracks</string>
+    <string name="online_yes">yes</string>
+    <string name="online_no">no</string>
+    <string name="guide_online_tab_title">Online tab</string>
+    <string name="guide_online_tab_summary">Teachers’ channels, captions and the JSON lesson</string>
+    <!-- Online tab guide -->
+    <string-array name="guide_online_tab_points">
+        <item>The tab streams YouTube through public Invidious and Piped instances — free-software front-ends — so nothing talks to Google directly and no account is needed.</item>
+        <item>It starts with a list of channels run by English teachers (BBC Learning English, English with Lucy, Rachel’s English, mmmEnglish, Speak English With Vanessa, …). The first list is their latest uploads; tap a channel chip to see all of its videos, long-press or use Unfollow to drop it.</item>
+        <item>+ follows a new channel: search by name or paste a channel link, id or @handle. Search also accepts a YouTube video link, which opens straight away.</item>
+        <item>The player is the same as the Video tab: tap a word for the dictionary, tap a line for the lesson, loop a line, change speed, use smart pause and focus mode.</item>
+        <item>The captions chip lists the video’s caption tracks; the English one loads by itself. A second track can be shown as the translation line, and the per-line AI translate button works here too.</item>
+        <item>Export / copy puts the captions on the clipboard (SRT or plain text) or saves them to Downloads, and can hand them to the Video tab as regular subtitles.</item>
+        <item>Attach JSON lesson opens the same file / paste chooser as the Video tab, so an AI-made learning file follows the online clip with its lessons, chunks and time shift.</item>
+        <item>The instance list (server icon) is yours: add a self-hosted or another public instance, switch one off, move one to the top. If nothing loads or a clip refuses to play (“sign in to confirm you’re not a bot”), the instance is being rate-limited by YouTube — wait a few minutes or try another one.</item>
+        <item>Channel lists never go blank because of a single bad instance: when no instance can list a channel, the channel’s public feed on youtube.com fills the list; captions still come from an instance.</item>
+        <item>Playback never gets stuck on one server: a 403, 5xx or timeout moves on to the next instance automatically (up to four), muxed audio+video MP4 opens first, and if YouTube blocks direct streams everywhere the clip plays in the “Fallback web player” (YouTube’s own embed) with subtitles still in sync. The chip under the title switches between the two at any time.</item>
+    </string-array>
+
+    <!-- Unified transcript-player FAB and compact cue controls. -->
+    <string name="cue_replay_cd">Replay this cue</string>
+    <string name="cue_loop_cd">Loop this cue</string>
+    <string name="cue_pause_at_end_cd">Pause near cue end</string>
+    <string name="player_learning_title">Playback and study</string>
+    <string name="player_focus_mode">Focus mode</string>
+    <string name="player_font_smaller">Smaller subtitle text</string>
+    <string name="player_font_larger">Larger subtitle text</string>
+    <string name="player_extra_actions">Other player actions</string>
+
 </resources>

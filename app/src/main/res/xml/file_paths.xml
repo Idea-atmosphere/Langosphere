@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Only the app's own internal files directory is exposed, and only through
-     a one-shot read permission granted to the app the user picks when sharing
-     a crash report. -->
+<!-- Only the app's own storage is exposed, and only through one-shot read
+     permissions granted to the app the user picks when sharing a crash
+     report or installing an update. -->
 <paths>
+    <!-- Crash reports live in the internal files directory. -->
     <files-path
         name="internal_files"
         path="." />
+    <!-- The in-app updater's APK downloads. DownloadManager writes them into
+         the app-specific external Download directory
+         (Android/data/com.langosphere/files/Download), which needs no
+         storage permission; this entry lets FileProvider hand exactly that
+         file to the system package installer with a read grant
+         (FLAG_GRANT_READ_URI_PERMISSION). Nothing else under external files
+         is reachable through the provider. -->
+    <external-files-path
+        name="update_apks"
+        path="Download/" />
 </paths>

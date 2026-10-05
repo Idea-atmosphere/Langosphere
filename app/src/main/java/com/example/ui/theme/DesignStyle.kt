@@ -104,6 +104,35 @@ fun isNeobrutalismDesign(): Boolean =
     LocalDesignStyle.current == AppDesignStyle.NEOBRUTALISM
 
 /**
+ * Optional friendly/playful Neobrutalism treatment from the bundled design
+ * guide: warm cream canvas, coral/lavender/mint accents, rounded 10–14dp
+ * corners and selective zero-blur hard shadows.
+ */
+object FriendlyNeobrutalismState {
+    private const val PREFS_NAME = "app_prefs"
+    private const val PREF_KEY = "friendly_neobrutalism"
+
+    var enabled: Boolean by mutableStateOf(false)
+
+    fun restore(prefs: SharedPreferences) {
+        enabled = prefs.getBoolean(PREF_KEY, false)
+    }
+
+    fun set(context: Context, value: Boolean) {
+        enabled = value
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(PREF_KEY, value)
+            .apply()
+    }
+}
+
+@Composable
+@ReadOnlyComposable
+fun isFriendlyNeobrutalismDesign(): Boolean =
+    isNeobrutalismDesign() && FriendlyNeobrutalismState.enabled
+
+/**
  * Process-wide holder for the selected design, backed by Compose state and
  * mirrored into SharedPreferences — the same pattern already used by
  * [AppPaletteState], so any screen can read/change it and the whole app
@@ -466,6 +495,28 @@ val NeoBrutalismShapes = Shapes(
     extraLarge = RoundedCornerShape(0.dp),
 )
 
+/** Rounded scale used only when the optional friendly Neo treatment is on. */
+val FriendlyNeoShapes = Shapes(
+    extraSmall = RoundedCornerShape(6.dp),
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(10.dp),
+    large = RoundedCornerShape(12.dp),
+    extraLarge = RoundedCornerShape(14.dp),
+)
+
+/** Friendly geometric type: strong headings without the aggressive black weight. */
+val FriendlyNeoTypography = Material3Typography.copy(
+    displayLarge = Material3Typography.displayLarge.copy(fontWeight = FontWeight.ExtraBold),
+    displayMedium = Material3Typography.displayMedium.copy(fontWeight = FontWeight.ExtraBold),
+    displaySmall = Material3Typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold),
+    headlineLarge = Material3Typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+    headlineMedium = Material3Typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+    headlineSmall = Material3Typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+    titleLarge = Material3Typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+    titleMedium = Material3Typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+    titleSmall = Material3Typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+)
+
 // ── Neobrutalism type scale ──
 // Built on the app's bold Langosphere scale (so Persian readability is
 // kept) but pushed blockier: Black/ExtraBold display + headline weights,
@@ -614,8 +665,71 @@ val NeoBrutalismAccent = Color(0xFFFDC800)
  */
 @Composable
 @ReadOnlyComposable
-fun neoAccent(): Color =
-    if (isNeobrutalismDesign()) MaterialTheme.colorScheme.tertiary else NeoBrutalismAccent
+fun neoAccent(): Color = when {
+    isFriendlyNeobrutalismDesign() -> MaterialTheme.colorScheme.primary
+    isNeobrutalismDesign() -> MaterialTheme.colorScheme.tertiary
+    else -> NeoBrutalismAccent
+}
+
+val FriendlyNeoLightColors = lightColorScheme(
+    primary = Color(0xFFE8635A),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFFFDAD5),
+    onPrimaryContainer = Color(0xFF3B0906),
+    secondary = Color(0xFF7B6CF6),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFE6E0FF),
+    onSecondaryContainer = Color(0xFF1D135C),
+    tertiary = Color(0xFF4ECDC4),
+    onTertiary = Color(0xFF111111),
+    tertiaryContainer = Color(0xFFC9F5F0),
+    onTertiaryContainer = Color(0xFF073734),
+    background = Color(0xFFFAFADF),
+    onBackground = Color(0xFF111111),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF111111),
+    surfaceVariant = Color(0xFFF5F0D7),
+    onSurfaceVariant = Color(0xFF555555),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFFFFEF4),
+    surfaceContainer = Color(0xFFFAFADF),
+    surfaceContainerHigh = Color(0xFFF5F0D7),
+    surfaceContainerHighest = Color(0xFFEDE7CF),
+    outline = Color(0xFF111111),
+    outlineVariant = Color(0xFFB8B39E),
+    error = Color(0xFFB3261E),
+    onError = Color.White,
+)
+
+val FriendlyNeoDarkColors = darkColorScheme(
+    primary = Color(0xFFFFE566),
+    onPrimary = Color(0xFF111111),
+    primaryContainer = Color(0xFF544900),
+    onPrimaryContainer = Color(0xFFFFF2A8),
+    secondary = Color(0xFFC4B5FD),
+    onSecondary = Color(0xFF211650),
+    secondaryContainer = Color(0xFF403674),
+    onSecondaryContainer = Color(0xFFE7E0FF),
+    tertiary = Color(0xFF4ECDC4),
+    onTertiary = Color(0xFF082F2C),
+    tertiaryContainer = Color(0xFF174D49),
+    onTertiaryContainer = Color(0xFFB8F4EE),
+    background = Color(0xFF111111),
+    onBackground = Color.White,
+    surface = Color(0xFF1B1B1B),
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF292929),
+    onSurfaceVariant = Color(0xFFD0D0D0),
+    surfaceContainerLowest = Color(0xFF171717),
+    surfaceContainerLow = Color(0xFF1B1B1B),
+    surfaceContainer = Color(0xFF202020),
+    surfaceContainerHigh = Color(0xFF292929),
+    surfaceContainerHighest = Color(0xFF333333),
+    outline = Color.White,
+    outlineVariant = Color(0xFF707070),
+    error = Color(0xFFFF8A80),
+    onError = Color(0xFF111111),
+)
 
 val NeoBrutalismLightColors = lightColorScheme(
     primary = Color(0xFF432DD7),
@@ -861,8 +975,14 @@ class DesignStyleStrings(strings: AppStrings) {
     val sectionDesc = strings.designSectionDesc
     val langosphereTitle = strings.designLangosphere
     val material3Title = strings.designMaterial3
+    val material3NavTitle = strings.designMaterial3NavTitle
+    val material3NavDesc = strings.designMaterial3NavDesc
+    val material3Top = strings.designMaterial3Top
+    val material3Bottom = strings.designMaterial3Bottom
     val materialYouTitle = strings.designMaterialYou
     val neobrutalismTitle = strings.designNeobrutalism
+    val friendlyNeoTitle = strings.designFriendlyNeo
+    val friendlyNeoDesc = strings.designFriendlyNeoDesc
     val animeTitle = strings.designAnime
     val animeMascotTitle = strings.designAnimeMascot
     val animeMascotDesc = strings.designAnimeMascotDesc
@@ -876,8 +996,7 @@ class DesignStyleStrings(strings: AppStrings) {
      */
     fun titleFor(style: AppDesignStyle): String = when (style) {
         AppDesignStyle.LANGOSPHERE -> langosphereTitle
-        AppDesignStyle.MATERIAL3 -> material3Title
-        AppDesignStyle.MATERIAL_YOU -> materialYouTitle
+        AppDesignStyle.MATERIAL3, AppDesignStyle.MATERIAL_YOU -> material3Title
         AppDesignStyle.NEOBRUTALISM -> neobrutalismTitle
         AppDesignStyle.ANIME -> animeTitle
     }

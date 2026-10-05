@@ -29,10 +29,11 @@ enum class AppThemeMode { LIGHT, DARK, SYSTEM }
 val LocalThemeMode = staticCompositionLocalOf { AppThemeMode.SYSTEM }
 
 // ── User-customizable app palette (Settings ▸ Theme ▸ App colors) ──
-// The three role overrides live in Palette.kt (AppPaletteState) and are
-// applied on top of whatever base color scheme the active design produced,
-// so any screen can read/change them and the whole app re-themes
-// immediately since they are backed by Compose state.
+// The role overrides live in Palette.kt (AppPaletteState) — three roles per
+// canvas, i.e. a separate day and night triad — and are applied on top of
+// whatever base color scheme the active design produced, so any screen can
+// read/change them and the whole app re-themes immediately since they are
+// backed by Compose state.
 
 // ── User-customizable subtitle colors (EN/FA) ──
 // Backed by the SAME process-wide Compose-state-singleton pattern as
@@ -173,6 +174,16 @@ fun MyApplicationTheme(
         AppThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
 
+    // The user's palette choice is stored per canvas (Settings ▸ Theme ▸ App
+    // colors keeps a day triad and a night triad), so the active canvas
+    // decides which three role colors are read here. That split is what
+    // keeps a palette readable in both modes: the day triad can stay deep
+    // and saturated under white glyphs, while the night triad stays light
+    // enough to carry dark glyphs on the dark canvas.
+    val palettePrimary = AppPaletteState.roleColor(PaletteRole.PRIMARY, isDark)
+    val paletteSecondary = AppPaletteState.roleColor(PaletteRole.SECONDARY, isDark)
+    val paletteTertiary = AppPaletteState.roleColor(PaletteRole.TERTIARY, isDark)
+
     // Keep the toon accent tokens in sync with the user's palette choice
     // BEFORE the scheme is built: the anime skin's components paint from the
     // AnimeColors.* tokens directly (not the Material scheme), so this is
@@ -180,11 +191,7 @@ fun MyApplicationTheme(
     // Soft/SoftDark companions keep the ink-on-pastel contrast contract for
     // both the day and the night canvas.
     if (designStyle == AppDesignStyle.ANIME) {
-        AnimeColors.applyPalette(
-            AppPaletteState.primary,
-            AppPaletteState.secondary,
-            AppPaletteState.tertiary
-        )
+        AnimeColors.applyPalette(palettePrimary, paletteSecondary, paletteTertiary)
     } else {
         AnimeColors.resetPalette()
     }
@@ -192,8 +199,12 @@ fun MyApplicationTheme(
     val baseColorScheme = when {
         // Neobrutalism never follows the wallpaper: its identity is the
         // fixed cream-and-ink palette with loud accent blocks.
-        designStyle == AppDesignStyle.NEOBRUTALISM ->
-            if (isDark) NeoBrutalismDarkColors else NeoBrutalismLightColors
+        designStyle == AppDesignStyle.NEOBRUTALISM -> when {
+            FriendlyNeobrutalismState.enabled && isDark -> FriendlyNeoDarkColors
+            FriendlyNeobrutalismState.enabled -> FriendlyNeoLightColors
+            isDark -> NeoBrutalismDarkColors
+            else -> NeoBrutalismLightColors
+        }
         // Neither does the toon skin: its identity is the ink + pastel
         // manga palette, so wallpaper dynamic color is skipped for it too.
         // The scheme is a FUNCTION of the palette-synced AnimeColors tokens
@@ -231,12 +242,23 @@ fun MyApplicationTheme(
     } else {
         applyPalette(
             base = baseColorScheme,
-            primary = AppPaletteState.primary,
-            secondary = AppPaletteState.secondary,
-            tertiary = AppPaletteState.tertiary,
+            primary = palettePrimary,
+            secondary = paletteSecondary,
+            tertiary = paletteTertiary,
             isDark = isDark
         )
     }
+
+    // The active design's own shape scale, with the user's corner-roundness
+    // override applied (Settings ▸ Theme ▸ Customize ▸ Layout & shapes).
+    // AppCornerStyle.DESIGN — the default — reproduces each design's scale
+    // exactly, so this is a no-op until the user asks for sharper or rounder
+    // corners.
+    val shapes = appShapesFor(
+        style = designStyle,
+        friendlyNeo = FriendlyNeobrutalismState.enabled,
+        corners = AppLayoutState.cornerStyle,
+    )
 
     CompositionLocalProvider(
         LocalThemeMode provides themeMode,
@@ -251,7 +273,7 @@ fun MyApplicationTheme(
                 MaterialExpressiveTheme(
                     colorScheme = colorScheme,
                     motionScheme = motionScheme,
-                    shapes = AppShapes,
+                    shapes = shapes,
                     typography = Typography,
                     content = content
                 )
@@ -261,7 +283,7 @@ fun MyApplicationTheme(
                 // the standard (non-expressive) Material motion.
                 MaterialTheme(
                     colorScheme = colorScheme,
-                    shapes = Material3Shapes,
+                    shapes = shapes,
                     typography = Material3Typography,
                     content = content
                 )
@@ -275,7 +297,7 @@ fun MyApplicationTheme(
                 MaterialExpressiveTheme(
                     colorScheme = colorScheme,
                     motionScheme = motionScheme,
-                    shapes = MaterialYouShapes,
+                    shapes = shapes,
                     typography = MaterialYouTypography,
                     content = content
                 )
@@ -290,7 +312,7 @@ fun MyApplicationTheme(
                 // MaterialTheme elevation.
                 MaterialTheme(
                     colorScheme = colorScheme,
-                    shapes = AnimeShapes,
+                    shapes = shapes,
                     typography = animeTypography(),
                     content = content
                 )
@@ -302,8 +324,8 @@ fun MyApplicationTheme(
                 // components (LangosphereUi.kt) rather than by MaterialTheme.
                 MaterialTheme(
                     colorScheme = colorScheme,
-                    shapes = NeoBrutalismShapes,
-                    typography = NeoTypography,
+                    shapes = shapes,
+                    typography = if (FriendlyNeobrutalismState.enabled) FriendlyNeoTypography else NeoTypography,
                     content = content
                 )
             }
