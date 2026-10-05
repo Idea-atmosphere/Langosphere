@@ -52,7 +52,7 @@ fun TranslationScreen(
     var baseUrl by remember { mutableStateOf(sharedPrefs.getString("base_url", "http://localhost:20128/v1") ?: "http://localhost:20128/v1") }
     var model by remember { mutableStateOf(sharedPrefs.getString("model", "gpt-4o-mini") ?: "gpt-4o-mini") }
     // The target language is the app-wide pair value (ai_prefs.target_lang, the
-    // same one Settings ▸ Tutorial & AI Learning edits), typed by hand and used
+    // same one Settings ▸ Prompts edits), typed by hand and used
     // exactly as written — the old quick-pick chips are gone.
     var targetLang by remember { mutableStateOf(LanguagePairState.targetRaw) }
     val storedTargetLang = LanguagePairState.targetRaw
@@ -73,19 +73,45 @@ fun TranslationScreen(
 
     // Translation results
     var translatedLines by remember { mutableStateOf<List<AiService.TranslatedLine>>(emptyList()) }
+    var currentLineIndex by remember { mutableIntStateOf(0) }
 
     // Selected source lines
     var selectedSource by remember { mutableStateOf("en") } // "en" or "fa"
     val sourceList = if (selectedSource == "en") subEnList else subFaList
+
+    // Results and paging belong to one source list. Keeping the old English
+    // results after switching to the other subtitle track made the popup show
+    // mismatched text and line numbers.
+    LaunchedEffect(selectedSource, sourceList) {
+        translatedLines = emptyList()
+        batchOffset = 0
+        currentLineIndex = 0
+        errorMessage = null
+    }
+
+    fun mergeTranslatedBatch(
+        existing: List<AiService.TranslatedLine>,
+        incoming: List<AiService.TranslatedLine>,
+        sourceOffset: Int
+    ): List<AiService.TranslatedLine> {
+        val shifted = incoming.map { line ->
+            line.copy(originalIndex = line.originalIndex + sourceOffset)
+        }
+        val replacedIndices = shifted.mapTo(hashSetOf()) { it.originalIndex }
+        return (existing.filterNot { it.originalIndex in replacedIndices } + shifted)
+            .sortedBy { it.originalIndex }
+    }
+
+    LaunchedEffect(currentLineIndex, translatedLines) {
+        val resultIndex = translatedLines.indexOfFirst { it.originalIndex == currentLineIndex }
+        if (resultIndex >= 0) listState.animateScrollToItem(resultIndex)
+    }
 
     // Chat state
     var chatInput by remember { mutableStateOf("") }
     var chatMessages by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var isChatLoading by remember { mutableStateOf(false) }
     var showChat by remember { mutableStateOf(false) }
-
-    // Navigation index
-    var currentLineIndex by remember { mutableIntStateOf(0) }
 
     Column(
         modifier = Modifier
@@ -212,7 +238,11 @@ fun TranslationScreen(
 
                                     result.fold(
                                         onSuccess = { translationResult ->
-                                            translatedLines = translationResult.translatedLines
+                                            translatedLines = mergeTranslatedBatch(
+                                                existing = translatedLines,
+                                                incoming = translationResult.translatedLines,
+                                                sourceOffset = startIdx
+                                            )
                                             currentLineIndex = startIdx
                                             if (!isDefaultMode) {
                                                 batchOffset = endIdx
@@ -321,6 +351,7 @@ fun TranslationScreen(
 
         // ── Navigation bar + Batch pagination ──
         if (translatedLines.isNotEmpty()) {
+            val navigationStep = 1
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -337,7 +368,7 @@ fun TranslationScreen(
                     ) {
                         IconButton(
                             onClick = {
-                                currentLineIndex = (currentLineIndex - linesPerBatch).coerceAtLeast(0)
+                                currentLineIndex = (currentLineIndex - navigationStep).coerceAtLeast(0)
                             },
                             enabled = currentLineIndex > 0
                         ) {
@@ -352,7 +383,7 @@ fun TranslationScreen(
 
                         IconButton(
                             onClick = {
-                                currentLineIndex = (currentLineIndex + linesPerBatch).coerceAtMost(
+                                currentLineIndex = (currentLineIndex + navigationStep).coerceAtMost(
                                     (sourceList.size - 1).coerceAtLeast(0)
                                 )
                             },
@@ -406,7 +437,11 @@ fun TranslationScreen(
 
                                                 result.fold(
                                                     onSuccess = { translationResult ->
-                                                        translatedLines = translationResult.translatedLines
+                                                        translatedLines = mergeTranslatedBatch(
+                                                            existing = translatedLines,
+                                                            incoming = translationResult.translatedLines,
+                                                            sourceOffset = startIdx
+                                                        )
                                                         currentLineIndex = startIdx
                                                         batchOffset = endIdx
                                                     },

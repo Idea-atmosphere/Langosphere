@@ -48,9 +48,12 @@ android {
 
     // The release workflow derives these from the git tag, e.g. tag v0.0.6 ->
     //   ./gradlew -PappVersionName=0.0.6 -PappVersionCode=6 assembleRelease
-    // The fallbacks below are only used for local and debug builds.
-    versionCode = providers.gradleProperty("appVersionCode").map(String::toInt).getOrElse(4)
-    versionName = providers.gradleProperty("appVersionName").getOrElse("0.0.4")
+    // The fallbacks below are only used for local and debug builds. Keep them
+    // in sync with the newest released tag so the in-app updater (which
+    // compares this value with the latest GitHub release) does not offer a
+    // downgrade on a freshly checked-out debug build.
+    versionCode = providers.gradleProperty("appVersionCode").map(String::toInt).getOrElse(98)
+    versionName = providers.gradleProperty("appVersionName").getOrElse("0.0.98")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -111,6 +114,14 @@ dependencies {
   implementation(libs.androidx.media3.exoplayer)
   implementation(libs.androidx.media3.ui)
   implementation(libs.androidx.media3.exoplayer.dash)
+  // HLS is what Piped/Invidious hand out for streams that have no muxed
+  // progressive file (the Online tab), so the player needs the HLS module.
+  implementation(libs.androidx.media3.exoplayer.hls)
+  // Document-start script injection into the YouTube embed frame (hides the
+  // embed's own title bar / watermark / end screen). AndroidX, Apache-2.0.
+  implementation(libs.androidx.webkit)
+  // Thumbnails / channel avatars in the Online tab (Apache-2.0).
+  implementation(libs.coil.compose)
   implementation(libs.jsoup)
   implementation(libs.pdfbox.android)
   implementation(libs.documentfile)

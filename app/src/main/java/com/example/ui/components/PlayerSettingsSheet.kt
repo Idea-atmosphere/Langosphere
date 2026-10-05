@@ -27,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -36,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +48,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
@@ -53,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.media3.common.Tracks
+import com.example.logic.StudyModeState
 import com.example.logic.autoTextDirection
 import com.example.ui.theme.AccentAmber
 import com.example.ui.theme.AccentCyan
@@ -79,6 +84,15 @@ import com.example.ui.theme.isNeobrutalismDesign
  * Settings ▸ Theme (see ThemeSettingsDialog): the design toggle was removed
  * outright (it changed nothing), and colors/fonts are app-wide concerns.
  */
+/** A caller-owned online action relocated into the single player FAB drawer. */
+data class PlayerFabAction(
+    val label: String,
+    val icon: ImageVector,
+    val onClick: () -> Unit,
+    val enabled: Boolean = true,
+    val active: Boolean = false,
+)
+
 @Composable
 fun PlayerSettingsSheet(
     prefs: PlayerPrefs,
@@ -87,16 +101,33 @@ fun PlayerSettingsSheet(
     onSelectAudioTrack: (Tracks.Group, Int) -> Unit,
     subEnOffset: Double,
     subFaOffset: Double,
+    /** Present only while the loaded JSON lesson has timestamps. */
+    jsonOffset: Double? = null,
     onShiftSubEn: (Double) -> Unit,
     onShiftSubFa: (Double) -> Unit,
+    onResetSubEn: () -> Unit = {},
+    onResetSubFa: () -> Unit = {},
+    onShiftJson: (Double) -> Unit = {},
+    onResetJson: () -> Unit = {},
     offsetText: (Double) -> String,
     canSaveSrt: Boolean,
     onSaveSrt: () -> Unit,
+    focusMode: Boolean = false,
+    onToggleFocus: (() -> Unit)? = null,
+    /**
+     * The Online tab moved the «کارهای دیگر پخش‌کننده» card into its action
+     * drawer (its own button opens [PlayerExtraActionsSheet]); the full
+     * settings sheet keeps the card only for the Video tab, where no
+     * drawer exists.
+     */
+    includeExtraActions: Boolean = true,
+    fabActions: List<PlayerFabAction> = emptyList(),
     onDismiss: () -> Unit
 ) {
     val neo = isNeobrutalismDesign()
     val anime = isAnimeDesign()
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        RtledForPersian(strings) {
         Surface(
             modifier = Modifier.padding(14.dp).fillMaxWidth(0.96f).fillMaxHeight(0.92f),
             shape = when {
@@ -190,79 +221,32 @@ fun PlayerSettingsSheet(
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 14.dp)
                 ) {
-                    // ── Subtitles ──
-                    SettingsCard(
-                        title = strings.showSubtitlesTitle,
-                        subtitle = strings.showSubtitlesDesc,
-                        accent = MaterialTheme.colorScheme.secondary,
-                        checked = prefs.subtitlesEnabled,
-                        onCheckedChange = { prefs.subtitlesEnabled = it }
-                    ) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        SliderRow(
-                            title = strings.subtitleFontSizeTitle,
-                            valueLabel = "${(prefs.fontSizeFactor * 100).toInt()}%",
-                            value = prefs.fontSizeFactor,
-                            valueRange = 0.6f..2.0f,
-                            onValueChange = { prefs.fontSizeFactor = it }
+                    // ── Playback and study, reachable from the one transcript FAB ──
+                    SettingsCard(title = strings.playerLearningTitle) {
+                        PlayerSpeedPresets(
+                            selected = prefs.playbackSpeed,
+                            onSelect = { prefs.playbackSpeed = it }
                         )
-                        SliderRow(
-                            title = strings.subtitlePositionTitle,
-                            valueLabel = "${prefs.bottomPadding.toInt()}dp",
-                            value = prefs.bottomPadding,
-                            valueRange = 16f..250f,
-                            onValueChange = { prefs.bottomPadding = it }
+                        ToggleRow(
+                            title = strings.studyChallengeMode,
+                            description = null,
+                            checked = StudyModeState.challengeMode,
+                            onCheckedChange = { StudyModeState.setChallengeMode(it) }
                         )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = strings.subtitleColorTitle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        val subtitleColorOptions = remember {
-                            listOf(
-                                Color.White,
-                                AccentAmber,
-                                AccentCyan,
-                                AccentGreen,
-                                AccentRed,
-                                AccentIndigo,
-                                Color(0xFFFFD54F),
-                                Color(0xFF64B5F6)
+                        if (onToggleFocus != null) {
+                            ToggleRow(
+                                title = strings.playerFocusMode,
+                                description = null,
+                                checked = focusMode,
+                                onCheckedChange = { onToggleFocus() }
                             )
                         }
-                        Spacer(modifier = Modifier.height(10.dp))
-                        SwatchGroupLabel(strings.subEnParenLabel)
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-                        ) {
-                            subtitleColorOptions.forEach { swatch ->
-                                ColorSwatch(
-                                    color = swatch,
-                                    selected = SubtitleColorState.colorEn == swatch,
-                                    emptyLabel = null,
-                                    onClick = { prefs.setSubtitleColorEn(swatch) }
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(14.dp))
-                        SwatchGroupLabel(strings.subFaParenLabel)
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-                        ) {
-                            subtitleColorOptions.forEach { swatch ->
-                                ColorSwatch(
-                                    color = swatch,
-                                    selected = SubtitleColorState.colorFa == swatch,
-                                    emptyLabel = null,
-                                    onClick = { prefs.setSubtitleColorFa(swatch) }
-                                )
-                            }
-                        }
                     }
+
+                    // ── Subtitles ──
+                    // Extracted so a dedicated sheet can render the exact
+                    // same card instead of a diverging copy.
+                    SubtitleDisplaySettingsCard(prefs = prefs, strings = strings)
 
                     // ── Smart pause ──
                     SettingsCard(
@@ -335,42 +319,37 @@ fun PlayerSettingsSheet(
                     }
 
                     // ── Sync ──
-                    SettingsCard(
-                        title = strings.syncTitle,
-                        subtitle = strings.syncHint
-                    ) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        SubtitleShiftControls(
-                            title = strings.langCodeEn,
-                            offsetLabel = strings.syncCurrentOffset(strings.langCodeEn, offsetText(subEnOffset)),
-                            currentOffset = subEnOffset,
-                            exactLabel = strings.exactTimeLabel,
-                            applyLabel = strings.applyBtn,
-                            onShift = onShiftSubEn
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SubtitleShiftControls(
-                            title = strings.langCodeFa,
-                            offsetLabel = strings.syncCurrentOffset(strings.langCodeFa, offsetText(subFaOffset)),
-                            currentOffset = subFaOffset,
-                            exactLabel = strings.exactTimeLabel,
-                            applyLabel = strings.applyBtn,
-                            onShift = onShiftSubFa
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        GradientButton(
-                            text = strings.saveSrtBtn,
-                            onClick = onSaveSrt,
-                            enabled = canSaveSrt,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        if (!canSaveSrt) {
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = strings.noFaSubtitleToSave,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    // Extracted alongside the subtitle card so a dedicated
+                    // sheet can reach it with the same parameters.
+                    SubtitleSyncSettingsCard(
+                        strings = strings,
+                        subEnOffset = subEnOffset,
+                        subFaOffset = subFaOffset,
+                        jsonOffset = jsonOffset,
+                        onShiftSubEn = onShiftSubEn,
+                        onShiftSubFa = onShiftSubFa,
+                        onResetSubEn = onResetSubEn,
+                        onResetSubFa = onResetSubFa,
+                        onShiftJson = onShiftJson,
+                        onResetJson = onResetJson,
+                        offsetText = offsetText,
+                        canSaveSrt = canSaveSrt,
+                        onSaveSrt = onSaveSrt
+                    )
+
+                    if (includeExtraActions && fabActions.isNotEmpty()) {
+                        SettingsCard(title = strings.playerExtraActions) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            fabActions.forEach { action ->
+                                AudioTrackRow(
+                                    label = action.label,
+                                    language = null,
+                                    selected = action.active,
+                                    onClick = action.onClick,
+                                    icon = action.icon,
+                                    enabled = action.enabled,
+                                )
+                            }
                         }
                     }
 
@@ -385,6 +364,321 @@ fun PlayerSettingsSheet(
                     )
                 }
             }
+        }
+        }  // RtledForPersian
+    }
+}
+
+/**
+ * The subtitle display card (show/hide, font size, position, per-language
+ * colors) — extracted from [PlayerSettingsSheet] so the Online tab's
+ * dedicated subtitle-settings button renders the exact same card instead of
+ * a diverging copy.
+ */
+@Composable
+internal fun SubtitleDisplaySettingsCard(prefs: PlayerPrefs, strings: AppStrings) {
+    SettingsCard(
+        title = strings.showSubtitlesTitle,
+        subtitle = strings.showSubtitlesDesc,
+        accent = MaterialTheme.colorScheme.secondary,
+        checked = prefs.subtitlesEnabled,
+        onCheckedChange = { prefs.subtitlesEnabled = it }
+    ) {
+        Spacer(modifier = Modifier.height(8.dp))
+        FontStepControl(
+            factor = prefs.fontSizeFactor,
+            smallerDescription = strings.playerFontSmaller,
+            largerDescription = strings.playerFontLarger,
+            onSmaller = { prefs.fontSizeFactor -= 0.1f },
+            onLarger = { prefs.fontSizeFactor += 0.1f },
+        )
+        SliderRow(
+            title = strings.subtitleFontSizeTitle,
+            valueLabel = "${(prefs.fontSizeFactor * 100).toInt()}%",
+            value = prefs.fontSizeFactor,
+            valueRange = 0.6f..2.0f,
+            onValueChange = { prefs.fontSizeFactor = it }
+        )
+        SliderRow(
+            title = strings.subtitlePositionTitle,
+            valueLabel = "${prefs.bottomPadding.toInt()}dp",
+            value = prefs.bottomPadding,
+            valueRange = 16f..250f,
+            onValueChange = { prefs.bottomPadding = it }
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = strings.subtitleColorTitle,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        val subtitleColorOptions = remember {
+            listOf(
+                Color.White,
+                AccentAmber,
+                AccentCyan,
+                AccentGreen,
+                AccentRed,
+                AccentIndigo,
+                Color(0xFFFFD54F),
+                Color(0xFF64B5F6)
+            )
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        SwatchGroupLabel(strings.subEnParenLabel)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+        ) {
+            subtitleColorOptions.forEach { swatch ->
+                ColorSwatch(
+                    color = swatch,
+                    selected = SubtitleColorState.colorEn == swatch,
+                    emptyLabel = null,
+                    onClick = { prefs.setSubtitleColorEn(swatch) }
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+        SwatchGroupLabel(strings.subFaParenLabel)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+        ) {
+            subtitleColorOptions.forEach { swatch ->
+                ColorSwatch(
+                    color = swatch,
+                    selected = SubtitleColorState.colorFa == swatch,
+                    emptyLabel = null,
+                    onClick = { prefs.setSubtitleColorFa(swatch) }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The subtitle time-sync card (EN/FA/JSON offsets, exact time, save-SRT) —
+ * extracted alongside [SubtitleDisplaySettingsCard].
+ */
+@Composable
+internal fun SubtitleSyncSettingsCard(
+    strings: AppStrings,
+    subEnOffset: Double,
+    subFaOffset: Double,
+    jsonOffset: Double?,
+    onShiftSubEn: (Double) -> Unit,
+    onShiftSubFa: (Double) -> Unit,
+    onResetSubEn: () -> Unit,
+    onResetSubFa: () -> Unit,
+    onShiftJson: (Double) -> Unit,
+    onResetJson: () -> Unit,
+    offsetText: (Double) -> String,
+    canSaveSrt: Boolean,
+    onSaveSrt: () -> Unit
+) {
+    SettingsCard(
+        title = strings.syncTitle,
+        subtitle = strings.syncHint
+    ) {
+        Spacer(modifier = Modifier.height(12.dp))
+        SubtitleShiftControls(
+            title = strings.langCodeEn,
+            offsetLabel = strings.syncCurrentOffset(strings.langCodeEn, offsetText(subEnOffset)),
+            currentOffset = subEnOffset,
+            exactLabel = strings.exactTimeLabel,
+            applyLabel = strings.applyBtn,
+            onShift = onShiftSubEn,
+            footer = if (subEnOffset != 0.0) {
+                { GradientButton(text = strings.resetBtn, onClick = onResetSubEn, modifier = Modifier.fillMaxWidth()) }
+            } else null,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        SubtitleShiftControls(
+            title = strings.langCodeFa,
+            offsetLabel = strings.syncCurrentOffset(strings.langCodeFa, offsetText(subFaOffset)),
+            currentOffset = subFaOffset,
+            exactLabel = strings.exactTimeLabel,
+            applyLabel = strings.applyBtn,
+            onShift = onShiftSubFa,
+            footer = if (subFaOffset != 0.0) {
+                { GradientButton(text = strings.resetBtn, onClick = onResetSubFa, modifier = Modifier.fillMaxWidth()) }
+            } else null,
+        )
+        // JSON sync belongs with the other timing tools; it only shows up
+        // while the loaded JSON lesson has timestamps.
+        jsonOffset?.let { offset ->
+            Spacer(modifier = Modifier.height(16.dp))
+            SubtitleShiftControls(
+                title = strings.subJsonLabel,
+                offsetLabel = strings.syncCurrentOffset(strings.subJsonLabel, offsetText(offset)),
+                currentOffset = offset,
+                exactLabel = strings.exactTimeLabel,
+                applyLabel = strings.applyBtn,
+                onShift = onShiftJson,
+                footer = {
+                    GradientButton(
+                        text = strings.jsonResetBtn,
+                        onClick = onResetJson,
+                        enabled = offset != 0.0,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        GradientButton(
+            text = strings.saveSrtBtn,
+            onClick = onSaveSrt,
+            enabled = canSaveSrt,
+            modifier = Modifier.fillMaxWidth()
+        )
+        if (!canSaveSrt) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = strings.noFaSubtitleToSave,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/**
+ * The Online tab's «کارهای دیگر پخش‌کننده» — the extra player actions that
+ * closed the full settings sheet before the action drawer existed. The
+ * drawer's own button opens this sheet, so the 3-dot cluster's settings
+ * stay player settings and these one-tap tasks stay beneath the video.
+ */
+@Composable
+fun PlayerExtraActionsSheet(
+    actions: List<PlayerFabAction>,
+    strings: AppStrings,
+    onDismiss: () -> Unit
+) {
+    val neo = isNeobrutalismDesign()
+    val anime = isAnimeDesign()
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        RtledForPersian(strings) {
+        Surface(
+            modifier = Modifier.padding(14.dp).fillMaxWidth(0.96f).fillMaxHeight(0.92f),
+            shape = when {
+                neo -> RoundedCornerShape(0.dp)
+                anime -> RoundedCornerShape(28.dp)
+                else -> RoundedCornerShape(30.dp)
+            },
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = if (neo || anime) 0.dp else 6.dp,
+            border = when {
+                neo -> BorderStroke(2.dp, MaterialTheme.colorScheme.outline)
+                anime -> BorderStroke(3.dp, MaterialTheme.colorScheme.outline)
+                else -> null
+            }
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Just the close button — the title lived here twice (once
+                // beside this button, once on the content's own card); only
+                // the card's title stays.
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 18.dp, top = 16.dp, end = 12.dp, bottom = 10.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    SoftIconButton(
+                        icon = Icons.Default.Close,
+                        contentDescription = strings.close,
+                        onClick = onDismiss,
+                        size = 36.dp
+                    )
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fadingEdges()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 14.dp)
+                ) {
+                    SettingsCard(title = strings.playerExtraActions) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        actions.forEach { action ->
+                            AudioTrackRow(
+                                label = action.label,
+                                language = null,
+                                selected = action.active,
+                                onClick = action.onClick,
+                                icon = action.icon,
+                                enabled = action.enabled,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(18.dp))
+                }
+                Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                    GradientButton(
+                        text = strings.confirmReturnBtn,
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+        }  // RtledForPersian
+    }
+}
+
+@Composable
+private fun PlayerSpeedPresets(selected: Float, onSelect: (Float) -> Unit) {
+    val presets = listOf(0.75f, 1f, 1.25f, 1.5f)
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        presets.forEach { speed ->
+            val active = kotlin.math.abs(selected - speed) < 0.01f
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(14.dp),
+                color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                onClick = { onSelect(speed) },
+            ) {
+                Text(
+                    text = "${if (speed % 1f == 0f) speed.toInt() else speed}×",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(vertical = 10.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FontStepControl(
+    factor: Float,
+    smallerDescription: String,
+    largerDescription: String,
+    onSmaller: () -> Unit,
+    onLarger: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(onClick = onSmaller, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
+            Text("A−", modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).semantics { contentDescription = smallerDescription })
+        }
+        Text(
+            text = "${(factor * 100).toInt()}%",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center,
+        )
+        Surface(onClick = onLarger, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
+            Text("A+", modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).semantics { contentDescription = largerDescription })
         }
     }
 }
@@ -442,7 +736,9 @@ private fun AudioTrackRow(
     label: String,
     language: String?,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
 ) {
     val scheme = MaterialTheme.colorScheme
     val neo = isNeobrutalismDesign()
@@ -469,29 +765,38 @@ private fun AudioTrackRow(
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .then(rowModifier)
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // A square/ring that fills in when selected — same idea as a radio
-        // button, but it matches the rest of the sheet.
-        Box(
-            modifier = Modifier
-                .size(16.dp)
-                .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
-                .background(
-                    if (selected) {
-                        if (neo) Color.Black else scheme.primary
-                    } else {
-                        Color.Transparent
-                    }
-                )
-                .border(
-                    width = if (selected) 0.dp else 2.dp,
-                    color = scheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    shape = if (neo) RoundedCornerShape(0.dp) else CircleShape
-                )
-        )
+        // A caller action gets its own icon; audio/quality rows retain the
+        // radio marker that identifies the selected rendition.
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (enabled) scheme.primary else scheme.onSurfaceVariant.copy(alpha = 0.45f),
+                modifier = Modifier.size(18.dp),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
+                    .background(
+                        if (selected) {
+                            if (neo) Color.Black else scheme.primary
+                        } else {
+                            Color.Transparent
+                        }
+                    )
+                    .border(
+                        width = if (selected) 0.dp else 2.dp,
+                        color = scheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        shape = if (neo) RoundedCornerShape(0.dp) else CircleShape
+                    )
+            )
+        }
         Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = label,
@@ -786,4 +1091,16 @@ private fun ColorSwatch(
             )
         }
     }
+}
+
+/**
+ * The player's settings surfaces mirror for Persian: their titles, rows and
+ * icons read right-to-left, exactly like the settings menu at the top of the
+ * app. English keeps the app-wide LTR flow.
+ */
+@Composable
+private fun RtledForPersian(strings: AppStrings, content: @Composable () -> Unit) {
+    CompositionLocalProvider(
+        LocalLayoutDirection provides if (strings.isEn) LayoutDirection.Ltr else LayoutDirection.Rtl
+    ) { content() }
 }

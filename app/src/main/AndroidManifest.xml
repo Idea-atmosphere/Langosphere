@@ -4,6 +4,13 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- In-app updater: lets the app offer the APK attached to the latest
+         GitHub release for installation with the system package installer.
+         Android 8.0+ still asks the user for the "Install unknown apps"
+         grant at runtime (see AppUpdateManager), so nothing installs
+         silently. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <application
         android:name=".LangosphereApp"
         android:allowBackup="true"

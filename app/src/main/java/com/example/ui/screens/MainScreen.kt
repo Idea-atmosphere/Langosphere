@@ -32,9 +32,11 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.Subtitles
+import androidx.compose.material.icons.filled.SystemUpdateAlt
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.MenuBook
@@ -42,6 +44,7 @@ import androidx.compose.material.icons.outlined.SettingsBrightness
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,20 +66,24 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.logic.AppUpdateManager
+import com.example.logic.SentenceCardFactory
 import com.example.ui.components.AboutDialog
 import com.example.ui.components.DictionaryBottomSheet
 import com.example.ui.components.DonatePopupDialog
 import com.example.ui.components.GlassCard
 import com.example.ui.components.JsonChunkPanel
-import com.example.ui.components.JsonSubtitlePasteDialog
+import com.example.ui.components.JsonQuizBetaDialog
 import com.example.ui.components.LiquidTabBar
 import com.example.ui.components.LiquidTabItem
 import com.example.ui.components.M3NavigationBar
 import com.example.ui.components.M3NavigationRail
 import com.example.ui.components.PillTone
+import com.example.ui.components.SentenceStudyLabels
 import com.example.ui.components.SoftIconButton
 import com.example.ui.components.StatusPill
 import com.example.ui.components.SubtitleLearningSheet
+import com.example.ui.components.UpdateDialog
 import com.example.ui.components.VideoPlayerScreen
 import com.example.ui.screens.AgentScreen
 import com.example.ui.theme.AccentAmber
@@ -85,6 +92,11 @@ import com.example.ui.theme.AccentIndigo
 import com.example.ui.theme.AppDesignStyleState
 import com.example.ui.theme.AppFontState
 import com.example.ui.theme.AppLanguage
+import com.example.ui.theme.AppTab
+import com.example.ui.theme.AppTabOrderState
+import com.example.ui.theme.icon
+import com.example.ui.theme.tabsAtBottom
+import com.example.ui.theme.titleIn
 import com.example.ui.theme.AppStrings
 import com.example.ui.theme.AppThemeMode
 import com.example.ui.theme.neoAccent
@@ -97,11 +109,13 @@ import com.example.ui.components.anime.halftone
 import com.example.ui.components.toToonItems
 import com.example.ui.theme.AnimeColors
 import com.example.ui.theme.isAnimeDesign
+import com.example.ui.theme.isFriendlyNeobrutalismDesign
 import com.example.ui.theme.isMaterialYouDesign
 import com.example.ui.theme.isNeobrutalismDesign
 import com.example.ui.theme.Typography as AppTypography
 import com.example.ui.theme.forAppLanguage
 import com.example.ui.theme.withFontFamily
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
@@ -152,6 +166,65 @@ fun MainScreen(
     }
 }
 
+/**
+ * The pager's pages are keyed on [AppTab] rather than on fixed indices,
+ * because the user can reorder the app's sections (Settings ▸ Theme ▸
+ * Customize ▸ Layout & shapes) — the page at index 1 is whatever the user
+ * put there, so every lookup goes through the active order.
+ */
+private fun AppTab.tabItem(strings: AppStrings): LiquidTabItem =
+    LiquidTabItem(titleIn(strings), icon())
+
+/**
+ * The app's primary navigation, in one place.
+ *
+ * Which bar is drawn is still the active design's business — the toon
+ * sticker pill, the Material You NavigationBar or the shared
+ * [LiquidTabBar] (which itself picks the M3 TabRow / the neo block bar) —
+ * but WHERE it is drawn is the user's (Settings ▸ Theme ▸ Customize ▸
+ * Layout & shapes), so MainScreen renders this same composable in the
+ * Scaffold's `topBar` or `bottomBar` slot. It always stays LTR so the tab
+ * order never flips under a right-to-left UI language.
+ *
+ * [showRailInstead] is true on wide windows where the design replaced the
+ * bar with a side rail; nothing is drawn then.
+ */
+@Composable
+private fun PrimaryNavBar(
+    tabs: List<LiquidTabItem>,
+    assistantIndex: Int,
+    animeChrome: Boolean,
+    materialYou: Boolean,
+    showRailInstead: Boolean,
+    selectedTab: Int,
+    indicatorPosition: () -> Float,
+    onTabSelected: (Int) -> Unit,
+) {
+    if (showRailInstead) return
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        when {
+            animeChrome -> ToonTabBar(
+                items = tabs.toToonItems(avatarIndex = assistantIndex),
+                // The fractional pager position, so the Sunny blob tracks
+                // the finger during a swipe instead of snapping once it
+                // settles.
+                indicatorPosition = indicatorPosition,
+                onTabSelected = onTabSelected,
+            )
+            materialYou -> M3NavigationBar(
+                items = tabs,
+                selectedIndex = selectedTab,
+                onTabSelected = onTabSelected,
+            )
+            else -> LiquidTabBar(
+                items = tabs,
+                indicatorPosition = indicatorPosition,
+                onTabSelected = onTabSelected,
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainScreenContent(
@@ -162,15 +235,22 @@ private fun MainScreenContent(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val strings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
+    // The same study labels the book reader uses, so a film line and a book
+    // sentence describe their shared controls with identical wording.
+    val studyLabels = remember(appLanguage) { SentenceStudyLabels(appLanguage == AppLanguage.FA) }
+    val savedSentenceTexts by viewModel.savedSentenceTexts.collectAsState()
 
-    val tabs = remember(strings) {
-        listOf(
-            LiquidTabItem(strings.tabReader, Icons.Outlined.MenuBook),
-            LiquidTabItem(strings.tabVideo, Icons.Filled.PlayArrow),
-            LiquidTabItem(strings.tabAgent, Icons.Filled.Language),
-            LiquidTabItem(strings.tabLeitner, Icons.Filled.Style),
-        )
+    // The user's own section order (or the app's default one).
+    val tabOrder = AppTabOrderState.order
+    val tabs = remember(strings, tabOrder) { tabOrder.map { it.tabItem(strings) } }
+    // Pages that host a media player: the fullscreen / focus-mode chrome
+    // rules below apply to both of them (the Video tab and the Online tab).
+    val playerPages = remember(tabOrder) {
+        setOf(tabOrder.indexOf(AppTab.VIDEO), tabOrder.indexOf(AppTab.ONLINE))
     }
+    // Where the assistant currently sits, so the toon bar keeps drawing
+    // Sora's headshot on her own tab after a reorder.
+    val assistantIndex = remember(tabOrder) { tabOrder.indexOf(AppTab.AGENT) }
 
     // Tabs are pages of a HorizontalPager now, so the user can either tap a
     // tab or simply swipe left/right to move between sections. The pager is
@@ -192,6 +272,51 @@ private fun MainScreenContent(
     var showAboutDialog by remember { mutableStateOf(false) }
     val appVersionName = remember {
         try { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "" } catch (e: Exception) { "" }
+    }
+
+    // ── In-app update ──
+    // The latest GitHub release, once a check finds one newer than the
+    // installed build; null means "no update known". Two paths lead here:
+    // a silent check ~1.5s after launch, and the settings-menu item, which
+    // always re-checks and reports "up to date" / failures with a toast.
+    var availableUpdate by remember { mutableStateOf<AppUpdateManager.UpdateInfo?>(null) }
+
+    fun checkForUpdates(manual: Boolean) {
+        pagerScope.launch {
+            AppUpdateManager.checkForUpdate().fold(
+                onSuccess = { info ->
+                    if (info != null) {
+                        availableUpdate = info
+                    } else if (manual) {
+                        Toast.makeText(context, strings.updateUpToDateToast, Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onFailure = { error ->
+                    // The automatic check stays silent when offline; a manual
+                    // one should tell the user what happened.
+                    if (manual) {
+                        Toast.makeText(
+                            context,
+                            strings.updateCheckFailedToast(error.message ?: ""),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            )
+        }
+    }
+
+    // Silent update check shortly after launch, so it never competes with
+    // first-frame composition. A tag the user already dismissed with
+    // "بعداً" is skipped until a NEWER release appears.
+    LaunchedEffect(Unit) {
+        delay(1500)
+        AppUpdateManager.checkForUpdate().onSuccess { info ->
+            val skippedTag = sharedPrefs.getString(AppUpdateManager.PREFS_SKIPPED_TAG_KEY, null)
+            if (info != null && info.tagName != skippedTag) {
+                availableUpdate = info
+            }
+        }
     }
 
     val activeWord by viewModel.activeWord.collectAsState()
@@ -232,12 +357,11 @@ private fun MainScreenContent(
     // the subtitle time-sync cards so only the video + subtitle list remain.
     var focusMode by remember { mutableStateOf(false) }
 
-    // Collapsible video/subtitle import section — folded up to give the
-    // player and subtitle list more room. The choice is persisted. Besides
-    // the header tap, scrolling the subtitle list up also folds it
-    // (importSectionCollapsedByScroll marks scroll-driven folds so only
-    // those are auto-reopened when the list scrolls back to the top).
-    var isImportSectionExpanded by remember { mutableStateOf(!sharedPrefs.getBoolean("video_import_section_collapsed", false)) }
+    // Keep the Video tab focused on playback by default. Import is one tap
+    // away in its compact header, and the user's explicit expanded/collapsed
+    // choice remains persisted. Scrolling the subtitle list may also fold it
+    // (importSectionCollapsedByScroll marks those temporary folds).
+    var isImportSectionExpanded by remember { mutableStateOf(sharedPrefs.getBoolean("video_import_section_expanded", false)) }
     var importSectionCollapsedByScroll by remember { mutableStateOf(false) }
 
     val videoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -254,11 +378,10 @@ private fun MainScreenContent(
     val jsonSubLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let { viewModel.loadJsonSubtitleFromUri(it) }
     }
-    var showJsonPasteDialog by remember { mutableStateOf(false) }
     var showRemoveSubsConfirm by remember { mutableStateOf(false) }
 
     // Settings sections: Theme (its own small back stack, below),
-    // Tutorial & AI Learning (prompts + JSON learning instructions) and the
+    // Prompts (prompts + JSON learning instructions) and the
     // App guide (a walkthrough of every tab and section).
     //
     // The theme area's sections (App design, App colors, Font) all open from
@@ -275,6 +398,10 @@ private fun MainScreenContent(
     // the clipboard (copied file contents / a copied .srt file). null = hidden.
     // Targets: 0 = English subtitle, 1 = Persian subtitle, 2 = JSON subtitle.
     var subtitleChooserTarget by remember { mutableStateOf<Int?>(null) }
+    // The JSON quiz fullscreen overlay. Saveable AND hosted here in the
+    // activity's own composition (not a Dialog window), so a running quiz
+    // survives Recents, recreation and process death.
+    var showQuizOverlay by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(saveMessage) {
         saveMessage?.let {
@@ -303,8 +430,8 @@ private fun MainScreenContent(
     // The navigation chrome is hidden in fullscreen, in focus mode, and while
     // a learning popup (dictionary / lesson sheet) is open, so the popup gets
     // the full attention.
-    val chromeVisible = (!isFullScreen || selectedTab != 1) &&
-        !focusMode && activeWord == null && learningSheet == null
+    val chromeVisible = (!isFullScreen || selectedTab !in playerPages) &&
+        !focusMode && activeWord == null && learningSheet == null && !showQuizOverlay
 
     // Authentic Material 3 chrome for the Material designs (M3 / Material
     // You), per m3.material.io: a real TopAppBar (surface color, plain
@@ -330,6 +457,12 @@ private fun MainScreenContent(
     // bar, and the Langosphere design keeps its own top liquid tab bar.
     val materialYou = isMaterialYouDesign()
     val compact = LocalConfiguration.current.screenWidthDp < 600
+
+    // Where the primary navigation goes: the user's override (Settings ▸
+    // Theme ▸ Customize ▸ Layout & shapes) or, by default, whatever the
+    // active design does by itself. The rails below are a wide-window
+    // presentation and are not affected by it.
+    val navAtBottom = tabsAtBottom()
 
     // Medium / expanded windows place the Material You NavigationRail on the
     // leading edge, with the app content (a Scaffold) beside it. Compact
@@ -414,11 +547,13 @@ private fun MainScreenContent(
                             LangosphereMark(modifier = Modifier.size(30.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                         } else if (neoChrome) {
+                            val neoMarkShape = if (isFriendlyNeobrutalismDesign()) CircleShape else RoundedCornerShape(0.dp)
                             Box(
                                 modifier = Modifier
                                     .size(28.dp)
+                                    .clip(neoMarkShape)
                                     .background(neoAccent())
-                                    .border(2.dp, MaterialTheme.colorScheme.outline)
+                                    .border(2.dp, MaterialTheme.colorScheme.outline, neoMarkShape)
                                     .padding(4.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -502,15 +637,22 @@ private fun MainScreenContent(
                                     null
                                 },
                                 shape = when {
-                                    neoChrome -> RoundedCornerShape(0.dp)
+                                    neoChrome -> if (isFriendlyNeobrutalismDesign()) MaterialTheme.shapes.large else RoundedCornerShape(0.dp)
                                     material3Chrome -> MaterialTheme.shapes.extraLarge
                                     else -> RoundedCornerShape(22.dp)
                                 }
                             ) {
-                                // Dropdown items follow the app language
-                                // direction (RTL when FA) but the menu's
-                                // anchor stays LTR so the gear doesn't move.
-                                CompositionLocalProvider(LocalLayoutDirection provides appLayoutDirection) {
+                                // The settings menu is the ONE chrome
+                                // section that mirrors for Persian: its rows
+                                // read right-to-left with the leading icons
+                                // on the right, while the anchor gear and
+                                // every other part of the app chrome keep
+                                // their LTR placement.
+                                CompositionLocalProvider(
+                                    LocalLayoutDirection provides
+                                        if (appLanguage == AppLanguage.FA) LayoutDirection.Rtl
+                                        else appLayoutDirection
+                                ) {
                                     // Day / night / system as one visual picker
                                     // instead of three identical text rows. The
                                     // Material designs use the real M3
@@ -594,7 +736,7 @@ private fun MainScreenContent(
                                         themeNav.open(ThemeSettingsSection.HUB)
                                     }
                                 )
-                                // Settings ▸ Tutorial & AI Learning section
+                                // Settings ▸ Prompts section
                                 // (AI prompts + JSON learning instructions).
                                 DropdownMenuItem(
                                     text = { Text(strings.tutorialMenu) },
@@ -621,6 +763,17 @@ private fun MainScreenContent(
                                     }
                                 )
                                 HorizontalDivider()
+                                // Manual update check: always re-checks the
+                                // latest GitHub release, whatever was
+                                // dismissed before, and toasts the outcome.
+                                DropdownMenuItem(
+                                    text = { Text(strings.updateMenu) },
+                                    leadingIcon = { MenuIcon(Icons.Filled.SystemUpdateAlt) },
+                                    onClick = {
+                                        showThemeMenu = false
+                                        checkForUpdates(manual = true)
+                                    }
+                                )
                                 DropdownMenuItem(
                                     text = { Text(strings.aboutMenu) },
                                     leadingIcon = { MenuIcon(Icons.Filled.Info) },
@@ -648,56 +801,50 @@ private fun MainScreenContent(
                     // a top tab bar: both move primary navigation to the
                     // bottom (see bottomBar), and the toon rail replaces even
                     // that on expanded windows.
-                    if (!materialYou && !animeChrome) {
-                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                            LiquidTabBar(
-                                items = tabs,
-                                indicatorPosition = {
-                                    pagerState.currentPage + pagerState.currentPageOffsetFraction
-                                },
-                                onTabSelected = { index ->
-                                    pagerScope.launch { pagerState.animateScrollToPage(index) }
-                                },
-                            )
-                        }
+                    // Each design keeps its own bar; only WHERE it is drawn
+                    // is up to the user.
+                    if (!navAtBottom) {
+                        PrimaryNavBar(
+                            tabs = tabs,
+                            assistantIndex = assistantIndex,
+                            animeChrome = animeChrome,
+                            materialYou = materialYou,
+                            showRailInstead = (animeChrome && toonExpanded) || (materialYou && !compact),
+                            selectedTab = selectedTab,
+                            indicatorPosition = {
+                                pagerState.currentPage + pagerState.currentPageOffsetFraction
+                            },
+                            onTabSelected = { index ->
+                                pagerScope.launch { pagerState.animateScrollToPage(index) }
+                            },
+                        )
                     }
                 }
             }
         },
         bottomBar = {
-            // Only the Material You design uses a bottom NavigationBar on
-            // compact windows; the M3 baseline and Langosphere both use a
-            // top tab bar instead. The bar itself always stays LTR.
-            if (animeChrome && !toonExpanded && chromeVisible) {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                    ToonTabBar(
-                        items = tabs.toToonItems(),
-                        // The fractional pager position, so the Sunny blob
-                        // tracks the finger during a swipe instead of
-                        // snapping once it settles.
-                        indicatorPosition = {
-                            pagerState.currentPage + pagerState.currentPageOffsetFraction
-                        },
-                        onTabSelected = { index ->
-                            pagerScope.launch { pagerState.animateScrollToPage(index) }
-                        },
-                    )
-                }
-            }
-            if (materialYou && compact && chromeVisible) {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                    M3NavigationBar(
-                        items = tabs,
-                        selectedIndex = selectedTab,
-                        onTabSelected = { index ->
-                            pagerScope.launch { pagerState.animateScrollToPage(index) }
-                        },
-                    )
-                }
+            // The same per-design bar as above, drawn at the bottom edge
+            // instead — the toon skin and Material You land here by default,
+            // and any design lands here once the user moves the tabs down.
+            if (chromeVisible && navAtBottom) {
+                PrimaryNavBar(
+                    tabs = tabs,
+                    assistantIndex = assistantIndex,
+                    animeChrome = animeChrome,
+                    materialYou = materialYou,
+                    showRailInstead = (animeChrome && toonExpanded) || (materialYou && !compact),
+                    selectedTab = selectedTab,
+                    indicatorPosition = {
+                        pagerState.currentPage + pagerState.currentPageOffsetFraction
+                    },
+                    onTabSelected = { index ->
+                        pagerScope.launch { pagerState.animateScrollToPage(index) }
+                    },
+                )
             }
         }
     ) { innerPadding ->
-        val contentPadding = if (isFullScreen && selectedTab == 1) PaddingValues(0.dp) else innerPadding
+        val contentPadding = if (isFullScreen && selectedTab in playerPages) PaddingValues(0.dp) else innerPadding
 
         // The pager itself always stays LTR so swipe direction and tab order
         // never flip; each page's content restores the app's RTL when Persian.
@@ -718,7 +865,7 @@ private fun MainScreenContent(
                     // recomposing the (expensive) screens below it.
                     // The video page is left untransformed because ExoPlayer renders
                     // into a SurfaceView, which does not scale/fade cleanly.
-                    val pageModifier = if (page == 1) {
+                    val pageModifier = if (page in playerPages) {
                         Modifier.fillMaxSize()
                     } else {
                         Modifier
@@ -735,9 +882,11 @@ private fun MainScreenContent(
                     }
 
                     Box(modifier = pageModifier) {
-                        when (page) {
-                            0 -> ReaderScreen(viewModel = viewModel)
-                            1 -> {
+                        when (tabOrder.getOrNull(page)) {
+                            AppTab.READER -> RtledForFa(appLanguage) {
+                                ReaderScreen(viewModel = viewModel)
+                            }
+                            AppTab.VIDEO -> {
                                 Column(modifier = Modifier.fillMaxSize()) {
                         if (!isFullScreen && !focusMode) {
                             // Collapsible import panel: a wide tile for the
@@ -748,6 +897,10 @@ private fun MainScreenContent(
                                 animationSpec = tween(durationMillis = 240),
                                 label = "importChevron"
                             )
+                            // The whole import drawer (header, media tile, subtitle slots,
+                            // JSON chunks) mirrors for Persian; the player below keeps its
+                            // deliberate LTR flow. English keeps LTR everywhere.
+                            RtledForFa(appLanguage) {
                             GlassCard(
                                 modifier = Modifier
                                     .padding(horizontal = 12.dp, vertical = 8.dp)
@@ -766,7 +919,7 @@ private fun MainScreenContent(
                                             isImportSectionExpanded = !isImportSectionExpanded
                                             // A manual toggle always overrides any scroll-driven fold.
                                             importSectionCollapsedByScroll = false
-                                            sharedPrefs.edit().putBoolean("video_import_section_collapsed", !isImportSectionExpanded).apply()
+                                            sharedPrefs.edit().putBoolean("video_import_section_expanded", isImportSectionExpanded).apply()
                                         }
                                         .padding(vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -864,12 +1017,6 @@ private fun MainScreenContent(
                                             )
                                         }
 
-                                        Text(
-                                            text = strings.importSectionScrollHint,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
-                                        )
 
                                         // "Remove Imported Subtitles" — clears English,
                                         // Persian AND JSON subtitle data in one tap.
@@ -900,6 +1047,7 @@ private fun MainScreenContent(
                                     }
                                 }
                             }
+                            }  // RtledForFa — the import drawer mirrors for Persian
                         }
 
                         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -925,6 +1073,16 @@ private fun MainScreenContent(
                                     },
                                     onSentenceClick = { sentence, translation ->
                                         viewModel.openSentenceLesson(sentence, translation)
+                                    },
+                                    // "[+ لایتنر جمله]" on every JSON line:
+                                    // the same card the book reader builds,
+                                    // tagged to the film side.
+                                    studyLabels = studyLabels,
+                                    savedSentenceTexts = savedSentenceTexts,
+                                    onAddSentenceToLeitner = { sub, timeLabel, _ ->
+                                        viewModel.addSentenceToLeitner(
+                                            SentenceCardFactory.fromSubtitle(sub, timeLabel)
+                                        )
                                     },
                                     onShiftSubEn = { viewModel.shiftSubEn(it) },
                                     onShiftSubFa = { viewModel.shiftSubFa(it) },
@@ -952,6 +1110,7 @@ private fun MainScreenContent(
                                     onResetJson = { viewModel.resetJson() },
                                     focusMode = focusMode,
                                     onFocusModeToggle = { focusMode = !focusMode },
+                                    pauseForLesson = learningSheet != null,
                                     // Scrolling the subtitle list up folds the
                                     // import section away; scrolling back to the
                                     // very top brings it back.
@@ -960,19 +1119,36 @@ private fun MainScreenContent(
                                             if (isImportSectionExpanded) {
                                                 isImportSectionExpanded = false
                                                 importSectionCollapsedByScroll = true
-                                                sharedPrefs.edit().putBoolean("video_import_section_collapsed", true).apply()
+                                                sharedPrefs.edit().putBoolean("video_import_section_expanded", false).apply()
                                             }
                                         } else if (importSectionCollapsedByScroll) {
                                             isImportSectionExpanded = true
                                             importSectionCollapsedByScroll = false
-                                            sharedPrefs.edit().putBoolean("video_import_section_collapsed", false).apply()
+                                            sharedPrefs.edit().putBoolean("video_import_section_expanded", true).apply()
                                         }
                                     }
                                 )
                         }
                     }
                 }
-                            2 -> {
+                            AppTab.ONLINE -> {
+                                OnlineVideoScreen(
+                                    appViewModel = viewModel,
+                                    appLanguage = appLanguage,
+                                    isFullScreen = isFullScreen,
+                                    onFullScreenToggle = { isFullScreen = it },
+                                    focusMode = focusMode,
+                                    onFocusModeToggle = { focusMode = !focusMode },
+                                    // No jsonPackage here on purpose: the Online tab
+                                    // reads the JSON slot only after switching it to
+                                    // the open clip (AppViewModel.useOnlineJsonScope),
+                                    // so the film's lesson never shows up online.
+                                    useDictionaryWithJson = useDictionaryWithJson,
+                                    pauseForLesson = learningSheet != null
+                                )
+                            }
+                            AppTab.AGENT -> {
+                                RtledForFa(appLanguage) {
                                 AgentScreen(
                                     subEnList = subEnList,
                                     subFaList = subFaList,
@@ -990,10 +1166,15 @@ private fun MainScreenContent(
                                     onStopLearning = { viewModel.stopLearning() },
                                     viewModel = viewModel
                                 )
+                                }
                             }
-                            3 -> {
-                                LeitnerScreen(viewModel = viewModel)
+                            AppTab.LEITNER -> {
+                                LeitnerScreen(
+                                    viewModel = viewModel,
+                                    onOpenQuiz = { showQuizOverlay = true }
+                                )
                             }
+                            null -> Unit
                         }
                     }
                 }
@@ -1188,20 +1369,64 @@ private fun MainScreenContent(
             )
         }
 
+        // «انتخاب JSON یادگیری»: the JSON slot (target 2 — the Video tab's
+        // import slot and the Online tab's action drawer both land here) opens
+        // the same two-option chooser as the EN/FA subtitle slots: pick a file
+        // or paste from the clipboard. The quiz keeps its own import panel
+        // inside the quiz overlay, so attaching a JSON to a player never reads
+        // as "import and build the quiz".
+        if (subtitleChooserTarget == 2) {
+            RtledForFa(appLanguage) {
+            AlertDialog(
+                onDismissRequest = { subtitleChooserTarget = null },
+                title = { Text(strings.addJsonSubtitleTitle(strings.subJsonLabel), fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        Text(
+                            strings.chooseSubtitleSourceTitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        SourceOptionCard(
+                            icon = Icons.Filled.AttachFile,
+                            accent = MaterialTheme.colorScheme.primary,
+                            title = strings.selectJsonFileOption,
+                            description = strings.selectJsonFileDesc,
+                            onClick = {
+                                subtitleChooserTarget = null
+                                jsonSubLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        SourceOptionCard(
+                            icon = Icons.Filled.ContentPaste,
+                            accent = MaterialTheme.colorScheme.secondary,
+                            title = strings.pasteJsonOption,
+                            description = strings.pasteJsonDesc,
+                            onClick = {
+                                subtitleChooserTarget = null
+                                viewModel.loadJsonFromClipboard()
+                            }
+                        )
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { subtitleChooserTarget = null }) { Text(strings.cancel) }
+                }
+            )
+            }
+        }
+
         // Add-subtitle chooser popup: lets the user either pick a subtitle
         // file from storage or paste a copied subtitle (file contents or a
-        // copied subtitle file) straight from the clipboard. For the JSON
-        // subtitle slot (target 2) the paste option opens a dedicated input
-        // dialog instead of the clipboard.
-        if (subtitleChooserTarget != null) {
+        // copied subtitle file) straight from the clipboard.
+        if (subtitleChooserTarget == 0 || subtitleChooserTarget == 1) {
+            RtledForFa(appLanguage) {
             val target = subtitleChooserTarget!!
             val isEnglish = target == 0
-            val isJson = target == 2
-            val subtitleLabel = when {
-                isJson -> strings.subJsonLabel
-                isEnglish -> strings.subEnLabel
-                else -> strings.subFaLabel
-            }
+            val subtitleLabel = if (isEnglish) strings.subEnLabel else strings.subFaLabel
             AlertDialog(
                 onDismissRequest = { subtitleChooserTarget = null },
                 title = { Text(strings.addSubtitleTitle(subtitleLabel), fontWeight = FontWeight.Bold) },
@@ -1216,27 +1441,23 @@ private fun MainScreenContent(
                         SourceOptionCard(
                             icon = Icons.Filled.AttachFile,
                             accent = MaterialTheme.colorScheme.primary,
-                            title = if (isJson) strings.selectJsonFileOption else strings.selectSubtitleFileOption,
-                            description = if (isJson) strings.selectJsonFileDesc else strings.selectSubtitleFileDesc,
+                            title = strings.selectSubtitleFileOption,
+                            description = strings.selectSubtitleFileDesc,
                             onClick = {
                                 subtitleChooserTarget = null
-                                when {
-                                    isJson -> jsonSubLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
-                                    isEnglish -> subEnLauncher.launch(arrayOf("*/*"))
-                                    else -> subFaLauncher.launch(arrayOf("*/*"))
-                                }
+                                if (isEnglish) subEnLauncher.launch(arrayOf("*/*"))
+                                else subFaLauncher.launch(arrayOf("*/*"))
                             }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         SourceOptionCard(
                             icon = Icons.Filled.ContentPaste,
                             accent = MaterialTheme.colorScheme.secondary,
-                            title = if (isJson) strings.pasteJsonOption else strings.pasteFromClipboardOption,
-                            description = if (isJson) strings.pasteJsonDesc else strings.pasteFromClipboardDesc,
+                            title = strings.pasteFromClipboardOption,
+                            description = strings.pasteFromClipboardDesc,
                             onClick = {
                                 subtitleChooserTarget = null
-                                if (isJson) showJsonPasteDialog = true
-                                else if (isEnglish) viewModel.loadSubEnFromClipboard()
+                                if (isEnglish) viewModel.loadSubEnFromClipboard()
                                 else viewModel.loadSubFaFromClipboard()
                             }
                         )
@@ -1247,18 +1468,11 @@ private fun MainScreenContent(
                     TextButton(onClick = { subtitleChooserTarget = null }) { Text(strings.cancel) }
                 }
             )
+            }
         }
 
         // Paste-JSON import dialog (auto-detects the format live and offers
         // a one-tap sample JSON for testing the import).
-        if (showJsonPasteDialog) {
-            JsonSubtitlePasteDialog(
-                strings = strings,
-                onImport = { text -> viewModel.importJsonSubtitleText(text) },
-                onDismiss = { showJsonPasteDialog = false },
-                loadedPackage = jsonSubtitles
-            )
-        }
 
         // Confirmation before "Remove Imported Subtitles" clears EN/FA/JSON data.
         if (showRemoveSubsConfirm) {
@@ -1302,6 +1516,25 @@ private fun MainScreenContent(
             )
         }
 
+        // In-app update: shown when the latest GitHub release is newer than
+        // the installed build (silent launch check, or the settings-menu
+        // item, which ignores the skipped tag). Dismissing it remembers the
+        // skipped tag, so the launch check stops asking until a NEWER
+        // release appears.
+        availableUpdate?.let { updateInfo ->
+            UpdateDialog(
+                updateInfo = updateInfo,
+                currentVersionName = appVersionName,
+                strings = strings,
+                onDismiss = {
+                    sharedPrefs.edit()
+                        .putString(AppUpdateManager.PREFS_SKIPPED_TAG_KEY, updateInfo.tagName)
+                        .apply()
+                    availableUpdate = null
+                }
+            )
+        }
+
         // Settings ▸ Theme — the hub (theme mode + one button per section)
         // and its sections (App design / App colors / Font), each on its own
         // screen with a Back control that returns to the hub. The host picks
@@ -1313,7 +1546,7 @@ private fun MainScreenContent(
             onThemeModeChange = onThemeToggle,
         )
 
-        // Settings ▸ Tutorial & AI Learning section — learning level,
+        // Settings ▸ Prompts section — learning level,
         // dictionary-vs-JSON toggle, and the JSON prompt generator with the
         // six prompt modes.
         if (showTutorialDialog) {
@@ -1334,6 +1567,21 @@ private fun MainScreenContent(
                 onDismiss = { showAppGuide = false }
             )
         }
+        }
+    }
+
+    // The quiz overlay lives HERE — the last child of MainScreenContent,
+    // OUTSIDE the Scaffold (whose navigation bars drew over the content
+    // slot and hid the quiz's docked start button) and outside its Row.
+    // Nothing can cover it, the chrome hides while it runs (chromeVisible),
+    // and its saveable state survives Recents and process death.
+    if (showQuizOverlay) {
+        RtledForFa(appLanguage) {
+            JsonQuizBetaDialog(
+                viewModel = viewModel,
+                strings = strings,
+                onDismiss = { showQuizOverlay = false },
+            )
         }
     }
 }
@@ -1413,11 +1661,13 @@ private fun ThemeQuickChip(
 ) {
     val scheme = MaterialTheme.colorScheme
     if (isNeobrutalismDesign()) {
+        val shape = if (isFriendlyNeobrutalismDesign()) MaterialTheme.shapes.medium else RoundedCornerShape(0.dp)
         Box(
             modifier = Modifier
                 .width(76.dp)
+                .clip(shape)
                 .background(if (selected) neoAccent() else scheme.surfaceContainerLowest)
-                .border(2.dp, scheme.outline)
+                .border(2.dp, scheme.outline, shape)
                 .clickable(onClick = onClick)
                 .padding(vertical = 8.dp, horizontal = 4.dp),
             contentAlignment = Alignment.Center
@@ -1427,14 +1677,14 @@ private fun ThemeQuickChip(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = if (selected) Color.Black else scheme.onSurface,
+                    tint = if (selected && isFriendlyNeobrutalismDesign()) scheme.onPrimary else if (selected) Color.Black else scheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (selected) Color.Black else scheme.onSurface,
+                    color = if (selected && isFriendlyNeobrutalismDesign()) scheme.onPrimary else if (selected) Color.Black else scheme.onSurface,
                     textAlign = TextAlign.Center,
                     maxLines = 1
                 )
@@ -1736,4 +1986,16 @@ private fun formatFileSize(bytes: Long): String {
 private fun formatFileDate(timestamp: Long): String {
     val date = java.text.SimpleDateFormat("yyyy/MM/dd HH:mm", java.util.Locale.getDefault())
     return date.format(java.util.Date(timestamp))
+}
+
+/**
+ * Tabs, overlays and chooser popups whose whole chrome mirrors for Persian:
+ * the book reader, the assistant, the Leitner toolbox, the quiz overlay and
+ * the subtitle/JSON attach choosers. English keeps the app-wide LTR flow.
+ */
+@Composable
+private fun RtledForFa(appLanguage: AppLanguage, content: @Composable () -> Unit) {
+    CompositionLocalProvider(
+        LocalLayoutDirection provides if (appLanguage == AppLanguage.FA) LayoutDirection.Rtl else LayoutDirection.Ltr
+    ) { content() }
 }

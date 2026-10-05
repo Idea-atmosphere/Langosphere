@@ -1,7 +1,62 @@
 package com.example.logic
 
+import com.example.model.JsonSubtitle
 import com.example.model.JsonSubtitlePackage
+import org.json.JSONArray
+import org.json.JSONObject
 import kotlin.random.Random
+
+/**
+ * Where the material of a quiz came from.
+ *
+ * The app learns from two places - the book reader and the film subtitles -
+ * and both end up in the same JSON envelope, so the only thing that tells them
+ * apart is the source they are registered under. The quiz filter is built on
+ * this: a learner revising for a book exam should not be asked about a film's
+ * dialogue.
+ */
+enum class QuizSource(val key: String) {
+    BOOK("book"),
+    MOVIE("movie"),
+    /** A learning JSON imported while watching an online clip (online_json/<id>). */
+    ONLINE("online");
+
+    companion object {
+        fun from(key: String?): QuizSource =
+            values().firstOrNull { it.key == key } ?: MOVIE
+    }
+}
+
+/** One imported package plus where it came from. */
+data class QuizMaterial(
+    val source: QuizSource,
+    val pkg: JsonSubtitlePackage
+)
+
+/**
+ * The learner's choice in the quiz setup screen.
+ *
+ * [BOTH] is a filter value rather than a third source: the builder always
+ * receives real materials tagged [QuizSource.BOOK] or [QuizSource.MOVIE].
+ */
+enum class QuizSourceFilter(val key: String) {
+    BOOK("book"),
+    MOVIE("movie"),
+    ONLINE("online"),
+    BOTH("both");
+
+    fun matches(source: QuizSource): Boolean = when (this) {
+        BOOK -> source == QuizSource.BOOK
+        MOVIE -> source == QuizSource.MOVIE
+        ONLINE -> source == QuizSource.ONLINE
+        BOTH -> true
+    }
+
+    companion object {
+        fun from(key: String?): QuizSourceFilter =
+            values().firstOrNull { it.key == key } ?: BOTH
+    }
+}
 
 /** What a single beta-quiz question asks about. */
 enum class JsonQuizType {
@@ -37,7 +92,14 @@ data class JsonQuizQuestion(
     /** The word being asked about, so a wrong answer can go to the Leitner box. */
     val word: String? = null,
     /** Id of the subtitle line the question came from. */
-    val subtitleId: String? = null
+    val subtitleId: String? = null,
+    /** Where this question's material came from, for the source badge. */
+    val source: QuizSource = QuizSource.MOVIE,
+    /**
+     * True in the "blur / fast guess" quiz: the prompt is hidden until the
+     * learner presses it, so the answer has to come from memory first.
+     */
+    val blurPrompt: Boolean = false
 ) {
     /** True when the question text is in the source (learned) language. */
     val promptIsSourceLanguage: Boolean
@@ -70,13 +132,24 @@ object JsonQuizBuilder {
      * How many questions this package can produce — used by the UI to disable
      * counts the file cannot fill.
      */
-    fun availableQuestions(pkg: JsonSubtitlePackage): Int {
-        val words = wordItems(pkg).size
-        val sentences = sentenceItems(pkg).size
-        val grammar = grammarItems(pkg).size
-        // Each word can be asked in both directions.
-        return (words * 2) + sentences + grammar
-    }
+    fun availableQuestions(pkg: JsonSubtitlePackage, blurPeek: Boolean = false): Int =
+        availableQuestions(listOf(QuizMaterial(QuizSource.MOVIE, pkg)), blurPeek)
+
+    /**
+     * The same count for a merged set of materials (book, film or both).
+     *
+     * This counts the questions [build] can REALLY deal, not a theoretical
+     * maximum: an item only becomes a question when the file also offers at
+     * least one plausible distractor for it, so a package with a single word
+     * honestly reports 0 instead of "3" — the setup screen can then disable
+     * the start button instead of opening an empty quiz.
+     */
+    fun availableQuestions(materials: List<QuizMaterial>, blurPeek: Boolean = false): Int =
+        buildPool(materials, Random(1), blurPeek).size
+
+    /** The materials a filter selects; [QuizSourceFilter.BOTH] keeps all. */
+    fun filter(materials: List<QuizMaterial>, filter: QuizSourceFilter): List<QuizMaterial> =
+        materials.filter { filter.matches(it.source) }
 
     /**
      * Builds up to [maxQuestions] shuffled questions.
@@ -88,26 +161,66 @@ object JsonQuizBuilder {
         pkg: JsonSubtitlePackage,
         maxQuestions: Int = 12,
         seed: Long = Random.nextLong()
+    ): List<JsonQuizQuestion> = build(
+        materials = listOf(QuizMaterial(QuizSource.MOVIE, pkg)),
+        maxQuestions = maxQuestions,
+        seed = seed,
+    )
+
+    /**
+     * Same quiz, built from one or more tagged packages.
+     *
+     * The pools are merged before the options are picked, so a "both sources"
+     * quiz really mixes book and film material - and the distractors of a book
+     * question may well come from a film, which is exactly the kind of
+     * discrimination a learner should be able to make.
+     *
+     * @param blurPeek marks every question as blurred-prompt, for the
+     *   "blur / fast guess" quiz type.
+     */
+    fun build(
+        materials: List<QuizMaterial>,
+        maxQuestions: Int = 12,
+        seed: Long = Random.nextLong(),
+        blurPeek: Boolean = false,
     ): List<JsonQuizQuestion> {
-        val random = Random(seed)
+        val pool = buildPool(materials, Random(seed), blurPeek)
+        if (pool.isEmpty()) return emptyList()
+        return pool.shuffled(Random(seed)).take(maxQuestions.coerceAtLeast(1))
+    }
+
+    /**
+     * Every question the materials can support, unshuffled. [availableQuestions]
+     * calls this too, so the count the setup screen shows is exactly the number
+     * of questions a run of [build] can produce.
+     */
+    private fun buildPool(
+        materials: List<QuizMaterial>,
+        random: Random,
+        blurPeek: Boolean,
+    ): List<JsonQuizQuestion> {
+        val usable = materials.filter { it.pkg.subtitles.isNotEmpty() }
+        if (usable.isEmpty()) return emptyList()
         val pool = mutableListOf<JsonQuizQuestion>()
 
-        val words = wordItems(pkg)
-        val sentences = sentenceItems(pkg)
-        val grammar = grammarItems(pkg)
+        val words = usable.flatMap { material -> wordItems(material.pkg).map { material.source to it } }
+        val sentences = usable.flatMap { material -> sentenceItems(material.pkg).map { material.source to it } }
+        val grammar = usable.flatMap { material -> grammarItems(material.pkg).map { material.source to it } }
 
-        val wordTranslations = words.map { it.translation }.distinct()
-        val wordTexts = words.map { it.word }.distinct()
-        val sentenceTranslations = sentences.map { it.translation }.distinct()
-        val grammarNames = grammar.map { it.answer }.distinct()
+        // Distractor pools stay global: they are all in the target language and
+        // all come from material the learner chose to be quizzed on.
+        val wordTranslations = words.map { it.second.translation }.distinct()
+        val wordTexts = words.map { it.second.word }.distinct()
+        val sentenceTranslations = sentences.map { it.second.translation }.distinct()
+        val grammarNames = grammar.map { it.second.answer }.distinct()
 
         // Word → translation, and the reverse direction.
-        words.forEachIndexed { index, item ->
+        words.forEachIndexed { index, (source, item) ->
             val options = buildOptions(item.translation, wordTranslations, random)
             if (options != null) {
                 pool.add(
                     JsonQuizQuestion(
-                        id = "w2t-$index",
+                        id = "${source.key}-w2t-$index",
                         type = JsonQuizType.WORD_TO_TRANSLATION,
                         prompt = item.word,
                         answer = item.translation,
@@ -115,7 +228,9 @@ object JsonQuizBuilder {
                         contextSentence = item.context,
                         note = item.note,
                         word = item.word,
-                        subtitleId = item.subtitleId
+                        subtitleId = item.subtitleId,
+                        source = source,
+                        blurPrompt = blurPeek
                     )
                 )
             }
@@ -123,7 +238,7 @@ object JsonQuizBuilder {
             if (reverseOptions != null) {
                 pool.add(
                     JsonQuizQuestion(
-                        id = "t2w-$index",
+                        id = "${source.key}-t2w-$index",
                         type = JsonQuizType.TRANSLATION_TO_WORD,
                         prompt = item.translation,
                         answer = item.word,
@@ -131,50 +246,118 @@ object JsonQuizBuilder {
                         contextSentence = item.context,
                         note = item.note,
                         word = item.word,
-                        subtitleId = item.subtitleId
+                        subtitleId = item.subtitleId,
+                        source = source,
+                        blurPrompt = blurPeek
                     )
                 )
             }
         }
 
         // Sentence → translation.
-        sentences.forEachIndexed { index, item ->
+        sentences.forEachIndexed { index, (source, item) ->
             val options = buildOptions(item.translation, sentenceTranslations, random)
             if (options != null) {
                 pool.add(
                     JsonQuizQuestion(
-                        id = "s2t-$index",
+                        id = "${source.key}-s2t-$index",
                         type = JsonQuizType.SENTENCE_TO_TRANSLATION,
                         prompt = item.prompt,
                         answer = item.translation,
                         options = options,
                         note = item.note,
-                        subtitleId = item.subtitleId
+                        subtitleId = item.subtitleId,
+                        source = source,
+                        blurPrompt = blurPeek
                     )
                 )
             }
         }
 
         // Sentence → grammar point.
-        grammar.forEachIndexed { index, item ->
+        grammar.forEachIndexed { index, (source, item) ->
             val options = buildOptions(item.answer, grammarNames, random)
             if (options != null) {
                 pool.add(
                     JsonQuizQuestion(
-                        id = "g-$index",
+                        id = "${source.key}-g-$index",
                         type = JsonQuizType.SENTENCE_TO_GRAMMAR,
                         prompt = item.prompt,
                         answer = item.answer,
                         options = options,
                         note = item.note,
-                        subtitleId = item.subtitleId
+                        subtitleId = item.subtitleId,
+                        source = source,
+                        blurPrompt = blurPeek
                     )
                 )
             }
         }
 
-        if (pool.isEmpty()) return emptyList()
-        return pool.shuffled(random).take(maxQuestions.coerceAtLeast(1))
+        // The blur / fast-guess variant is a pure sentence-meaning recall
+        // test: the learner sees the sentence, recalls its meaning from
+        // memory and only then reveals the options. Word and grammar
+        // questions have no place in it — only sentence → translation.
+        return if (blurPeek) {
+            pool.filter { it.type == JsonQuizType.SENTENCE_TO_TRANSLATION }
+        } else {
+            pool
+        }
+    }
+
+    // ── running-deck persistence (the dialog keeps these in rememberSaveable) ──
+
+    /**
+     * Serialises a dealt deck to one JSON string, so the quiz dialog can hold
+     * it in saved instance state: a trip to Recents (or the system reclaiming
+     * the activity) must not eat a running quiz.
+     */
+    fun encodeState(questions: List<JsonQuizQuestion>): String {
+        val array = JSONArray()
+        questions.forEach { q ->
+            array.put(JSONObject().apply {
+                put("id", q.id)
+                put("type", q.type.name)
+                put("prompt", q.prompt)
+                put("answer", q.answer)
+                put("options", JSONArray(q.options))
+                q.contextSentence?.let { put("context", it) }
+                q.note?.let { put("note", it) }
+                q.word?.let { put("word", it) }
+                q.subtitleId?.let { put("subId", it) }
+                put("source", q.source.name)
+                put("blur", q.blurPrompt)
+            })
+        }
+        return array.toString()
+    }
+
+    /** The inverse of [encodeState]; an unreadable payload yields an empty deck. */
+    fun decodeState(json: String): List<JsonQuizQuestion> = try {
+        val array = JSONArray(json)
+        (0 until array.length()).mapNotNull { i ->
+            val o = array.getJSONObject(i)
+            val type = runCatching { JsonQuizType.valueOf(o.getString("type")) }.getOrNull()
+                ?: return@mapNotNull null
+            JsonQuizQuestion(
+                id = o.getString("id"),
+                type = type,
+                prompt = o.getString("prompt"),
+                answer = o.getString("answer"),
+                options = o.optJSONArray("options")?.let { a ->
+                    (0 until a.length()).map { a.optString(it) }
+                } ?: emptyList(),
+                contextSentence = o.optString("context").takeIf { it.isNotEmpty() },
+                note = o.optString("note").takeIf { it.isNotEmpty() },
+                word = o.optString("word").takeIf { it.isNotEmpty() },
+                subtitleId = o.optString("subId").takeIf { it.isNotEmpty() },
+                source = runCatching { QuizSource.valueOf(o.optString("source")) }
+                    .getOrDefault(QuizSource.MOVIE),
+                blurPrompt = o.optBoolean("blur", false)
+            )
+        }
+    } catch (e: Exception) {
+        emptyList()
     }
 
     /** One learnable item pulled out of the package. */
@@ -228,7 +411,7 @@ object JsonQuizBuilder {
                     prompt = source,
                     answer = translation,
                     translation = translation,
-                    note = sub.notes?.trim()?.takeIf { it.isNotBlank() },
+                    note = sentenceTeachings(sub),
                     subtitleId = sub.id
                 )
             )
@@ -254,6 +437,29 @@ object JsonQuizBuilder {
             )
         }
         return items.filter { it.prompt.isNotBlank() }
+    }
+
+    /**
+     * Everything the JSON teaches about one subtitle line: its notes plus the
+     * lesson's explanation, grammar point and structure. This is what the
+     * quiz's feedback dock shows after an answer, and what a sentence the
+     * learner did not know ships to the Leitner box — "the sentence together
+     * with its teachings", not a bare translation.
+     */
+    private fun sentenceTeachings(sub: JsonSubtitle): String? {
+        val lines = buildList {
+            sub.notes?.trim()?.takeIf { it.isNotBlank() }?.let { add(it) }
+            sub.lesson?.let { lesson ->
+                lesson.explanation?.trim()?.takeIf { it.isNotBlank() }?.let { add(it) }
+                val grammar = listOfNotNull(
+                    lesson.grammar?.trim()?.takeIf { it.isNotBlank() },
+                    lesson.grammarTranslation?.trim()?.takeIf { it.isNotBlank() }
+                ).joinToString(" — ").takeIf { it.isNotBlank() }
+                grammar?.let { add(it) }
+                lesson.structure?.trim()?.takeIf { it.isNotBlank() }?.let { add(it) }
+            }
+        }
+        return lines.takeIf { it.isNotEmpty() }?.joinToString("\n")
     }
 
     /**

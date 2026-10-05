@@ -38,8 +38,14 @@ class LeitnerBoxManager(context: Context) : SQLiteOpenHelper(context, DATABASE_N
          * Never lower this number again — and note that the crash is no longer
          * possible either way, because onDowngrade below repairs the schema
          * instead of throwing.
+         *
+         * v3 adds the sentence-card columns (kind, source, translation,
+         * pronunciation, lesson_text, words_text, location). They are added by
+         * the reconciliation below, so an existing box keeps every card and
+         * every review date it had; a card written by v2 simply reads as a
+         * WORD card from the dictionary, which is exactly what it is.
          */
-        private const val DATABASE_VERSION = 2
+        private const val DATABASE_VERSION = 3
 
         private const val TABLE_NAME = "leitner_cards"
 
@@ -50,6 +56,13 @@ class LeitnerBoxManager(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         private const val COLUMN_BOX_LEVEL = "box_level"
         private const val COLUMN_NEXT_REVIEW = "next_review"
         private const val COLUMN_CREATED_AT = "created_at"
+        private const val COLUMN_KIND = "kind"
+        private const val COLUMN_SOURCE = "source"
+        private const val COLUMN_TRANSLATION = "translation"
+        private const val COLUMN_PRONUNCIATION = "pronunciation"
+        private const val COLUMN_LESSON_TEXT = "lesson_text"
+        private const val COLUMN_WORDS_TEXT = "words_text"
+        private const val COLUMN_LOCATION = "location"
 
         /**
          * Columns this build reads and writes, with the type used when one has
@@ -63,8 +76,37 @@ class LeitnerBoxManager(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             COLUMN_DEFINITION to "TEXT",
             COLUMN_BOX_LEVEL to "INTEGER",
             COLUMN_NEXT_REVIEW to "INTEGER",
-            COLUMN_CREATED_AT to "INTEGER"
+            COLUMN_CREATED_AT to "INTEGER",
+            COLUMN_KIND to "TEXT",
+            COLUMN_SOURCE to "TEXT",
+            COLUMN_TRANSLATION to "TEXT",
+            COLUMN_PRONUNCIATION to "TEXT",
+            COLUMN_LESSON_TEXT to "TEXT",
+            COLUMN_WORDS_TEXT to "TEXT",
+            COLUMN_LOCATION to "TEXT"
         )
+
+        /** Key prefix that keeps sentence cards from colliding with word cards. */
+        private const val SENTENCE_KEY_PREFIX = "s:"
+
+        /**
+         * The lookup key of a card.
+         *
+         * Word cards keep the exact key format earlier builds wrote
+         * (`word.lowercase().trim()`), so their uniqueness and the
+         * "already in the box" checks keep working against an existing
+         * database. Sentence cards live under `s:<source>:<text>`: a whole
+         * sentence is not a word, and the same line can legitimately appear in
+         * a book and in a film with different lessons.
+         */
+        internal fun keyFor(kind: String, source: String, text: String): String {
+            val normalized = LeitnerCard.normalizeFront(text)
+            return if (kind == LeitnerCard.KIND_SENTENCE) {
+                "$SENTENCE_KEY_PREFIX$source:$normalized"
+            } else {
+                normalized
+            }
+        }
 
         private val BOX_INTERVAL_DAYS = longArrayOf(1, 2, 4, 8, 16)
         const val MAX_BOX_LEVEL = 5
@@ -80,7 +122,14 @@ class LeitnerBoxManager(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 $COLUMN_DEFINITION TEXT,
                 $COLUMN_BOX_LEVEL INTEGER,
                 $COLUMN_NEXT_REVIEW INTEGER,
-                $COLUMN_CREATED_AT INTEGER
+                $COLUMN_CREATED_AT INTEGER,
+                $COLUMN_KIND TEXT,
+                $COLUMN_SOURCE TEXT,
+                $COLUMN_TRANSLATION TEXT,
+                $COLUMN_PRONUNCIATION TEXT,
+                $COLUMN_LESSON_TEXT TEXT,
+                $COLUMN_WORDS_TEXT TEXT,
+                $COLUMN_LOCATION TEXT
             )
             """.trimIndent()
         )
@@ -152,6 +201,10 @@ class LeitnerBoxManager(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         return names
     }
 
+    /** Reads a text column that may be NULL, or may not exist at all (-1). */
+    private fun Int.readText(cursor: Cursor): String? =
+        if (this < 0 || cursor.isNull(this)) null else cursor.getString(this)
+
     fun containsWord(word: String): Boolean {
         val db = readableDatabase
         val cursor = db.query(TABLE_NAME, arrayOf(COLUMN_ID), "$COLUMN_WORD_KEY = ?", arrayOf(word.lowercase().trim()), null, null, null)
@@ -170,7 +223,10 @@ class LeitnerBoxManager(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         val existing = db.query(TABLE_NAME, arrayOf(COLUMN_ID), "$COLUMN_WORD_KEY = ?", arrayOf(wordKey), null, null, null)
         val exists = existing.use { it.moveToFirst() }
         if (exists) {
-            val values = ContentValues().apply { put(COLUMN_DEFINITION, definition) }
+            val values = ContentValues().apply {
+                put(COLUMN_DEFINITION, definition)
+                put(COLUMN_KIND, LeitnerCard.KIND_WORD)
+            }
             db.update(TABLE_NAME, values, "$COLUMN_WORD_KEY = ?", arrayOf(wordKey))
             return false
         }
@@ -181,9 +237,62 @@ class LeitnerBoxManager(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             put(COLUMN_BOX_LEVEL, 1)
             put(COLUMN_NEXT_REVIEW, now)
             put(COLUMN_CREATED_AT, now)
+            put(COLUMN_KIND, LeitnerCard.KIND_WORD)
+            put(COLUMN_SOURCE, LeitnerCard.SOURCE_DICTIONARY)
         }
         db.insert(TABLE_NAME, null, values)
         return true
+    }
+
+    /**
+     * Adds a whole sentence as a card, or refreshes the stored back of it when
+     * the same line from the same source is already in the box.
+     *
+     * Refreshing (rather than ignoring) matters here: re-importing a book with
+     * a better AI answer should update the lesson on the card, exactly like a
+     * re-added dictionary word updates its definition — and it must never
+     * reset the card's box or its review date.
+     *
+     * @return true only when a new card was inserted.
+     */
+    fun addSentenceCard(draft: SentenceCardDraft): Boolean {
+        if (!draft.isValid) return false
+        val db = writableDatabase
+        val front = draft.front.trim()
+        val key = keyFor(LeitnerCard.KIND_SENTENCE, draft.source, front)
+        val now = System.currentTimeMillis()
+        val existing = db.query(TABLE_NAME, arrayOf(COLUMN_ID), "$COLUMN_WORD_KEY = ?", arrayOf(key), null, null, null)
+        val exists = existing.use { it.moveToFirst() }
+        val values = ContentValues().apply {
+            put(COLUMN_WORD, front)
+            put(COLUMN_DEFINITION, draft.definition)
+            put(COLUMN_KIND, LeitnerCard.KIND_SENTENCE)
+            put(COLUMN_SOURCE, draft.source)
+            put(COLUMN_TRANSLATION, draft.translation)
+            put(COLUMN_PRONUNCIATION, draft.pronunciation)
+            put(COLUMN_LESSON_TEXT, draft.lessonText)
+            put(COLUMN_WORDS_TEXT, draft.wordsText)
+            put(COLUMN_LOCATION, draft.location)
+        }
+        if (exists) {
+            db.update(TABLE_NAME, values, "$COLUMN_WORD_KEY = ?", arrayOf(key))
+            return false
+        }
+        values.put(COLUMN_WORD_KEY, key)
+        values.put(COLUMN_BOX_LEVEL, 1)
+        values.put(COLUMN_NEXT_REVIEW, now)
+        values.put(COLUMN_CREATED_AT, now)
+        db.insert(TABLE_NAME, null, values)
+        return true
+    }
+
+    /** True when this sentence (from this source) is already in the box. */
+    fun containsSentence(front: String, source: String): Boolean {
+        val key = keyFor(LeitnerCard.KIND_SENTENCE, source, front)
+        val cursor = readableDatabase.query(
+            TABLE_NAME, arrayOf(COLUMN_ID), "$COLUMN_WORD_KEY = ?", arrayOf(key), null, null, null
+        )
+        return cursor.use { it.moveToFirst() }
     }
 
     fun deleteCard(id: Long) {
@@ -211,6 +320,16 @@ class LeitnerBoxManager(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             val boxIdx = c.getColumnIndexOrThrow(COLUMN_BOX_LEVEL)
             val nextIdx = c.getColumnIndexOrThrow(COLUMN_NEXT_REVIEW)
             val createdIdx = c.getColumnIndexOrThrow(COLUMN_CREATED_AT)
+            // Columns a v3 database has and a v2 one does not: read them when
+            // they are there and fall back to the word-card defaults when they
+            // are not, so the box opens on either schema.
+            val kindIdx = c.getColumnIndex(COLUMN_KIND)
+            val sourceIdx = c.getColumnIndex(COLUMN_SOURCE)
+            val translationIdx = c.getColumnIndex(COLUMN_TRANSLATION)
+            val pronunciationIdx = c.getColumnIndex(COLUMN_PRONUNCIATION)
+            val lessonIdx = c.getColumnIndex(COLUMN_LESSON_TEXT)
+            val wordsIdx = c.getColumnIndex(COLUMN_WORDS_TEXT)
+            val locationIdx = c.getColumnIndex(COLUMN_LOCATION)
             while (c.moveToNext()) {
                 result.add(
                     LeitnerCard(
@@ -219,7 +338,14 @@ class LeitnerBoxManager(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                         definition = c.getString(defIdx) ?: "",
                         boxLevel = c.getInt(boxIdx),
                         nextReviewAt = c.getLong(nextIdx),
-                        createdAt = c.getLong(createdIdx)
+                        createdAt = c.getLong(createdIdx),
+                        kind = kindIdx.readText(c) ?: LeitnerCard.KIND_WORD,
+                        source = sourceIdx.readText(c) ?: LeitnerCard.SOURCE_DICTIONARY,
+                        translation = translationIdx.readText(c).orEmpty(),
+                        pronunciation = pronunciationIdx.readText(c).orEmpty(),
+                        lessonText = lessonIdx.readText(c).orEmpty(),
+                        wordsText = wordsIdx.readText(c).orEmpty(),
+                        location = locationIdx.readText(c).orEmpty()
                     )
                 )
             }

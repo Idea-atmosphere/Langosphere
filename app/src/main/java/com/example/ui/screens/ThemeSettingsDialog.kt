@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -25,18 +26,24 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Brush
 import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.SettingsBrightness
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.Widgets
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -78,7 +85,9 @@ import com.example.ui.theme.AppStrings
 import com.example.ui.theme.AppThemeMode
 import com.example.ui.theme.DesignStyleStrings
 import com.example.ui.theme.FontChoice
+import com.example.ui.theme.FriendlyNeobrutalismState
 import com.example.ui.theme.LocalDesignStyle
+import com.example.ui.theme.LocalThemeMode
 import com.example.ui.theme.neoAccent
 import com.example.ui.theme.PaletteRole
 import com.example.ui.theme.ThemePalette
@@ -96,6 +105,7 @@ import com.example.ui.components.anime.inkShadow
 import com.example.ui.theme.AnimeColors
 import com.example.ui.theme.AnimeMascotState
 import com.example.ui.theme.isAnimeDesign
+import com.example.ui.theme.isFriendlyNeobrutalismDesign
 import com.example.ui.theme.isMaterial3Design
 import com.example.ui.theme.isNeobrutalismDesign
 import kotlinx.coroutines.Dispatchers
@@ -110,6 +120,19 @@ enum class ThemeSettingsSection {
 
     /** The five design languages (used to be inline in [HUB]). */
     DESIGN,
+
+    /**
+     * "Customize": the small hub that holds the app-colors and font
+     * buttons, so the Theme hub itself stays down to mode + design +
+     * this one entry.
+     */
+    CUSTOMIZE,
+
+    /**
+     * Layout & shapes: tab-bar edge, corner roundness, the order of the
+     * app's sections and whatever extras the active design has.
+     */
+    LAYOUT,
 
     /** Preset palettes + the custom palette editor. */
     COLORS,
@@ -199,12 +222,26 @@ fun ThemeSettingsHost(
             currentThemeMode = currentThemeMode,
             onThemeModeChange = onThemeModeChange,
             onOpenDesign = { nav.open(ThemeSettingsSection.DESIGN) },
-            onOpenColors = { nav.open(ThemeSettingsSection.COLORS) },
-            onOpenFonts = { nav.open(ThemeSettingsSection.FONT) },
+            onOpenCustomize = { nav.open(ThemeSettingsSection.CUSTOMIZE) },
             onDismiss = { nav.closeAll() },
         )
 
         ThemeSettingsSection.DESIGN -> AppDesignSettingsDialog(
+            strings = strings,
+            onBack = { nav.back() },
+            onDismiss = { nav.closeAll() },
+        )
+
+        ThemeSettingsSection.CUSTOMIZE -> ThemeCustomizeSettingsDialog(
+            strings = strings,
+            onOpenLayout = { nav.open(ThemeSettingsSection.LAYOUT) },
+            onOpenColors = { nav.open(ThemeSettingsSection.COLORS) },
+            onOpenFonts = { nav.open(ThemeSettingsSection.FONT) },
+            onBack = { nav.back() },
+            onDismiss = { nav.closeAll() },
+        )
+
+        ThemeSettingsSection.LAYOUT -> LayoutSettingsDialog(
             strings = strings,
             onBack = { nav.back() },
             onDismiss = { nav.closeAll() },
@@ -247,6 +284,12 @@ fun ThemeSettingsHost(
  *    flat ink icons — even these dialogs and every option row re-skin) or
  *    the anime/toon skin (with its Sora mascot toggle). Switching it
  *    re-skins every screen, not just the colors.
+ *  - [ThemeCustomizeSettingsDialog]: the "Customize" step that holds the
+ *    fine-grained knobs below (layout & shapes, app colors and font), so
+ *    the hub itself stays mode + design + this one entry.
+ *  - [LayoutSettingsDialog]: the per-design layout adjustments — which edge
+ *    the tab bar sits on, how round every corner is, the order of the app's
+ *    sections and the active design's own extras, with a live preview.
  *  - [AppColorsSettingsDialog]: the preset palettes shipped per design
  *    (each design gets palettes that suit it — ink-safe pastels for the
  *    toon skin, loud ink-friendly blocks for neobrutalism, day and night
@@ -271,8 +314,7 @@ fun ThemeSettingsDialog(
     currentThemeMode: AppThemeMode,
     onThemeModeChange: (AppThemeMode) -> Unit,
     onOpenDesign: () -> Unit,
-    onOpenColors: () -> Unit,
-    onOpenFonts: () -> Unit,
+    onOpenCustomize: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val designStrings = remember(strings) { DesignStyleStrings(strings) }
@@ -344,11 +386,67 @@ fun ThemeSettingsDialog(
             onClick = onOpenDesign,
         )
         Spacer(modifier = Modifier.height(10.dp))
-        // Same for the palette: preset name, "custom" when the user mixed
-        // their own roles, or the design's own default.
-        val isDefaultPalette = AppPaletteState.primary == null &&
-            AppPaletteState.secondary == null &&
-            AppPaletteState.tertiary == null
+        // App colors and Font are the two fine-grained knobs, so they sit
+        // one level deeper behind "Customize" instead of crowding the hub.
+        SectionLinkRow(
+            title = strings.themeCustomizeTitle,
+            subtitle = strings.themeCustomizeRowSubtitle,
+            icon = Icons.Outlined.Tune,
+            onClick = onOpenCustomize,
+        )
+    }
+}
+
+/**
+ * Settings ▸ Theme ▸ Customize — the small hub that carries the
+ * fine-grained appearance knobs: [LayoutSettingsDialog] (tab-bar edge,
+ * corner roundness, section order, per-design extras),
+ * [AppColorsSettingsDialog] (preset palettes + the custom palette editor)
+ * and [FontSettingsDialog] (the per-scope font pickers).
+ *
+ * It is a plain step in the shared back stack, so Back walks
+ * Font/Colors → Customize → Theme instead of dropping the user out of
+ * settings.
+ */
+@Composable
+fun ThemeCustomizeSettingsDialog(
+    strings: AppStrings,
+    onOpenLayout: () -> Unit,
+    onOpenColors: () -> Unit,
+    onOpenFonts: () -> Unit,
+    onBack: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val currentDesign = LocalDesignStyle.current
+
+    ThemeSettingsShell(
+        title = strings.themeCustomizeTitle,
+        strings = strings,
+        onBack = onBack,
+        onDismiss = onDismiss,
+    ) {
+        Text(
+            text = strings.themeCustomizeDesc,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Layout first: it is the only one of the three that changes where
+        // things are, not just how they are painted.
+        SectionLinkRow(
+            title = strings.layoutSectionTitle,
+            subtitle = strings.layoutSectionRowSubtitle,
+            icon = Icons.Outlined.Dashboard,
+            onClick = onOpenLayout,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // The palette row answers "which one is on?" without a tap: preset
+        // name, "custom" when the user mixed their own roles, or the
+        // design's own default.
+        val isDefaultPalette = AppPaletteState.isDefault
         val paletteName = when {
             isDefaultPalette -> strings.defaultCd
             else -> AppPaletteState.selectedPreset(currentDesign)
@@ -390,6 +488,7 @@ fun AppDesignSettingsDialog(
     val context = LocalContext.current
     val designStrings = remember(strings) { DesignStyleStrings(strings) }
     val currentDesign = LocalDesignStyle.current
+    var showMaterial3TabPicker by rememberSaveable { mutableStateOf(false) }
 
     val applyDesign: (AppDesignStyle) -> Unit = { style ->
         if (style != currentDesign) {
@@ -425,17 +524,10 @@ fun AppDesignSettingsDialog(
         DesignStyleRow(
             title = designStrings.material3Title,
             icon = Icons.Outlined.Widgets,
-            selected = currentDesign == AppDesignStyle.MATERIAL3,
+            selected = currentDesign == AppDesignStyle.MATERIAL3 ||
+                currentDesign == AppDesignStyle.MATERIAL_YOU,
             selectedLabel = designStrings.selectedLabel,
-            onClick = { applyDesign(AppDesignStyle.MATERIAL3) },
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        DesignStyleRow(
-            title = designStrings.materialYouTitle,
-            icon = Icons.Outlined.Palette,
-            selected = currentDesign == AppDesignStyle.MATERIAL_YOU,
-            selectedLabel = designStrings.selectedLabel,
-            onClick = { applyDesign(AppDesignStyle.MATERIAL_YOU) },
+            onClick = { showMaterial3TabPicker = true },
         )
         Spacer(modifier = Modifier.height(10.dp))
         DesignStyleRow(
@@ -456,6 +548,32 @@ fun AppDesignSettingsDialog(
             // three signature dots behind an ink border.
             swatch = { AnimeSwatch() },
         )
+
+        // The friendly Neo option is intentionally nested under the active
+        // Neobrutalism design instead of becoming another top-level theme.
+        if (currentDesign == AppDesignStyle.NEOBRUTALISM) {
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = designStrings.friendlyNeoTitle,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = designStrings.friendlyNeoDesc,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Switch(
+                    checked = FriendlyNeobrutalismState.enabled,
+                    onCheckedChange = { FriendlyNeobrutalismState.set(context, it) },
+                )
+            }
+        }
 
         // The mascot toggle only makes sense while the toon skin is
         // the active design, so it appears with it.
@@ -490,6 +608,45 @@ fun AppDesignSettingsDialog(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+
+    if (showMaterial3TabPicker) {
+        AlertDialog(
+            onDismissRequest = { showMaterial3TabPicker = false },
+            title = { Text(designStrings.material3NavTitle) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = designStrings.material3NavDesc,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Button(
+                        onClick = {
+                            showMaterial3TabPicker = false
+                            applyDesign(AppDesignStyle.MATERIAL3)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(designStrings.material3Top)
+                    }
+                    Button(
+                        onClick = {
+                            showMaterial3TabPicker = false
+                            applyDesign(AppDesignStyle.MATERIAL_YOU)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(designStrings.material3Bottom)
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showMaterial3TabPicker = false }) {
+                    Text(strings.cancel)
+                }
+            },
+        )
+    }
 }
 
 /**
@@ -500,7 +657,7 @@ fun AppDesignSettingsDialog(
  * [subtitle], so the hub answers "which one is on?" without a tap.
  */
 @Composable
-private fun SectionLinkRow(
+internal fun SectionLinkRow(
     title: String,
     icon: ImageVector,
     onClick: () -> Unit,
@@ -714,7 +871,7 @@ fun FontSettingsDialog(
  * theme area.
  */
 @Composable
-private fun ThemeSettingsShell(
+internal fun ThemeSettingsShell(
     title: String,
     strings: AppStrings,
     onDismiss: () -> Unit,
@@ -727,6 +884,11 @@ private fun ThemeSettingsShell(
         onDismissRequest = onBack ?: onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        // The whole Theme area mirrors for Persian — exactly like the
+        // settings menu that opens it. English keeps the app-wide LTR flow.
+        CompositionLocalProvider(
+            LocalLayoutDirection provides if (strings.isEn) LayoutDirection.Ltr else LayoutDirection.Rtl
+        ) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
@@ -811,6 +973,7 @@ private fun ThemeSettingsShell(
                 }
             }
         }
+        }  // RTL provider
     }
 }
 
@@ -950,7 +1113,7 @@ private fun DesignStyleRow(
                     modifier = Modifier.weight(1f),
                 )
                 if (selected) {
-                    ToonChip(text = "✦ $selectedLabel", selected = true, fill = AnimeColors.Sakura)
+                    ToonChip(text = selectedLabel, selected = true, fill = AnimeColors.Sakura)
                 }
             }
         }
@@ -958,11 +1121,14 @@ private fun DesignStyleRow(
     }
 
     if (neo) {
+        val rowShape = if (isFriendlyNeobrutalismDesign()) MaterialTheme.shapes.medium else RoundedCornerShape(0.dp)
+        val iconShape = if (isFriendlyNeobrutalismDesign()) CircleShape else RoundedCornerShape(0.dp)
         Row(
             modifier = modifier
                 .fillMaxWidth()
+                .clip(rowShape)
                 .background(if (selected) neoAccent() else scheme.surfaceContainerLowest)
-                .border(2.dp, scheme.outline)
+                .border(2.dp, scheme.outline, rowShape)
                 .clickable(onClick = onClick)
                 .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -970,8 +1136,9 @@ private fun DesignStyleRow(
             Box(
                 modifier = Modifier
                     .size(42.dp)
+                    .clip(iconShape)
                     .background(if (selected) scheme.surfaceContainerLowest else neoAccent())
-                    .border(2.dp, scheme.outline),
+                    .border(2.dp, scheme.outline, iconShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -1122,7 +1289,9 @@ private fun ThemeModeCard(
                     fontWeight = FontWeight.Bold,
                     color = onCard,
                     textAlign = TextAlign.Center,
-                    maxLines = 2,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
             }
         }
@@ -1159,7 +1328,9 @@ private fun ThemeModeCard(
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 color = if (selected) Color.Black else scheme.onSurface,
                 textAlign = TextAlign.Center,
-                maxLines = 2,
+                maxLines = 1,
+                softWrap = false,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
         }
         return
@@ -1226,7 +1397,9 @@ private fun ThemeModeCard(
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
             color = contentColor,
             textAlign = TextAlign.Center,
-            maxLines = 2,
+            maxLines = 1,
+            softWrap = false,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
     }
 }
@@ -1281,16 +1454,29 @@ private data class PaletteOption(
 /**
  * The preset palette grid of the active design (plus the "default" card
  * that clears the override) followed by the per-role custom editor.
+ *
+ * Both halves work on ONE canvas at a time: the day/night chips at the top
+ * pick whether the swatches, the preview dots and the custom editor address
+ * the light or the dark palette. The section opens on the canvas the app is
+ * currently showing, so a tap is only needed to tune the other one. Presets
+ * always write both canvases at once (each preset ships a matched day and
+ * night triad), while the custom editor edits only the canvas on screen.
  */
 @Composable
 private fun AppColorsSection(strings: AppStrings) {
     val context = LocalContext.current
     val design = LocalDesignStyle.current
     val presets = remember(design) { ThemePalettes.forDesign(design) }
-    val isDefaultPalette = AppPaletteState.primary == null &&
-        AppPaletteState.secondary == null &&
-        AppPaletteState.tertiary == null
+    val isDefaultPalette = AppPaletteState.isDefault
     val selectedPreset = AppPaletteState.selectedPreset(design)
+
+    // The canvas currently on screen decides which one is previewed first.
+    val activeDark = when (LocalThemeMode.current) {
+        AppThemeMode.LIGHT -> false
+        AppThemeMode.DARK -> true
+        AppThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
+    var editingDark by remember(activeDark) { mutableStateOf(activeDark) }
 
     // ── Preset palettes ──
     Text(
@@ -1300,6 +1486,25 @@ private fun AppColorsSection(strings: AppStrings) {
         color = MaterialTheme.colorScheme.onSurface
     )
     Spacer(modifier = Modifier.height(10.dp))
+
+    // Day / night switch: which canvas the dots below preview and the custom
+    // editor writes to.
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+    ) {
+        FontScopeChip(
+            label = strings.themeLightMenu,
+            selected = !editingDark,
+            onClick = { editingDark = false },
+        )
+        FontScopeChip(
+            label = strings.themeDarkMenu,
+            selected = editingDark,
+            onClick = { editingDark = true },
+        )
+    }
+    Spacer(modifier = Modifier.height(12.dp))
 
     val options = listOf(
         PaletteOption(
@@ -1311,7 +1516,10 @@ private fun AppColorsSection(strings: AppStrings) {
     ) + presets.map { preset ->
         PaletteOption(
             label = strings.paletteName(preset),
-            colors = listOf(preset.primary, preset.secondary, preset.tertiary),
+            // The dots preview the canvas being edited, so the difference
+            // between a preset's day and night triad is visible before
+            // switching the whole app over to it.
+            colors = preset.triad(editingDark),
             preset = preset,
             selected = selectedPreset?.key == preset.key
         )
@@ -1336,7 +1544,7 @@ private fun AppColorsSection(strings: AppStrings) {
     Spacer(modifier = Modifier.height(10.dp))
 
     // ── Custom palette (swatches + hex per role) ──
-    CustomPaletteSection(strings = strings)
+    CustomPaletteSection(strings = strings, isDark = editingDark)
 }
 
 /**
@@ -1460,9 +1668,14 @@ private fun PaletteDots(colors: List<Color>?) {
  * The custom palette editor: one row per role (primary / secondary /
  * tertiary). Each role can be picked from a quick-swatch strip, typed in as
  * a hex code, or reset to the design's own color.
+ *
+ * [isDark] is the canvas being edited (picked by the day/night chips above):
+ * the day and the night palette are stored separately, so the same role can
+ * hold a deep color for the light canvas and a light one for the dark
+ * canvas — which is exactly what keeps text on it readable in both modes.
  */
 @Composable
-private fun CustomPaletteSection(strings: AppStrings) {
+private fun CustomPaletteSection(strings: AppStrings, isDark: Boolean) {
     val context = LocalContext.current
 
     Text(
@@ -1487,8 +1700,9 @@ private fun CustomPaletteSection(strings: AppStrings) {
         }
         RoleColorEditor(
             roleLabel = roleLabel,
-            current = AppPaletteState.roleColor(role),
-            onApply = { color -> AppPaletteState.setRole(context, role, color) },
+            current = AppPaletteState.roleColor(role, isDark),
+            onApply = { color -> AppPaletteState.setRole(context, role, isDark, color) },
+            isDark = isDark,
             strings = strings,
         )
         if (index != PaletteRole.entries.size - 1) {
@@ -1497,12 +1711,19 @@ private fun CustomPaletteSection(strings: AppStrings) {
     }
 }
 
-/** One role of the custom palette: swatches strip + hex input + reset. */
+/**
+ * One role of the custom palette: swatches strip + hex input + reset. The
+ * quick swatches follow the canvas being edited — deep tones for the day
+ * palette (white glyphs sit on them) and light tones for the night palette
+ * (dark glyphs sit on them) — so a tap can never produce an unreadable
+ * accent for that mode.
+ */
 @Composable
 private fun RoleColorEditor(
     roleLabel: String,
     current: Color?,
     onApply: (Color?) -> Unit,
+    isDark: Boolean,
     strings: AppStrings,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -1510,8 +1731,17 @@ private fun RoleColorEditor(
     // only re-syncs when the color actually changes (e.g. via a swatch).
     var hexText by remember(current) { mutableStateOf(current?.let { formatHexColor(it) } ?: "") }
     var hexError by remember { mutableStateOf(false) }
-    val quickColors = remember {
-        listOf(
+    val quickColors = remember(isDark) {
+        if (isDark) listOf(
+            Color(0xFFAFC1FF),
+            Color(0xFF6ED8E6),
+            Color(0xFF9FD79B),
+            Color(0xFFFFCC80),
+            Color(0xFFFFB1C8),
+            Color(0xFFCDB4FF),
+            Color(0xFFE6E9F5),
+            Color(0xFF9AA3B8),
+        ) else listOf(
             Color(0xFF3A5AD4),
             Color(0xFF00838F),
             Color(0xFF2E7D32),
@@ -1519,7 +1749,7 @@ private fun RoleColorEditor(
             Color(0xFFC2185B),
             Color(0xFF7A4FD1),
             Color(0xFF212121),
-            Color(0xFFF5F5F5),
+            Color(0xFF546070),
         )
     }
 
@@ -1897,6 +2127,9 @@ private fun FontScopeChip(
                 fontWeight = FontWeight.Bold,
                 color = if (selected) Color.Black else scheme.onSurface,
                 maxLines = 1,
+                softWrap = false,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
             )
         }
         return
@@ -1913,6 +2146,9 @@ private fun FontScopeChip(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
             maxLines = 1,
+            softWrap = false,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -1973,7 +2209,11 @@ private fun FontPicker(
             }
         }
         Spacer(modifier = Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+        ) {
             FontActionChip(
                 label = strings.importCustomFontBtn,
                 onClick = onImport
@@ -2003,8 +2243,6 @@ private fun FontActionChip(
     onClick: () -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
-    // Option chips preview their font (labelMedium); action buttons are the
-    // smaller labelSmall, matching the original layout in all designs.
     val textStyle = if (fontFamily != null) {
         MaterialTheme.typography.labelMedium.copy(fontFamily = fontFamily)
     } else {
@@ -2034,7 +2272,10 @@ private fun FontActionChip(
                 style = textStyle,
                 fontWeight = FontWeight.Bold,
                 color = content,
-                maxLines = 1
+                maxLines = 1,
+                softWrap = false,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
             )
         }
         return
@@ -2059,7 +2300,11 @@ private fun FontActionChip(
             text = label,
             style = textStyle,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+            maxLines = 1,
+            softWrap = false,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
         )
     }
 }

@@ -6,6 +6,10 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.logic.AiMemoryManager
+import com.example.logic.BookQuizMaterial
+import com.example.logic.BookSessionStore
+import com.example.logic.QuizMaterial
+import com.example.logic.SentenceCardDraft
 import com.example.logic.AnkiExporter
 import com.example.logic.DictionaryDatabaseHelper
 import com.example.logic.DictionaryParser
@@ -17,12 +21,15 @@ import com.example.logic.PdfTextExtractor
 import com.example.logic.SqliteDictParser
 import com.example.logic.SubtitleJsonParser
 import com.example.logic.SubtitleParser
+import com.example.logic.declaredLanguageRtl
 import com.example.logic.TranslationDetector
 import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.LanguagePairState
+import com.example.ui.theme.LanguageWeightState
 import com.example.ui.theme.AppStrings
 import com.example.model.DictionaryEntry
 import com.example.model.JsonChunkInfo
+import com.example.model.BookSentence
 import com.example.model.JsonSubtitlePackage
 import com.example.model.JsonWord
 import com.example.model.LeitnerCard
@@ -31,16 +38,37 @@ import com.example.model.SubtitleLearningState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
+
+/** Kind of document most recently opened in the book reader. */
+enum class ReaderDocumentType(val preferenceValue: String) {
+    NONE("none"),
+    PDF("pdf"),
+    EPUB("epub"),
+    TEXT("text");
+
+    companion object {
+        fun fromPreference(value: String?): ReaderDocumentType =
+            values().firstOrNull { it.preferenceValue == value } ?: NONE
+    }
+}
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         /** Persisted copy of the imported JSON subtitle-learning file (filesDir). */
         const val JSON_SUBTITLE_FILE = "saved_sub_json.json"
+        /** Per-clip JSON lesson packages of the Online tab: online_json/<videoId>.json. */
+        const val ONLINE_JSON_DIR = "online_json"
+
+        private const val PREF_READER_DOCUMENT_URI = "reader_document_uri"
+        private const val PREF_READER_DOCUMENT_TYPE = "reader_document_type"
     }
 
     private val sharedPrefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -141,6 +169,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val readerText: StateFlow<String> = _readerText
     private val _readerFileName = MutableStateFlow("")
     val readerFileName: StateFlow<String> = _readerFileName
+    private val _readerDocumentUri = MutableStateFlow<Uri?>(null)
+    val readerDocumentUri: StateFlow<Uri?> = _readerDocumentUri
+    private val _readerDocumentType = MutableStateFlow(ReaderDocumentType.NONE)
+    val readerDocumentType: StateFlow<ReaderDocumentType> = _readerDocumentType
     // PDF page-by-page reading support: when the loaded document is a PDF,
     // _readerText holds only the CURRENT page's text (see goToReaderPage),
     // while the other pages are kept in separate per-page files on disk
@@ -211,6 +243,123 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     // JSON is persisted to saved_sub_json.json so it survives restarts.
     private val _jsonSubtitles = MutableStateFlow<JsonSubtitlePackage?>(null)
     val jsonSubtitles: StateFlow<JsonSubtitlePackage?> = _jsonSubtitles
+
+    // ── JSON slot scope: local film vs. one online clip ──
+    // The JSON slot above (with its lessons, chunk merge, time shift, export
+    // and word/sentence lookups) is shared UI plumbing, but its CONTENT must
+    // never leak between the Video tab and the Online tab: a lesson built for
+    // the film on disk has nothing to do with a YouTube clip. So the slot is
+    // scoped. null = the local film (saved_sub_json.json, exactly as before);
+    // a YouTube id = that clip's own package in online_json/<id>.json. The
+    // Online player switches the scope while it is on screen
+    // ([useOnlineJsonScope]) and every read/write below goes to the scope's
+    // own file, so the local film's package is parked untouched meanwhile.
+    private val _jsonScope = MutableStateFlow<String?>(null)
+    /** null = the local film's JSON; otherwise the online clip id whose JSON is in the slot. */
+    val jsonScope: StateFlow<String?> = _jsonScope
+
+    private data class ParkedJson(val pkg: JsonSubtitlePackage?, val offset: Double, val fileName: String)
+    /** The local film's JSON state while an online clip owns the slot. */
+    private val parkedLocalJson = MutableStateFlow<ParkedJson?>(null)
+
+    /**
+     * The LOCAL film's learning JSON, whatever clip is open — the quiz's
+     * "film subtitles" source. While an online clip owns the slot this reads
+     * the parked package, so the quiz never mistakes a clip's JSON for the
+     * film's.
+     */
+    val localFilmJson: StateFlow<JsonSubtitlePackage?> =
+        combine(_jsonSubtitles, _jsonScope, parkedLocalJson) { pkg, scope, parked ->
+            if (scope == null) pkg else parked?.pkg
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /**
+     * Every online clip's learning JSON, merged — the quiz's "online
+     * subtitles" source. Rebuilt from the online_json/ directory on demand
+     * (see [refreshOnlineQuizJson]); imports and chunk removals refresh it.
+     */
+    private val _onlineQuizJson = MutableStateFlow<JsonSubtitlePackage?>(null)
+    val onlineQuizJson: StateFlow<JsonSubtitlePackage?> = _onlineQuizJson
+    @Volatile private var jsonScopeGeneration = 0
+
+    private fun safeVideoFileName(videoId: String): String =
+        videoId.replace(Regex("[^A-Za-z0-9_-]"), "_").take(64).ifBlank { "video" }
+
+    /** The file that persists the JSON slot of the current scope. */
+    private fun currentJsonFile(): File {
+        val context = getApplication<Application>()
+        val scope = _jsonScope.value ?: return File(context.filesDir, JSON_SUBTITLE_FILE)
+        val dir = File(context.filesDir, ONLINE_JSON_DIR).apply { mkdirs() }
+        return File(dir, safeVideoFileName(scope) + ".json")
+    }
+
+    /** SharedPreferences key of the display name of the current scope's JSON. */
+    private fun currentJsonNameKey(): String =
+        _jsonScope.value?.let { "online_json_name_" + safeVideoFileName(it) } ?: "sub_json_file_name"
+
+    /**
+     * Gives the JSON slot to the online clip [videoId] (its own saved package
+     * or nothing), or back to the local film with null. Call on the main
+     * thread. Switching to a clip parks the film's package in memory; its
+     * file is never touched, so the Video tab gets it back exactly as it was.
+     */
+    fun useOnlineJsonScope(videoId: String?) {
+        val current = _jsonScope.value
+        if (current == videoId) return
+        if (current == null) {
+            parkedLocalJson.value = ParkedJson(_jsonSubtitles.value, _jsonOffset.value, _jsonSubFileName.value)
+        }
+        val generation = ++jsonScopeGeneration
+        _jsonScope.value = videoId
+        if (videoId == null) {
+            val parked = parkedLocalJson.value
+            parkedLocalJson.value = null
+            _jsonSubtitles.value = parked?.pkg
+            _jsonOffset.value = parked?.offset ?: 0.0
+            _jsonSubFileName.value = parked?.fileName ?: ""
+            return
+        }
+        // A clip starts with an EMPTY slot at once; its own saved lesson (if
+        // any) is read from disk right after.
+        _jsonSubtitles.value = null
+        _jsonOffset.value = 0.0
+        _jsonSubFileName.value = ""
+        val file = currentJsonFile()
+        val nameKey = currentJsonNameKey()
+        viewModelScope.launch(Dispatchers.IO) {
+            val pkg = try {
+                if (file.exists()) file.readText().takeIf { SubtitleJsonParser.looksLikeSubtitleJson(it) }?.let { SubtitleJsonParser.parse(it) } else null
+            } catch (e: Exception) {
+                e.printStackTrace(); null
+            }
+            if (pkg != null && generation == jsonScopeGeneration && _jsonScope.value == videoId && _jsonSubtitles.value == null) {
+                _jsonSubtitles.value = pkg
+                _jsonSubFileName.value = sharedPrefs.getString(nameKey, "") ?: ""
+            }
+        }
+    }
+
+    /**
+     * The book reader's imported sentences, packaged as quiz material.
+     *
+     * Loaded on demand (the quiz setup screen asks for it) rather than at
+     * startup: reading every stored book to build a package is wasted work for
+     * a learner who opens the app to watch a film. The book store is scanned
+     * once per request and the result cached, so switching the quiz's source
+     * filter back and forth is free.
+     */
+    private val _bookQuizMaterial = MutableStateFlow<QuizMaterial?>(null)
+    val bookQuizMaterial: StateFlow<QuizMaterial?> = _bookQuizMaterial
+
+    /**
+     * The normalized text of every sentence already in the Leitner box.
+     *
+     * The reader and the film subtitle list both mark a line as saved from
+     * this, so "[+ لایتنر جمله]" turns into "در لایتنر ذخیره شد" everywhere the
+     * moment any surface saves it.
+     */
+    private val _savedSentenceTexts = MutableStateFlow<Set<String>>(emptySet())
+    val savedSentenceTexts: StateFlow<Set<String>> = _savedSentenceTexts
     private val _jsonSubFileName = MutableStateFlow("")
     val jsonSubFileName: StateFlow<String> = _jsonSubFileName
 
@@ -260,8 +409,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private fun persistJsonSubtitle() {
         val pkg = _jsonSubtitles.value ?: return
         try {
-            val context = getApplication<Application>()
-            File(context.filesDir, JSON_SUBTITLE_FILE).writeText(SubtitleJsonParser.serialize(pkg))
+            currentJsonFile().writeText(SubtitleJsonParser.serialize(pkg))
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -458,12 +606,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * The "source → target" language pair (Settings ▸ Tutorial & AI Learning) is
+     * The "source → target" language pair (Settings ▸ Prompts) is
      * restored before anything else here, so labels built from the ViewModel
      * (toasts, default file names) never run ahead of the saved value.
      * MainActivity restores it too, before the first composition.
      */
-    init { LanguagePairState.restore(getApplication<Application>()) }
+    init {
+        LanguagePairState.restore(getApplication<Application>())
+        LanguageWeightState.restore(getApplication<Application>())
+    }
 
     init { loadPersistedData() }
     init { refreshLeitnerCards() }
@@ -471,16 +622,68 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadPersistedData() {
         viewModelScope.launch(Dispatchers.IO) {
             val context = getApplication<Application>()
-            val isPdfDoc = sharedPrefs.getBoolean("reader_is_pdf", false)
+            val savedType = ReaderDocumentType.fromPreference(
+                sharedPrefs.getString(PREF_READER_DOCUMENT_TYPE, null),
+            )
+            val savedUri = sharedPrefs.getString(PREF_READER_DOCUMENT_URI, null)
+                ?.takeIf { it.isNotBlank() }
+                ?.let { value -> runCatching { Uri.parse(value) }.getOrNull() }
+            val savedName = sharedPrefs.getString("reader_file_name", "") ?: ""
+            val legacyIsPdf = sharedPrefs.getBoolean("reader_is_pdf", false)
             val pageCount = sharedPrefs.getInt("reader_page_count", 0)
-            if (isPdfDoc && pageCount > 0) {
-                val currentPage = sharedPrefs.getInt("reader_current_page", 0).coerceIn(0, pageCount - 1)
-                _readerIsPdf.value = true; _readerPageCount.value = pageCount; _readerCurrentPage.value = currentPage
-                _readerText.value = readReaderPage(context, currentPage)
-                _readerFileName.value = sharedPrefs.getString("reader_file_name", "") ?: ""
-            } else {
-                val readerFile = File(context.filesDir, "saved_reader_text.txt")
-                if (readerFile.exists()) { _readerText.value = readerFile.readText(); _readerFileName.value = sharedPrefs.getString("reader_file_name", "") ?: "" }
+
+            // Restore the source handle as well as the extracted text cache.
+            // The BookReaderState is screen-scoped and gets rebuilt on process
+            // death, while this URI has a persisted SAF read grant.
+            _readerFileName.value = savedName
+            _readerDocumentUri.value = savedUri
+            _readerDocumentType.value = savedType
+
+            when {
+                savedType == ReaderDocumentType.EPUB -> {
+                    _readerIsPdf.value = false
+                    _readerPageCount.value = 0
+                    _readerCurrentPage.value = 0
+                    _readerText.value = ""
+                }
+                savedType == ReaderDocumentType.PDF ||
+                    (savedType == ReaderDocumentType.NONE && legacyIsPdf && pageCount > 0) -> {
+                    if (pageCount > 0) {
+                        val currentPage = sharedPrefs.getInt("reader_current_page", 0).coerceIn(0, pageCount - 1)
+                        _readerIsPdf.value = true
+                        _readerPageCount.value = pageCount
+                        _readerCurrentPage.value = currentPage
+                        _readerText.value = readReaderPage(context, currentPage)
+                    } else if (savedType == ReaderDocumentType.PDF && savedUri != null) {
+                        // Recover a PDF that was selected just before the app
+                        // closed, before its page cache had finished writing.
+                        _readerIsPdf.value = true
+                        _readerPageCount.value = 0
+                        _readerCurrentPage.value = 0
+                        loadTextFile(savedUri, "application/pdf")
+                    }
+                }
+                savedType == ReaderDocumentType.TEXT -> {
+                    _readerIsPdf.value = false
+                    _readerPageCount.value = 0
+                    _readerCurrentPage.value = 0
+                    val readerFile = File(context.filesDir, "saved_reader_text.txt")
+                    if (readerFile.exists()) _readerText.value = readerFile.readText()
+                }
+                else -> {
+                    // Backward-compatible restore for installs that predate
+                    // reader_document_uri/type, including their PDF page cache.
+                    if (legacyIsPdf && pageCount > 0) {
+                        val currentPage = sharedPrefs.getInt("reader_current_page", 0).coerceIn(0, pageCount - 1)
+                        _readerIsPdf.value = true
+                        _readerPageCount.value = pageCount
+                        _readerCurrentPage.value = currentPage
+                        _readerText.value = readReaderPage(context, currentPage)
+                    } else {
+                        val readerFile = File(context.filesDir, "saved_reader_text.txt")
+                        if (readerFile.exists()) _readerText.value = readerFile.readText()
+                    }
+                }
             }
             if (sharedPrefs.contains("reader_text_color")) { _readerTextColor.value = sharedPrefs.getInt("reader_text_color", 0) }
             val videoUriStr = sharedPrefs.getString("video_uri_str", null)
@@ -490,7 +693,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             val subFaFile = File(context.filesDir, "saved_sub_fa.srt")
             if (subFaFile.exists()) { try { subFaFile.inputStream().use { s -> _subFaList.value = SubtitleParser.parseSubtitle(s, "fa"); _subFaFileName.value = sharedPrefs.getString("sub_fa_file_name", "") ?: "" } } catch (e: Exception) { e.printStackTrace() } }
             val jsonSubFile = File(context.filesDir, JSON_SUBTITLE_FILE)
-            if (jsonSubFile.exists()) { try { val jsonText = jsonSubFile.readText(); if (SubtitleJsonParser.looksLikeSubtitleJson(jsonText)) { _jsonSubtitles.value = SubtitleJsonParser.parse(jsonText); _jsonSubFileName.value = sharedPrefs.getString("sub_json_file_name", "") ?: "" } } catch (e: Exception) { e.printStackTrace() } }
+            if (jsonSubFile.exists()) { try { val jsonText = jsonSubFile.readText(); if (SubtitleJsonParser.looksLikeSubtitleJson(jsonText)) { val restoredPkg = SubtitleJsonParser.parse(jsonText); val restoredName = sharedPrefs.getString("sub_json_file_name", "") ?: ""; if (_jsonScope.value == null) { _jsonSubtitles.value = restoredPkg; _jsonSubFileName.value = restoredName } else { parkedLocalJson.value = ParkedJson(restoredPkg, 0.0, restoredName) } } } catch (e: Exception) { e.printStackTrace() } }
             var hasEntries = dbHelper.hasEntries()
             if (!hasEntries) { try { context.assets.open("default_dict.txt").use { s -> com.example.logic.DictionaryParser.parseAndSaveToDb(s, dbHelper, true) }; hasEntries = dbHelper.hasEntries() } catch (e: Exception) { e.printStackTrace() } }
             _isDictionaryLoaded.value = hasEntries
@@ -542,12 +745,52 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearImportError() { _importError.value = null }
 
+    /**
+     * Saves the SAF document handle as well as its display name. The extracted
+     * PDF text is cached separately, so without this URI the reader can still
+     * show the book after a restart while actions that need to re-read the PDF
+     * (such as range extraction) incorrectly think no document is open.
+     */
+    fun rememberReaderDocument(uri: Uri, name: String, type: ReaderDocumentType) {
+        val context = getApplication<Application>()
+        runCatching {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
+            )
+        }.onFailure { error ->
+            android.util.Log.w("AppViewModel", "Could not persist the reader document permission", error)
+        }
+
+        _readerDocumentUri.value = uri
+        _readerDocumentType.value = type
+        _readerFileName.value = name
+        _readerText.value = ""
+        _readerIsPdf.value = type == ReaderDocumentType.PDF
+        _readerPageCount.value = 0
+        _readerCurrentPage.value = 0
+
+        sharedPrefs.edit()
+            .putString(PREF_READER_DOCUMENT_URI, uri.toString())
+            .putString(PREF_READER_DOCUMENT_TYPE, type.preferenceValue)
+            .putString("reader_file_name", name)
+            .putBoolean("reader_is_pdf", type == ReaderDocumentType.PDF)
+            .putInt("reader_page_count", 0)
+            .putInt("reader_current_page", 0)
+            .apply()
+    }
+
     fun loadTextFile(uri: Uri, mimeType: String?) {
         viewModelScope.launch(Dispatchers.IO) {
             val context = getApplication<Application>()
             try {
                 val originalName = getUriDisplayName(context, uri)
-                val isPdf = mimeType == "application/pdf" || uri.toString().endsWith(".pdf", true)
+                val isPdf = mimeType?.contains("pdf", ignoreCase = true) == true ||
+                    originalName.endsWith(".pdf", ignoreCase = true) ||
+                    uri.toString().endsWith(".pdf", true)
+                val documentType = if (isPdf) ReaderDocumentType.PDF else ReaderDocumentType.TEXT
+                _readerDocumentUri.value = uri
+                _readerDocumentType.value = documentType
                 if (isPdf) {
                     // Split into per-page text files so the reader screen can show
                     // and navigate the PDF page by page (see readerPagesDir /
@@ -559,14 +802,19 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     _readerText.update { pages.first() }
                     sharedPrefs.edit().putBoolean("reader_is_pdf", true).putInt("reader_page_count", pages.size).putInt("reader_current_page", 0).apply()
                 } else {
-                    val text = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
+                    val text = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
                     readerPagesDir(context).listFiles()?.forEach { it.delete() }
                     File(context.filesDir, "saved_reader_text.txt").writeText(text)
                     _readerIsPdf.value = false; _readerPageCount.value = 0; _readerCurrentPage.value = 0
                     _readerText.update { text }
                     sharedPrefs.edit().putBoolean("reader_is_pdf", false).putInt("reader_page_count", 0).putInt("reader_current_page", 0).apply()
                 }
-                _readerFileName.update { originalName }; sharedPrefs.edit().putString("reader_file_name", originalName).apply()
+                _readerFileName.value = originalName
+                sharedPrefs.edit()
+                    .putString(PREF_READER_DOCUMENT_URI, uri.toString())
+                    .putString(PREF_READER_DOCUMENT_TYPE, documentType.preferenceValue)
+                    .putString("reader_file_name", originalName)
+                    .apply()
             } catch (e: Exception) { e.printStackTrace() }
         }
     }
@@ -619,6 +867,89 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         loadSubtitleFromClipboard(isEnglish = false)
     }
 
+    /**
+     * "Send to the video tab" from the Online tab: the captions of an online
+     * clip (and its optional translation track) become the EN/FA subtitle
+     * slots, persisted like a picked file, so they can be studied, edited by
+     * the AI tab and used with a local copy of the clip.
+     */
+    fun loadSubtitlesFromOnline(enList: List<SubtitleEntry>, faList: List<SubtitleEntry>, sourceTitle: String) {
+        if (enList.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            val s = strings()
+            try {
+                val safeTitle = sourceTitle.trim().replace(Regex("[\\\\/:*?\"<>|\\n\\r]"), "_").take(60).ifBlank { "online" }
+                val enName = "$safeTitle.en.srt"
+                SubtitleParser.writeSrtFile(enList, File(context.filesDir, "saved_sub_en.srt"))
+                _subEnOffset.value = 0.0
+                _subEnList.value = enList
+                _subEnFileName.value = enName
+                sharedPrefs.edit().putString("sub_en_file_name", enName).apply()
+                if (faList.isNotEmpty()) {
+                    val faName = "$safeTitle.translation.srt"
+                    SubtitleParser.writeSrtFile(faList, File(context.filesDir, "saved_sub_fa.srt"))
+                    _subFaOffset.value = 0.0
+                    _subFaList.value = faList
+                    _subFaFileName.value = faName
+                    sharedPrefs.edit().putString("sub_fa_file_name", faName).apply()
+                }
+                _saveMessage.value = s.subtitleLoadedFromClipboard(enName)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _saveMessage.value = s.errorWithMessage(e.message)
+            }
+        }
+    }
+
+    /**
+     * Loads a learning JSON straight from the clipboard — a copied file (the
+     * clipboard carries its content URI) or copied JSON text. The JSON attach
+     * chooser's paste option, mirroring [loadSubEnFromClipboard].
+     */
+    fun loadJsonFromClipboard() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            val s = strings()
+            try {
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = clipboard.primaryClip
+                if (clip == null || clip.itemCount == 0) { _saveMessage.value = s.clipboardEmptyError; return@launch }
+                val item = clip.getItemAt(0)
+
+                var content: String? = null
+                var displayName: String? = null
+
+                // A file copied in a file manager arrives as a content URI.
+                val uri = item.uri
+                if (uri != null) {
+                    try {
+                        context.contentResolver.openInputStream(uri)?.use { stream ->
+                            content = stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                        }
+                        displayName = getUriDisplayName(context, uri)
+                    } catch (e: Exception) {
+                        content = null
+                    }
+                }
+                if (content.isNullOrBlank()) {
+                    val text = try { item.coerceToText(context)?.toString() } catch (e: Exception) { null }
+                    if (!text.isNullOrBlank()) content = text
+                }
+
+                val raw = content
+                if (raw.isNullOrBlank()) { _saveMessage.value = s.clipboardEmptyError; return@launch }
+                importJsonSubtitleText(
+                    raw,
+                    displayName?.takeIf { it.isNotBlank() && !it.equals("Unknown", ignoreCase = true) }
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _saveMessage.value = s.errorWithMessage(e.message)
+            }
+        }
+    }
+
     private fun loadSubtitleFromClipboard(isEnglish: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             val context = getApplication<Application>()
@@ -638,7 +969,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 if (uri != null) {
                     try {
                         context.contentResolver.openInputStream(uri)?.use { stream ->
-                            content = stream.bufferedReader().use { it.readText() }
+                            content = stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
                         }
                         displayName = getUriDisplayName(context, uri)
                     } catch (e: Exception) {
@@ -710,7 +1041,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             val context = getApplication<Application>()
             try {
                 val text = context.contentResolver.openInputStream(uri)
-                    ?.bufferedReader()?.use { it.readText() }
+                    ?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
                     ?: throw Exception(strings().jsonEmptyFileError)
                 importJsonSubtitleText(text, getUriDisplayName(context, uri))
             } catch (e: SubtitleJsonParser.SubtitleJsonParseException) {
@@ -743,7 +1074,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         if (text.trim().isEmpty()) { _saveMessage.value = s.jsonEmptyFileError; return }
         if (!SubtitleJsonParser.looksLikeSubtitleJson(text)) { _saveMessage.value = s.jsonNotSubtitleJson; return }
         try {
-            val incoming = SubtitleJsonParser.parse(text)
+            val outcome = SubtitleJsonParser.parseWithReport(text)
+            val incoming = outcome.pkg
             val existing = _jsonSubtitles.value
             val chunk = incoming.chunks.firstOrNull()
             val isChunked = incoming.chunks.isNotEmpty()
@@ -770,21 +1102,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 ?: _jsonSubFileName.value.takeIf { mergeWith != null && it.isNotBlank() }
                 ?: s.jsonDefaultName
 
-            val context = getApplication<Application>()
             // Always store the normalized package rather than the raw paste: it
             // is free of CHUNK lines / fences / commentary, it keeps the chunk
             // bookkeeping so merged chunks survive a restart, and it is exactly
-            // what the time-shift code writes back anyway.
-            File(context.filesDir, JSON_SUBTITLE_FILE).writeText(SubtitleJsonParser.serialize(pkg))
+            // what the time-shift code writes back anyway. The file is the one
+            // of the current scope (local film or the open online clip).
+            currentJsonFile().writeText(SubtitleJsonParser.serialize(pkg))
 
             _jsonSubtitles.value = pkg
             // A brand new file starts unsynchronised; merging another chunk of
             // the SAME film keeps the shift the user already dialled in.
             if (mergeWith == null) _jsonOffset.value = 0.0
             _jsonSubFileName.value = name
-            sharedPrefs.edit().putString("sub_json_file_name", name).apply()
+            sharedPrefs.edit().putString(currentJsonNameKey(), name).apply()
 
-            _saveMessage.value = when {
+            val importedMessage = when {
                 chunk != null && reimportedChunk ->
                     s.jsonChunkReimported(chunk.shortLabel, pkg.subtitles.size)
                 chunk != null && mergeWith != null ->
@@ -793,6 +1125,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     s.jsonChunkImported(chunk.shortLabel, name, pkg.subtitles.size)
                 else -> s.jsonImportedSuccess(name, pkg.subtitles.size)
             }
+            // An import into an online clip feeds the quiz's online source.
+            if (_jsonScope.value != null) refreshOnlineQuizJson()
+
+            // A paste can hold one complete chunk plus one truncated chunk.
+            // The complete half imports; the broken half must not vanish
+            // silently, so the success toast carries a warning line.
+            _saveMessage.value =
+                if (outcome.skippedDocuments > 0) {
+                    importedMessage + "\n" + s.jsonPartialImportWarning(outcome.skippedDocuments)
+                } else {
+                    importedMessage
+                }
         } catch (e: SubtitleJsonParser.SubtitleJsonParseException) {
             _saveMessage.value = s.jsonParseError(e.message)
         } catch (e: Exception) {
@@ -815,11 +1159,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             _saveMessage.value = s.jsonChunkRemovedLast(chunk.shortLabel)
             return
         }
+        val targetFile = currentJsonFile()
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val context = getApplication<Application>()
-                File(context.filesDir, JSON_SUBTITLE_FILE).writeText(SubtitleJsonParser.serialize(remaining))
+                targetFile.writeText(SubtitleJsonParser.serialize(remaining))
                 _jsonSubtitles.value = remaining
+                if (_jsonScope.value != null) refreshOnlineQuizJson()
                 _saveMessage.value = s.jsonChunkRemoved(chunk.shortLabel, remaining.subtitles.size)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -833,17 +1178,19 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      * left alone) — the escape hatch after a wrong merge.
      */
     fun removeJsonSubtitle(silent: Boolean = false) {
+        val targetFile = currentJsonFile()
+        val nameKey = currentJsonNameKey()
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val context = getApplication<Application>()
-                File(context.filesDir, JSON_SUBTITLE_FILE).delete()
+                targetFile.delete()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
             _jsonSubtitles.value = null
             _jsonOffset.value = 0.0
             _jsonSubFileName.value = ""
-            sharedPrefs.edit().remove("sub_json_file_name").apply()
+            if (_jsonScope.value != null) refreshOnlineQuizJson()
+            sharedPrefs.edit().remove(nameKey).apply()
             if (!silent) _saveMessage.value = strings().jsonRemovedAll
         }
     }
@@ -895,13 +1242,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             File(context.filesDir, JSON_SUBTITLE_FILE).delete()
             _subEnList.value = emptyList()
             _subFaList.value = emptyList()
-            _jsonSubtitles.value = null
             _subEnOffset.value = 0.0
             _subFaOffset.value = 0.0
-            _jsonOffset.value = 0.0
             _subEnFileName.value = ""
             _subFaFileName.value = ""
-            _jsonSubFileName.value = ""
+            // The film's JSON lives in the slot only while no online clip owns it.
+            if (_jsonScope.value == null) {
+                _jsonSubtitles.value = null
+                _jsonOffset.value = 0.0
+                _jsonSubFileName.value = ""
+            } else {
+                parkedLocalJson.value = null
+            }
             sharedPrefs.edit()
                 .remove("sub_en_file_name")
                 .remove("sub_fa_file_name")
@@ -925,11 +1277,19 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val jsonSub = findJsonSubtitleForSentence(s)
         viewModelScope.launch(Dispatchers.IO) {
             val fallback = if (jsonSub == null) buildFallbackVocabulary(s) else emptyMap()
+            // The JSON's declared languages steer the sheet's direction:
+            // an RTL target language (Persian, Arabic, ...) renders every
+            // translation right-to-left, an LTR one left-to-right — with no
+            // declaration each text decides by its own script.
+            val declared = declaredLanguageRtl(_jsonSubtitles.value?.metadata?.language) to
+                declaredLanguageRtl(_jsonSubtitles.value?.metadata?.targetLanguage)
             _learningSheet.value = SubtitleLearningState(
                 jsonSubtitle = jsonSub,
                 sentenceEnglish = s,
                 translation = jsonSub?.translation ?: translation,
-                fallbackVocab = fallback
+                fallbackVocab = fallback,
+                sourceLanguageRtl = declared.first,
+                targetLanguageRtl = declared.second
             )
         }
     }
@@ -950,7 +1310,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             sentenceEnglish = sentence.trim(),
             translation = jsonSub?.translation ?: translation,
             targetWord = w,
-            jsonWord = jsonWord
+            jsonWord = jsonWord,
+            sourceLanguageRtl = declaredLanguageRtl(_jsonSubtitles.value?.metadata?.language),
+            targetLanguageRtl = declaredLanguageRtl(_jsonSubtitles.value?.metadata?.targetLanguage)
         )
     }
 
@@ -1033,8 +1395,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun refreshLeitnerCards() {
         viewModelScope.launch(Dispatchers.IO) {
-            _leitnerCards.value = leitnerHelper.getAllCards()
+            val cards = leitnerHelper.getAllCards()
+            _leitnerCards.value = cards
             _leitnerDueCards.value = leitnerHelper.getDueCards()
+            // The reader's "already saved" state, kept in step with the box.
+            _savedSentenceTexts.value = cards
+                .filter { it.isSentence }
+                .mapTo(mutableSetOf()) { LeitnerCard.normalizeFront(it.word) }
         }
     }
 
@@ -1089,6 +1456,90 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Adds a whole sentence to the Leitner box - the shared action behind
+     * "[+ لایتنر جمله]" in the book reader and in the film subtitle list.
+     *
+     * The draft is built by [com.example.logic.SentenceCardFactory], so a
+     * sentence card carries the same teaching payload whichever surface it
+     * came from: front is the original line, back is the translation, the
+     * grammar lesson, the sentence structure, IPA and the key words.
+     */
+    fun addSentenceToLeitner(draft: SentenceCardDraft) {
+        if (!draft.isValid) {
+            _leitnerMessage.value = strings().noMeaningToSave
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val added = leitnerHelper.addSentenceCard(draft)
+                refreshLeitnerCards()
+                _leitnerMessage.value = if (added) {
+                    strings().sentenceAddedToLeitner
+                } else {
+                    strings().sentenceUpdatedInLeitner
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _leitnerMessage.value = strings().errorWithMessage(e.message)
+            }
+        }
+    }
+
+    /**
+     * Re-reads every stored book's sentences and rebuilds the quiz material.
+     * Called when the quiz setup screen opens, so a freshly imported chapter is
+     * quizzed without restarting the app.
+     */
+    fun refreshBookQuizMaterial() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val context = getApplication<Application>()
+                val store = BookSessionStore(context)
+                val documents = store.documentKeys().mapNotNull { key ->
+                    val sentences: List<BookSentence> = store.loadSentences(key)
+                    if (sentences.isEmpty()) null else BookQuizMaterial.Document(key, sentences)
+                }
+                _bookQuizMaterial.value = BookQuizMaterial.build(documents)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _bookQuizMaterial.value = null
+            }
+        }
+    }
+
+    /**
+     * Rebuilds the quiz's "online subtitles" material: every per-clip
+     * learning JSON saved under online_json/ is parsed and merged into one
+     * package, so the quiz can draw from all of the Online tab's clips —
+     * whichever one is (or is not) currently open.
+     */
+    fun refreshOnlineQuizJson() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val context = getApplication<Application>()
+                val dir = File(context.filesDir, ONLINE_JSON_DIR)
+                val files = dir.listFiles { f -> f.isFile && f.name.endsWith(".json") } ?: emptyArray()
+                var merged: JsonSubtitlePackage? = null
+                for (file in files) {
+                    val pkg = try {
+                        file.readText()
+                            .takeIf { SubtitleJsonParser.looksLikeSubtitleJson(it) }
+                            ?.let { SubtitleJsonParser.parse(it) }
+                    } catch (e: Exception) {
+                        null
+                    }
+                    if (pkg != null) {
+                        merged = merged?.let { SubtitleJsonParser.mergePackages(it, pkg) } ?: pkg
+                    }
+                }
+                _onlineQuizJson.value = merged
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     fun markLeitnerKnown(id: Long) { viewModelScope.launch(Dispatchers.IO) { leitnerHelper.markKnown(id); refreshLeitnerCards() } }
     fun markLeitnerUnknown(id: Long) { viewModelScope.launch(Dispatchers.IO) { leitnerHelper.markUnknown(id); refreshLeitnerCards() } }
     fun deleteLeitnerCard(id: Long) { viewModelScope.launch(Dispatchers.IO) { leitnerHelper.deleteCard(id); refreshLeitnerCards() } }
@@ -1105,11 +1556,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val cards = leitnerHelper.getAllCards()
                 if (cards.isEmpty()) { _leitnerMessage.value = strings().leitnerBoxEmpty; return@launch }
                 val text = AnkiExporter.buildExportText(cards)
+                val (wordCount, sentenceCount) = AnkiExporter.countByKind(cards)
                 val context = getApplication<Application>()
                 val file = File(context.filesDir, "leitner_anki_export.txt")
                 file.writeText(text)
                 val path = saveToDownloads(context, "leitner_anki_export.txt", file)
-                _leitnerMessage.value = strings().ankiExportSaved(path)
+                _leitnerMessage.value = strings().ankiExportSaved(path, wordCount, sentenceCount)
             } catch (e: Exception) {
                 _leitnerMessage.value = strings().errorWithMessage(e.message)
             }

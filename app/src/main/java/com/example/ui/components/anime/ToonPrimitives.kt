@@ -64,6 +64,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.AnimeColors
+import com.example.logic.autoTextAlign
+import com.example.logic.autoTextDirection
 import com.example.ui.theme.toonOutlineStroke
 
 /**
@@ -629,7 +631,12 @@ fun ToonChip(
         }
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelSmall.copy(
+                // The pill's own wording picks its reading direction —
+                // fixes mixed labels like «سطح: B1» under an LTR layout.
+                textAlign = text.autoTextAlign(),
+                textDirection = text.autoTextDirection()
+            ),
             fontWeight = FontWeight.Bold,
             color = content,
             maxLines = 1,
@@ -883,14 +890,20 @@ fun ToonHeader(
         Column(modifier = Modifier.weight(1f)) {
             ToonOutlinedTitle(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    textAlign = title.autoTextAlign(),
+                    textDirection = title.autoTextDirection()
+                ),
                 strokeWidth = 5f,
                 maxLines = 2,
             )
             if (subtitle != null) {
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        textAlign = subtitle.autoTextAlign(),
+                        textDirection = subtitle.autoTextDirection()
+                    ),
                     color = onBand.copy(alpha = 0.78f),
                     maxLines = 2,
                 )

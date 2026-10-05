@@ -14,13 +14,17 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.logic.CrashReporter
+import com.example.logic.StudyModeState
 import com.example.ui.screens.CrashReportScreen
 import com.example.ui.screens.MainScreen
 import com.example.ui.theme.AnimeFonts
 import com.example.ui.theme.AnimeMascotState
 import com.example.ui.theme.AppDesignStyleState
 import com.example.ui.theme.AppLanguage
+import com.example.ui.theme.AppLayoutState
+import com.example.ui.theme.AppTabOrderState
 import com.example.ui.theme.AppThemeMode
+import com.example.ui.theme.FriendlyNeobrutalismState
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
@@ -61,6 +65,16 @@ class MainActivity : ComponentActivity() {
         // launches directly in that design — shapes, type scale, components
         // and navigation included.
         AppDesignStyleState.restore(sharedPrefs)
+        FriendlyNeobrutalismState.restore(sharedPrefs)
+
+        // The per-design layout adjustments (Settings ▸ Theme ▸ Customize ▸
+        // Layout & shapes): which edge the tab bar sits on, the corner
+        // roundness override applied to the design's shape scale, and the
+        // user's own order for the app's sections. All three are read before
+        // the first composition so the app launches already laid out that
+        // way instead of rearranging itself after one frame.
+        AppLayoutState.restore(sharedPrefs)
+        AppTabOrderState.restore(sharedPrefs)
 
         // The toon skin's mascot toggle, plus its bundled display fonts
         // (Baloo 2 / Vazirmatn). Both are resolved before the first
@@ -107,10 +121,11 @@ class MainActivity : ComponentActivity() {
         }
 
         // Restore the learner's "source → target" language pair (Settings ▸
-        // Tutorial & AI Learning) before the first composition, so every label
+        // Prompts) before the first composition, so every label
         // and every AI prompt is built from it right away instead of defaulting
         // to English → Persian for one frame.
         com.example.ui.theme.LanguagePairState.restore(this)
+        com.example.ui.theme.LanguageWeightState.restore(this)
 
         setContent {
             val themeModeOrdinal = sharedPrefs.getInt("theme_mode", 2) // default: SYSTEM
@@ -151,6 +166,11 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     } else {
+                        // The shared study switches (challenge / focus / lesson
+                        // style) are read once at launch and then kept in
+                        // memory, so the reader and the subtitle list never
+                        // disagree about them.
+                        LaunchedEffect(Unit) { StudyModeState.load(this@MainActivity) }
                         MainScreen(
                             onThemeToggle = { saveThemeMode(it) },
                             currentThemeMode = themeMode

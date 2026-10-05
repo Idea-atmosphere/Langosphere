@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.Subtitles
@@ -247,6 +248,12 @@ private fun buildGuideTopics(strings: AppStrings): List<GuideTopic> = listOf(
         title = strings.guideJsonPackageTitle,
         summary = strings.guideJsonPackageSummary,
         points = strings.guideJsonPackagePoints
+    ),
+    GuideTopic(
+        icon = Icons.Filled.Public,
+        title = strings.guideOnlineTabTitle,
+        summary = strings.guideOnlineTabSummary,
+        points = strings.guideOnlineTabPoints
     ),
     GuideTopic(
         icon = Icons.Filled.Style,

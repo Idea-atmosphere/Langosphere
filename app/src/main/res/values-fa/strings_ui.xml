@@ -8,30 +8,30 @@
     <string name="tab_agent">دستیار</string>
     <string name="tab_leitner">ابزار یادگیری بهتر</string>
     <string name="change_theme_cd">تغییر تم</string>
-    <string name="theme_light_menu">☀️ روشن</string>
-    <string name="theme_dark_menu">🌙 تاریک</string>
-    <string name="theme_system_menu">📱 سیستم</string>
-    <string name="app_language_menu">🌐 زبان برنامه</string>
+    <string name="theme_light_menu">روشن</string>
+    <string name="theme_dark_menu">تاریک</string>
+    <string name="theme_system_menu">سیستم</string>
+    <string name="app_language_menu">زبان برنامه</string>
     <string name="app_language_dialog_title">زبان برنامه</string>
     <string name="unlimited_label">نامحدود</string>
-    <string name="max_words_menu_unlimited">📝 تعداد کلمات: نامحدود</string>
-    <string name="max_words_menu_count">📝 تعداد کلمات: %1$s</string>
-    <string name="file_manager_menu">📁 مدیریت فایل‌ها</string>
-    <string name="about_menu">ℹ️ درباره</string>
+    <string name="max_words_menu_unlimited">تعداد کلمات: نامحدود</string>
+    <string name="max_words_menu_count">تعداد کلمات: %1$s</string>
+    <string name="file_manager_menu">مدیریت فایل‌ها</string>
+    <string name="about_menu">درباره</string>
     <string name="video_audio_label">فیلم / آهنگ</string>
     <string name="sub_en_label">زیرنویس %1$s</string>
     <string name="sub_fa_label">زیرنویس %1$s</string>
     <string name="add_subtitle_title">افزودن %1$s</string>
     <string name="choose_subtitle_source_title">روش افزودن زیرنویس را انتخاب کنید</string>
-    <string name="select_subtitle_file_option">📂 انتخاب فایل زیرنویس</string>
+    <string name="select_subtitle_file_option">انتخاب فایل زیرنویس</string>
     <string name="select_subtitle_file_desc">از حافظه دستگاه (SRT، VTT، LRC و...)</string>
-    <string name="paste_from_clipboard_option">📋 جای‌گذاری از کلیپ‌بورد</string>
+    <string name="paste_from_clipboard_option">جای‌گذاری از کلیپ‌بورد</string>
     <string name="paste_from_clipboard_desc">اگر متن یا فایل زیرنویس را کپی کرده‌اید</string>
     <string name="clipboard_subtitle_default_name_en">زیرنویس %1$s (از کلیپ‌بورد).srt</string>
     <string name="clipboard_subtitle_default_name_fa">زیرنویس %1$s (از کلیپ‌بورد).srt</string>
     <string name="clipboard_empty_error">کلیپ‌بورد خالی است؛ ابتدا فایل یا متن زیرنویس را کپی کنید.</string>
     <string name="clipboard_no_subtitle_error">محتوای کلیپ‌بورد زیرنویس معتبر (SRT/VTT/LRC) نیست.</string>
-    <string name="subtitle_loaded_from_clipboard">✅ زیرنویس از کلیپ‌بورد بارگذاری شد: %1$s</string>
+    <string name="subtitle_loaded_from_clipboard">زیرنویس از کلیپ‌بورد بارگذاری شد: %1$s</string>
     <string name="max_words_dialog_title">تعداد کلمات وارد شده</string>
     <string name="max_words_unlimited_all">نامحدود (همه کلمات)</string>
     <string name="max_words_count_text">%1$s کلمه</string>
@@ -45,12 +45,12 @@
     <!-- ── Sora, the ANIME skin's mascot ── -->
     <string name="sora_name">سورا</string>
     <string name="sora_tagline">رفیق زبان‌آموزی‌ات</string>
-    <string name="sora_greet_hello">سلام! من سورا هستم ✦</string>
+    <string name="sora_greet_hello">سلام! من سورا هستم</string>
     <string name="sora_greet_tap_words">روی کلمه‌ها بزن تا معنی‌شان را بگویم!</string>
     <string name="sora_greet_leitner">جعبه لایتنرت %1$s کارت آماده دارد!</string>
     <string name="sora_greet_episode">یک قسمت تماشا کنیم؟</string>
     <string name="sora_open_pdf_hint">یک PDF باز کن و روی هر کلمه بزن!</string>
-    <string name="file_manager_title">📁 مدیریت فایل‌ها</string>
+    <string name="file_manager_title">مدیریت فایل‌ها</string>
     <string name="file_manager_saved_label">فایل‌های ذخیره شده در فضای برنامه:</string>
     <string name="export_all">خروجی همه</string>
     <string name="no_files_saved">هیچ فایلی ذخیره نشده.</string>
@@ -63,6 +63,7 @@
     <string name="ok">باشه</string>
     <string name="text_color_cd">رنگ متن</string>
     <string name="exit_fullscreen_cd">خروج از تمام صفحه</string>
+    <string name="rotate_screen_cd">چرخش صفحه</string>
     <string name="fullscreen_cd">تمام صفحه</string>
     <string name="dict_loaded_active">دیکشنری آفلاین فعال</string>
     <string name="dict_empty">پایگاه‌داده خالی است</string>
@@ -71,8 +72,8 @@
     <string name="clear_all">پاک کردن همه</string>
     <string name="imported_files_count">فایل‌های وارد شده (%1$s)</string>
     <string name="select_text_pdf">انتخاب متن / PDF</string>
-    <string name="prev_page">◀ قبلی</string>
-    <string name="next_page">بعدی ▶</string>
+    <string name="prev_page">قبلی</string>
+    <string name="next_page">بعدی</string>
     <string name="page_of_count">از %1$s صفحه</string>
     <string name="empty_reader_hint">برای شروع مطالعه، یک سند را بارگذاری کنید.</string>
     <string name="color_dialog_subtitle">یکی از رنگ‌های زیر را انتخاب کنید یا رنگ دلخواه خود را بسازید:</string>
@@ -90,14 +91,14 @@
     <string name="preset_indigo">بنفش</string>
     <string name="preset_amber">کهربایی</string>
     <!-- ── LeitnerScreen ── -->
-    <string name="tool_leitner_box">📦 جعبه لایتنر</string>
-    <string name="tool_json_quiz">🧪 آزمون از JSON</string>
+    <string name="tool_leitner_box">جعبه لایتنر</string>
+    <string name="tool_json_quiz">آزمون از JSON</string>
     <string name="export_anki">خروجی Anki (txt)</string>
     <string name="leitner_summary">در مجموع %1$s کارت، %2$s کارت آمادهٔ مرور امروز.</string>
     <string name="review_today_chip">مرور امروز (%1$s)</string>
     <string name="all_cards_chip">همه کارت‌ها (%1$s)</string>
     <string name="leitner_empty_add_hint">هنوز کلمه‌ای به جعبه لایتنر اضافه نکرده‌اید. روی هر کلمه در دیکشنری ضربه بزنید و «افزودن به جعبه لایتنر» را انتخاب کنید.</string>
-    <string name="leitner_empty_done_today">کارتی برای مرور امروز باقی نمانده. 🎉</string>
+    <string name="leitner_empty_done_today">کارتی برای مرور امروز باقی نمانده.</string>
     <string name="leitner_empty_no_cards">هنوز کلمه‌ای به جعبه لایتنر اضافه نکرده‌اید.</string>
     <string name="box_of_five">جعبه %1$s از 5</string>
     <string name="box_label">جعبه %1$s</string>
@@ -110,15 +111,15 @@
     <string name="agent_memory_cd">حافظه AI</string>
     <string name="agent_settings_cd">تنظیمات</string>
     <string name="agent_no_file_loaded">فایلی بارگذاری نشده</string>
-    <string name="agent_memory_active">🧠 حافظه فعال</string>
+    <string name="agent_memory_active">حافظه فعال</string>
     <string name="target_lang_label">زبان مقصد</string>
     <string name="bubble_color_title">رنگ حباب پیام‌ها</string>
     <string name="bubble_color_hint">رنگ پیام‌هایی که شما ارسال می‌کنید و پیام‌هایی که از Agent دریافت می‌کنید را جدا از هم انتخاب کنید</string>
     <string name="sent_messages_label">پیام‌های شما (ارسالی)</string>
     <string name="received_messages_label">پیام‌های دستیار (دریافتی)</string>
     <string name="default_cd">پیش‌فرض</string>
-    <string name="learn_from_subtitles_btn">🧠 یادگیری از زیرنویس</string>
-    <string name="learn_from_dictionary_btn">📖 یادگیری از دیکشنری</string>
+    <string name="learn_from_subtitles_btn">یادگیری از زیرنویس</string>
+    <string name="learn_from_dictionary_btn">یادگیری از دیکشنری</string>
     <string name="stop_cd">توقف</string>
     <string name="agent_thinking">در حال فکر کردن...</string>
     <string name="ask_agent_placeholder">از Agent بپرسید...</string>
@@ -133,7 +134,7 @@
     <string name="prompt_translate">ترجمه</string>
     <string name="prompt_chat">چت</string>
     <string name="prompt_translate_empty">ترجمه خالی‌ها</string>
-    <string name="custom_badge">سفارشی ✓</string>
+    <string name="custom_badge">سفارشی</string>
     <string name="edit_btn">ویرایش</string>
     <string name="reset_btn">بازنشانی</string>
     <string name="editing_prompt_title">ویرایش پرامپت: %1$s</string>
@@ -157,10 +158,10 @@
     <string name="category_dictionary_tip">نکته دیکشنری</string>
     <string name="export_import_title">خروجی/ورودی حافظه AI</string>
     <string name="export_import_desc">تمام داده‌های حافظه (پرامپت‌ها، اصلاحات، مهارت‌ها) به‌صورت یه فایل JSON.</string>
-    <string name="export_to_downloads_btn">📥 خروجی به Downloads</string>
+    <string name="export_to_downloads_btn">خروجی به Downloads</string>
     <string name="import_from_file_label">ورودی از فایل:</string>
-    <string name="select_file_import_btn">📤 انتخاب فایل و وارد کردن</string>
-    <string name="clear_all_memory_btn">🗑 پاک کردن کل حافظه</string>
+    <string name="select_file_import_btn">انتخاب فایل و وارد کردن</string>
+    <string name="clear_all_memory_btn">پاک کردن کل حافظه</string>
     <!-- ── TranslationScreen ── -->
     <string name="sub_en_chip">زیرنویس %1$s</string>
     <string name="sub_fa_chip">زیرنویس %1$s</string>
@@ -178,13 +179,13 @@
     <string name="next_line_cd">خط بعدی</string>
     <string name="batch_info">دسته %1$s از %2$s (خطوط %3$s تا %4$s)</string>
     <string name="next_batch_btn">۱۰۰ خط بعدی</string>
-    <string name="all_done_label">✅ تمام</string>
+    <string name="all_done_label">تمام</string>
     <string name="no_subtitle_loaded_title">زیرنویسی بارگذاری نشده</string>
     <string name="no_subtitle_loaded_hint">از تب پخش‌کننده ویدیو زیرنویس اضافه کنید</string>
     <string name="more_lines_label">... و %1$s خط دیگر</string>
     <string name="ask_about_subtitle_placeholder">پرسش درباره زیرنویس...</string>
     <string name="translation_settings_title">تنظیمات ترجمه هوشمند</string>
-    <string name="translate_target_lang_hint">همان «زبان هدف» بخش آموزش و یادگیری AI است — هر چه بنویسی دقیقاً همان استفاده می‌شود.</string>
+    <string name="translate_target_lang_hint">همان «زبان هدف» بخش «تنظیمات › پرامپت‌ها» است — هر چه بنویسی دقیقاً همان استفاده می‌شود.</string>
     <string name="translation_processing">در حال پردازش...</string>
     <!-- ── VideoPlayerScreen ── -->
     <string name="reset_positions_title">بازنشانی موقعیت دکمه‌ها</string>
@@ -195,18 +196,18 @@
     <string name="player_settings_cd">تنظیمات پخش‌کننده</string>
     <string name="focus_mode_cd">حالت تمرکز</string>
     <string name="smart_pause_settings_cd">تنظیمات توقف هوشمند</string>
-    <string name="smart_pause_panel_title">⚙️ تنظیمات توقف هوشمند</string>
+    <string name="smart_pause_panel_title">تنظیمات توقف هوشمند</string>
     <string name="pause_dim_title">لایه تیره هنگام توقف</string>
     <string name="pause_dim_desc">هنگام توقف، لایه سیاه روی فیلم نمایش داده شود</string>
     <string name="pause_hide_ui_title">مخفی کردن زیرنویس و دکمه‌ها</string>
     <string name="pause_hide_ui_desc">هنگام توقف، زیرنویس و دکمه‌های توقف هوشمند مخفی شوند تا فریم فیلم واضح دیده شود (چرخ‌دنده باقی می‌ماند)</string>
     <string name="pause_require_continue_title">ادامه فقط با دکمه «ادامه پلی»</string>
     <string name="pause_require_continue_desc">لمس هر جای صفحه، پخش را از سر نگیرد؛ برای ادامه حتماً باید دکمه «ادامه پلی» زده شود</string>
-    <string name="audio_track_title">🎧 انتخاب صوت فیلم</string>
+    <string name="audio_track_title">انتخاب صوت فیلم</string>
     <string name="audio_track_desc">برای فیلم‌های چندزبانه (مثلاً دوبله + زبان اصلی) صوت دلخواه را انتخاب کنید</string>
     <string name="audio_track_unavailable">این ویدیو هیچ آهنگ صوتی قابل انتخابی ندارد.</string>
     <string name="audio_track_fallback_name">آهنگ %1$s</string>
-    <string name="audio_playing_hint">🎵 در حال پخش است... ضربه روی کلمات برای ترجمه</string>
+    <string name="audio_playing_hint">در حال پخش است... ضربه روی کلمات برای ترجمه</string>
     <string name="player_settings_title">تنظیمات پخش‌کننده و زیرنویس</string>
     <string name="show_subtitles_title">نمایش زیرنویس‌ها</string>
     <string name="show_subtitles_desc">نمایش یا عدم نمایش متن‌های زیرنویس روی ویدیو</string>
@@ -224,57 +225,89 @@
     <string name="font_fa_label">فونت %1$s (زبان هدف)</string>
     <string name="font_default">پیش‌فرض</string>
     <string name="font_custom_label">دلخواه</string>
-    <string name="import_custom_font_btn">📂 وارد کردن فونت دلخواه</string>
+    <string name="import_custom_font_btn">وارد کردن فونت دلخواه</string>
     <string name="remove_custom_font_btn">حذف فونت دلخواه</string>
-    <string name="sync_title">⏱️ هماهنگ‌سازی زمان زیرنویس‌ها (جلو/عقب بردن)</string>
+    <string name="sync_title">هماهنگ‌سازی زمان زیرنویس‌ها (جلو/عقب بردن)</string>
     <string name="sync_current_offset">%1$s — تغییر فعلی: %2$s ثانیه</string>
     <string name="shift_value_label">تغییر: %1$s ثانیه</string>
     <string name="lang_code_en">%1$s (زبان اصلی)</string>
     <string name="lang_code_fa">%1$s (زبان هدف)</string>
-    <string name="json_sync_row_title">⏱️ هماهنگ‌سازی زمان JSON (جلو/عقب)</string>
+    <string name="json_sync_row_title">هماهنگ‌سازی زمان JSON (جلو/عقب)</string>
     <string name="json_sync_no_timings">این فایل JSON زمان‌بندی ندارد؛ همگام‌سازی فقط بر اساس متن انجام می‌شود و جلو/عقب بردن زمان ممکن نیست.</string>
     <string name="json_reset_btn">بازنشانی تغییر زمان</string>
     <string name="exact_time_label">زمان دقیق (ثانیه)</string>
     <string name="apply_btn">اعمال</string>
     <string name="sync_hint">راهنما: عدد مثبت یعنی زیرنویس جلوتر نمایش داده شود (تأخیر آن جبران شود) و عدد منفی یعنی عقب‌تر.</string>
-    <string name="save_srt_btn">💾 ذخیره فایل SRT</string>
+    <string name="save_srt_btn">ذخیره فایل SRT</string>
     <string name="no_fa_subtitle_to_save">زیرنویس %1$s برای ذخیره وجود ندارد</string>
     <string name="confirm_return_btn">تایید و بازگشت</string>
     <string name="all_subtitles_list_title">لیست تمام زیرنویس‌ها (برای پرش کلیک کنید)</string>
     <string name="load_subtitle_hint">پس از بارگذاری فایل زیرنویس، لیست خطوط اینجا نمایش داده می‌شود.</string>
     <string name="sync_settings_row_title">تنظیم و هماهنگ‌سازی زمان زیرنویس‌ها (Sync)</string>
-    <string name="collapse_sync">بستن تنظیمات ▲</string>
-    <string name="expand_sync">کلیک برای تنظیم زمان ▼</string>
+    <string name="collapse_sync">بستن تنظیمات</string>
+    <string name="expand_sync">کلیک برای تنظیم زمان</string>
     <string name="playing_label">در حال پخش</string>
     <string name="play_from_start_btn">پخش از ابتدا</string>
     <string name="play_auto_stop_btn">پخش و توقف خودکار</string>
     <string name="translating_label">در حال ترجمه...</string>
-    <string name="ai_translate_btn">🤖 ترجمه AI</string>
+    <string name="ai_translate_btn">ترجمه AI</string>
     <!-- ── DictionaryBottomSheet ── -->
     <string name="all_filter_chip">همه</string>
-    <string name="added_to_leitner_label">در جعبه لایتنر ذخیره شد ✓</string>
+    <string name="added_to_leitner_label">در جعبه لایتنر ذخیره شد</string>
     <string name="add_to_leitner_btn">افزودن به جعبه لایتنر</string>
     <string name="search_word_placeholder">جستجوی کلمه...</string>
     <string name="word_label">کلمه</string>
     <string name="search_cd">جستجو</string>
     <string name="subtitle_and_translation_label">متن زیرنویس و ترجمه</string>
     <string name="matched_translation_label">ترجمه منطبق: %1$s</string>
-    <string name="auto_detect_warning">⚠️ تشخیص خودکار — ممکن است اشتباه باشد</string>
+    <string name="auto_detect_warning">تشخیص خودکار — ممکن است اشتباه باشد</string>
     <string name="no_results_found">واژه‌ای یافت نشد. پسوندها (s, ed, ing) را حذف و مجددا جستجو کنید.</string>
     <!-- ── Theme settings section ── -->
-    <string name="theme_section_menu">🎨 تم</string>
-    <string name="theme_section_title">🎨 تم</string>
+    <string name="theme_section_menu">تم</string>
+    <string name="theme_section_title">تم</string>
     <string name="theme_mode_title">حالت تم اصلی</string>
     <string name="theme_mode_desc">روشن، تاریک یا پیروی از سیستم. رنگ‌ها بر اساس Material You (رنگ‌های پویای والپیپر در اندروید ۱۲ و بالاتر) تنظیم می‌شوند.</string>
     <!-- ── Theme settings: the section hub (design / colors / font buttons) ── -->
     <string name="theme_sections_title">بخش‌های ظاهر برنامه</string>
     <string name="theme_sections_desc">هر بخش با یک دکمه در صفحهٔ خودش باز می‌شود و با دکمهٔ «بازگشت» دقیقاً به همین‌جا برمی‌گردید.</string>
-    <string name="theme_design_title">🖌️ طراحی کل برنامه</string>
+    <string name="theme_design_title">طراحی کل برنامه</string>
     <string name="theme_active_value">فعال: %1$s</string>
     <string name="back">بازگشت</string>
     <string name="back_to_theme_btn">بازگشت به تم</string>
     <!-- ── Theme settings: app colors (palettes + custom hex) ── -->
-    <string name="theme_colors_title">🎨 رنگ‌های برنامه</string>
+    <!-- ── Theme settings ▸ Customize ▸ Layout & shapes ── -->
+    <string name="layout_section_title">چیدمان و شکل‌ها</string>
+    <string name="layout_section_row_subtitle">نوار تب‌ها، لبه‌ها و ترتیب بخش‌ها</string>
+    <string name="layout_section_desc">همان طراحی فعلی را دقیق‌تر تنظیم کنید: نوار تب‌ها کدام لبه باشد، لبه‌ها چقدر گرد باشند و بخش‌های برنامه به چه ترتیبی بیایند. هر تغییر بی‌درنگ اعمال می‌شود و در پیش‌نمایش دیده می‌شود.</string>
+    <string name="layout_value_design_default">پیش‌فرض طراحی</string>
+    <string name="layout_tabbar_title">جای نوار تب‌ها</string>
+    <string name="layout_tabbar_desc">هر طراحی نوار تب خودش را نگه می‌دارد؛ این گزینه فقط آن را به لبهٔ بالا یا پایین می‌برد. در نمایشگرهای عریض، طراحی‌هایی که ریل کنار دارند همان را نگه می‌دارند.</string>
+    <string name="layout_tabbar_top">بالا</string>
+    <string name="layout_tabbar_bottom">پایین</string>
+    <string name="layout_corners_title">گردی لبه‌ها</string>
+    <string name="layout_corners_desc">روی کل مقیاس شکل طراحی فعال اعمال می‌شود: دکمه‌ها، کارت‌ها، پنجره‌ها، شیت‌ها و نوار تب‌ها همه با آن هماهنگ می‌شوند.</string>
+    <string name="layout_corner_sharp">تیز</string>
+    <string name="layout_corner_crisp">کم‌گرد</string>
+    <string name="layout_corner_round">گرد</string>
+    <string name="layout_corner_extra">خیلی گرد</string>
+    <string name="layout_tab_order_title">ترتیب بخش‌ها</string>
+    <string name="layout_tab_order_desc">هر بخش برنامه را هر جا خواستید ببرید. نوار تب‌ها و ترتیب کشیدن صفحه‌ها هم همان می‌شود.</string>
+    <string name="layout_move_earlier">انتقال به عقب</string>
+    <string name="layout_move_later">انتقال به جلو</string>
+    <string name="layout_reset_order">بازگرداندن ترتیب پیش‌فرض</string>
+    <string name="layout_preview_title">پیش‌نمایش</string>
+    <string name="layout_preview_desc">با اجزای واقعی برنامه و در طراحی فعال ساخته شده، پس همان چیزی است که انتخاب‌هایتان می‌سازند.</string>
+    <string name="layout_preview_card_title">کارت نمونه</string>
+    <string name="layout_preview_card_body">لبه‌های این کارت، دکمه‌هایش و نوار تب‌ها با انتخاب‌های شما تغییر می‌کنند.</string>
+    <string name="layout_preview_primary_btn">دکمه</string>
+    <string name="layout_preview_secondary_btn">فرعی</string>
+    <string name="layout_preview_chip">برچسب</string>
+    <string name="layout_design_extras_title">تنظیمات ویژهٔ %1$s</string>
+    <string name="layout_design_extras_none">این طراحی فعلاً تنظیم ویژهٔ خودش را ندارد.</string>
+    <string name="theme_customize_title">سفارشی‌سازی</string>
+    <string name="theme_customize_row_subtitle">رنگ‌های برنامه و فونت</string>
+    <string name="theme_customize_desc">ظاهر برنامه را دقیق‌تر تنظیم کنید: رنگ‌های برنامه و فونت‌ها.</string>
+    <string name="theme_colors_title">رنگ‌های برنامه</string>
     <string name="theme_colors_desc">پالت رنگی متناسب با طراحی فعال را انتخاب کنید یا رنگ‌های دلخواه خودتان را بسازید.</string>
     <string name="palette_presets_title">پالت‌های آماده</string>
     <string name="custom_palette_title">پالت دلخواه</string>
@@ -285,20 +318,20 @@
     <string name="hex_input_label">کد hex (مثل #3A5AD4)</string>
     <string name="hex_invalid_error">کد hex معتبر نیست</string>
     <!-- ── Theme settings: fonts (per scope) ── -->
-    <string name="theme_font_title">✍️ فونت</string>
+    <string name="theme_font_title">فونت</string>
     <string name="theme_font_desc">فونت کل برنامه یا فقط یک بخش از آن را تغییر دهید؛ فونت دلخواه (.ttf/.otf) هم می‌توانید وارد کنید.</string>
     <string name="font_scope_app">کل برنامه</string>
     <string name="font_scope_subtitles">فقط زیرنویس‌ها</string>
     <string name="font_scope_reader">فایل‌های خواندنی (PDF و…)</string>
     <string name="font_scope_leitner">کارت‌های لایتنر</string>
     <!-- ── Video import section (collapsible) ── -->
-    <string name="video_import_section_title">🎬 فیلم و زیرنویس</string>
-    <string name="collapse_import_section">جمع کردن ▲</string>
-    <string name="expand_import_section">باز کردن ▼</string>
-    <string name="import_section_scroll_hint">💡 با اسکرول لیست زیرنویس به سمت بالا، این بخش خودکار جمع می‌شود و با برگشت به ابتدای لیست، دوباره باز می‌شود.</string>
-    <!-- ── Tutorial & AI Learning section ── -->
-    <string name="tutorial_menu">🧠 آموزش و یادگیری AI</string>
-    <string name="tutorial_title">🧠 آموزش و یادگیری AI</string>
+    <string name="video_import_section_title">فیلم و زیرنویس</string>
+    <string name="collapse_import_section">جمع کردن</string>
+    <string name="expand_import_section">باز کردن</string>
+    <string name="import_section_scroll_hint">با اسکرول لیست زیرنویس به سمت بالا، این بخش خودکار جمع می‌شود و با برگشت به ابتدای لیست، دوباره باز می‌شود.</string>
+    <!-- ── Prompts section ── -->
+    <string name="tutorial_menu">پرامپت‌ها</string>
+    <string name="tutorial_title">پرامپت‌ها</string>
     <string name="tutorial_learning_level_title">سطح یادگیری شما</string>
     <string name="tutorial_learning_level_desc">توضیحات آموزشی، مثال‌ها و پرامپت‌ها بر اساس این سطح تنظیم می‌شوند.</string>
     <string name="dictionary_json_toggle_title">استفاده از دیکشنری هنگام وجود داده یادگیری JSON</string>
@@ -317,8 +350,8 @@
     <string name="mode_word_analysis_title">تحلیل کلمه</string>
     <string name="mode_word_analysis_desc">ترجمه، نوع کلمه، معنی در جمله، مثال‌ها و توضیح مناسب سطح — برای وقتی روی یک کلمه کلیک می‌کنید</string>
     <string name="prompt_preview_title">متن پرامپت (آماده کپی)</string>
-    <string name="copy_prompt_btn">📋 کپی پرامپت</string>
-    <string name="prompt_copied_toast">✅ پرامپت کپی شد</string>
+    <string name="copy_prompt_btn">کپی پرامپت</string>
+    <string name="prompt_copied_toast">پرامپت کپی شد</string>
     <string name="level_a1">A1 — مبتدی</string>
     <string name="level_a2">A2 — مقدماتی</string>
     <string name="level_b1">B1 — متوسط</string>
@@ -338,49 +371,52 @@
     <string name="pos_phrasal_verb">فعل عبارتی</string>
     <!-- ── JSON subtitle import ── -->
     <string name="sub_json_label">زیرنویس JSON</string>
+    <string name="json_import_sheet_title">JSON یادگیری</string>
+    <string name="json_import_sheet_desc">یک JSON یادگیری برای ویدیو پلیر، تب آنلاین و آزمون — فایل انتخاب کن یا پاسخ AI را پیست کن.</string>
+    <string name="json_partial_import_warning">%1$d سندِ ناقص یا خراب در همین متن نادیده گرفته شد.</string>
     <string name="add_json_subtitle_title">افزودن %1$s</string>
-    <string name="select_json_file_option">📂 انتخاب فایل JSON</string>
+    <string name="select_json_file_option">انتخاب فایل JSON</string>
     <string name="select_json_file_desc">فایل JSON یادگیری زیرنویس (خروجی AI) از حافظه دستگاه</string>
-    <string name="paste_json_option">📋 جای‌گذاری محتوای JSON</string>
+    <string name="paste_json_option">جای‌گذاری محتوای JSON</string>
     <string name="paste_json_desc">متن JSON را مستقیم وارد کنید؛ برنامه خودکار آن را تشخیص می‌دهد</string>
     <string name="json_paste_dialog_title">وارد کردن JSON زیرنویس</string>
     <string name="json_paste_placeholder">محتوای JSON را اینجا جای‌گذاری کنید...</string>
     <string name="json_import_btn">وارد کردن JSON</string>
     <string name="json_load_sample_btn">نمونه JSON</string>
-    <string name="json_detected_label">✅ فرمت JSON یادگیری زیرنویس تشخیص داده شد</string>
+    <string name="json_detected_label">فرمت JSON یادگیری زیرنویس تشخیص داده شد</string>
     <string name="json_not_subtitle_json">محتوا JSON یادگیری زیرنویس معتبر نیست؛ به کلیدهای subtitles / english / translation نیاز دارد.</string>
     <string name="json_parse_error">خطای JSON: %1$s</string>
     <string name="json_empty_file_error">فایل JSON خالی است</string>
-    <string name="json_imported_success">✅ JSON وارد شد: %1$s (%2$s زیرنویس)</string>
+    <string name="json_imported_success">JSON وارد شد: %1$s (%2$s زیرنویس)</string>
     <string name="json_default_name">زیرنویس یادگیری (JSON).json</string>
     <string name="json_active_badge">JSON فعال — اولویت بالا</string>
-    <string name="remove_imported_subtitles_btn">🗑 حذف زیرنویس‌های وارد شده</string>
+    <string name="remove_imported_subtitles_btn">حذف زیرنویس‌های وارد شده</string>
     <string name="remove_subs_confirm_title">حذف همه زیرنویس‌های وارد شده؟</string>
     <string name="remove_subs_confirm_desc">زیرنویس زبان اصلی، زیرنویس زبان هدف و زیرنویس JSON حذف می‌شوند.</string>
     <string name="subtitle_removed_all">همه زیرنویس‌های وارد شده حذف شدند</string>
     <!-- ── JSON chunks: AI answers ("CHUNK 1-50") merged into one file ── -->
-    <string name="json_chunks_title">🧩 بخش‌های JSON (CHUNK)</string>
+    <string name="json_chunks_title">بخش‌های JSON (CHUNK)</string>
     <string name="json_chunks_summary">%1$s پاسخ AI با هم ادغام شده‌اند — مجموعاً %2$s خط.</string>
     <string name="json_chunk_merged_badge">ادغام‌شده</string>
     <string name="json_chunks_hint">پاسخ‌های تکه‌تکهٔ AI (خط اول «CHUNK 1-50») خودکار شناخته، تمیز و با هم ادغام می‌شوند. اگر تکه‌ای اشتباه بود، فقط همان را حذف کن.</string>
-    <string name="json_chunk_imported">✅ %1$s شناخته و وارد شد: %2$s (%3$s زیرنویس)</string>
-    <string name="json_chunk_merged">✅ %1$s با بقیه ادغام شد — %2$s بخش، مجموعاً %3$s خط. اگر اشتباه بود، همان بخش را از لیست CHUNK حذف کن.</string>
-    <string name="json_chunk_reimported">🔁 %1$s دوباره وارد شد و جای نسخهٔ قبلی را گرفت — مجموعاً %2$s خط.</string>
-    <string name="json_chunk_removed">🗑 %1$s حذف شد — %2$s خط باقی ماند.</string>
-    <string name="json_chunk_removed_last">🗑 %1$s حذف شد؛ چون خطی باقی نماند، زیرنویس JSON کامل پاک شد.</string>
+    <string name="json_chunk_imported">%1$s شناخته و وارد شد: %2$s (%3$s زیرنویس)</string>
+    <string name="json_chunk_merged">%1$s با بقیه ادغام شد — %2$s بخش، مجموعاً %3$s خط. اگر اشتباه بود، همان بخش را از لیست CHUNK حذف کن.</string>
+    <string name="json_chunk_reimported">%1$s دوباره وارد شد و جای نسخهٔ قبلی را گرفت — مجموعاً %2$s خط.</string>
+    <string name="json_chunk_removed">%1$s حذف شد — %2$s خط باقی ماند.</string>
+    <string name="json_chunk_removed_last">%1$s حذف شد؛ چون خطی باقی نماند، زیرنویس JSON کامل پاک شد.</string>
     <string name="json_chunk_lines">%1$s خط</string>
-    <string name="json_chunk_detected_label">🧩 پاسخ تکه‌ای AI تشخیص داده شد:</string>
+    <string name="json_chunk_detected_label">پاسخ تکه‌ای AI تشخیص داده شد:</string>
     <string name="json_chunk_auto_strip_hint">خط CHUNK، حصار ``` و متن‌های اضافه خودکار جدا می‌شوند؛ فقط JSON وارد می‌شود.</string>
     <string name="json_chunk_merge_hint">چون یک JSON دیگر باز است، این بخش خودکار با آن ادغام می‌شود.</string>
     <string name="json_chunk_replace_hint">بدون نشانگر CHUNK: این محتوا جای فایل JSON فعلی را می‌گیرد.</string>
     <string name="json_remove_chunk_cd">حذف این بخش</string>
-    <string name="json_remove_only_json_btn">🗑 حذف فقط زیرنویس JSON</string>
+    <string name="json_remove_only_json_btn">حذف فقط زیرنویس JSON</string>
     <string name="json_removed_all">زیرنویس JSON حذف شد</string>
-    <string name="json_export_btn">📥 خروجی JSON به Downloads</string>
-    <string name="json_export_saved">✅ فایل JSON ذخیره شد: %1$s (%2$s خط)</string>
-    <string name="json_export_saved_merged">✅ فایل JSON ذخیره شد: %1$s (%2$s خط، %3$s بخش ادغام‌شده)</string>
+    <string name="json_export_btn">خروجی JSON به Downloads</string>
+    <string name="json_export_saved">فایل JSON ذخیره شد: %1$s (%2$s خط)</string>
+    <string name="json_export_saved_merged">فایل JSON ذخیره شد: %1$s (%2$s خط، %3$s بخش ادغام‌شده)</string>
     <string name="no_json_to_export">زیرنویس JSON برای خروجی گرفتن وجود ندارد</string>
-    <!-- ── Settings ▸ Tutorial & AI Learning: the source → target language pair ── -->
+    <!-- ── Settings ▸ Prompts: the source → target language pair ── -->
     <string name="source_language_label">زبان اصلی (محتوای یادگیری)</string>
     <string name="target_language_label">زبان هدف (ترجمه و توضیح)</string>
     <string name="source_language_hint">مثلاً English</string>
@@ -392,15 +428,15 @@
     <string name="language_pair_subtitle_preview">برچسب زیرنویس‌ها: «زیرنویس %1$s» و «زیرنویس %2$s»</string>
     <string name="language_pair_prompt_preview">پرامپت AI: فایل %1$s را به %2$s ترجمه و توضیح می‌دهد.</string>
     <string name="language_pair_quiz_preview">آزمون JSON: سؤال‌ها از %1$s به %2$s.</string>
-    <string name="language_same_warning">⚠️ زبان اصلی و زبان هدف یکی است؛ معمولاً باید متفاوت باشند.</string>
+    <string name="language_same_warning">زبان اصلی و زبان هدف یکی است؛ معمولاً باید متفاوت باشند.</string>
     <!-- ── Leitner tab ▸ beta: quiz built from an imported JSON package ── -->
-    <string name="json_quiz_card_title">🧪 آزمون از فایل JSON</string>
+    <string name="json_quiz_card_title">آزمون از فایل JSON</string>
     <string name="json_quiz_card_desc">بخش آزمایشی: از واژه‌ها و جمله‌های همان فایل JSON یادگیری، آزمون چهارگزینه‌ای ساخته می‌شود. فایل یا پاسخ AI (حتی با خط CHUNK) را بده، خودکار وارد و استفاده می‌شود.</string>
-    <string name="json_quiz_open_btn">🧪 شروع آزمون JSON</string>
-    <string name="json_quiz_dialog_title">🧪 آزمون از JSON</string>
+    <string name="json_quiz_open_btn">شروع آزمون JSON</string>
+    <string name="json_quiz_dialog_title">آزمون از JSON</string>
     <string name="json_quiz_source_title">منبع آزمون</string>
-    <string name="json_quiz_pick_file_btn">📂 انتخاب فایل JSON</string>
-    <string name="json_quiz_paste_btn">📋 پیست پاسخ AI (با CHUNK)</string>
+    <string name="json_quiz_pick_file_btn">انتخاب فایل JSON</string>
+    <string name="json_quiz_paste_btn">پیست پاسخ AI (با CHUNK)</string>
     <string name="json_quiz_paste_hint">کل پاسخ AI را پیست کن؛ خط «CHUNK 1-50»، حصارها و متن‌های اضافه خودکار جدا می‌شوند و JSON وارد برنامه می‌شود.</string>
     <string name="json_quiz_paste_field_label">محتوای JSON / پاسخ AI</string>
     <string name="json_quiz_import_paste_btn">وارد کردن و ساخت آزمون</string>
@@ -409,30 +445,36 @@
     <string name="json_quiz_no_source">هنوز فایل JSON وارد نشده. یک فایل انتخاب کن یا پاسخ AI را پیست کن.</string>
     <string name="json_quiz_count_title">تعداد سؤال</string>
     <string name="json_quiz_count_chip">%1$s سؤال</string>
-    <string name="json_quiz_start_btn">▶ شروع آزمون</string>
+    <string name="json_quiz_start_btn">شروع آزمون</string>
     <string name="json_quiz_empty">این فایل JSON دادهٔ کافی برای آزمون ندارد؛ به واژه‌ها (words) یا ترجمهٔ جمله‌ها نیاز است.</string>
     <string name="json_quiz_progress">سؤال %1$s از %2$s</string>
     <string name="json_quiz_score_live">درست: %1$s از %2$s</string>
-    <string name="json_quiz_type_word">واژه ⟶ ترجمه</string>
-    <string name="json_quiz_type_reverse">ترجمه ⟶ واژه</string>
-    <string name="json_quiz_type_sentence">جمله ⟶ ترجمه</string>
-    <string name="json_quiz_type_grammar">جمله ⟶ گرامر</string>
+    <string name="json_quiz_type_word">واژه به ترجمه</string>
+    <string name="json_quiz_type_reverse">ترجمه به واژه</string>
+    <string name="json_quiz_type_sentence">جمله به ترجمه</string>
+    <string name="json_quiz_type_grammar">جمله به گرامر</string>
     <string name="json_quiz_context_label">در جمله:</string>
-    <string name="json_quiz_correct">✅ درست!</string>
-    <string name="json_quiz_wrong">❌ نادرست — پاسخ درست: %1$s</string>
+    <string name="json_quiz_correct">درست!</string>
+    <string name="json_quiz_wrong">نادرست — پاسخ درست: %1$s</string>
     <string name="json_quiz_select_hint">یک گزینه را انتخاب کن</string>
-    <string name="json_quiz_next_btn">سؤال بعدی ⟵</string>
-    <string name="json_quiz_finish_title">🏁 آزمون تمام شد</string>
+    <string name="json_quiz_next_btn">سؤال بعدی</string>
+    <string name="json_quiz_finish_title">آزمون تمام شد</string>
     <string name="json_quiz_result">%1$s پاسخ درست از %2$s سؤال (%3$s٪).</string>
     <string name="json_quiz_wrong_list_title">پاسخ‌های اشتباه — افزودن به لایتنر</string>
-    <string name="json_quiz_add_to_leitner_btn">➕ لایتنر</string>
+    <string name="json_quiz_add_to_leitner_btn">افزودن به لایتنر</string>
     <string name="json_quiz_added_to_leitner">به جعبه لایتنر اضافه شد</string>
-    <string name="json_quiz_retry_btn">🔁 آزمون دوباره</string>
-    <string name="json_quiz_new_questions_btn">🎲 سؤال‌های جدید</string>
-    <string name="json_quiz_back_to_source_btn">⟶ بازگشت به انتخاب منبع</string>
+    <string name="json_quiz_retry_btn">آزمون دوباره</string>
+    <string name="json_quiz_new_questions_btn">سؤال‌های جدید</string>
+    <string name="json_quiz_back_to_source_btn">بازگشت به انتخاب منبع</string>
+    <string name="json_quiz_stat_vocab">واژه‌ها %1$d از %2$d</string>
+    <string name="json_quiz_stat_sentence">جمله‌ها %1$d از %2$d</string>
+    <string name="json_quiz_stat_grammar">گرامر %1$d از %2$d</string>
+    <string name="json_quiz_add_all_leitner">افزودن همهٔ غلط‌ها به لایتنر</string>
+    <string name="json_quiz_reveal_options">حدست را زدی؟ برای دیدن گزینه‌ها بزن</string>
+    <string name="json_quiz_all_added">همه به جعبهٔ لایتنر اضافه شد</string>
     <!-- ── Subtitle learning sheet (sentence lesson / word analysis) ── -->
-    <string name="lesson_sheet_title">🎓 درس زیرنویس</string>
-    <string name="word_lesson_sheet_title">📖 یادگیری کلمه</string>
+    <string name="lesson_sheet_title">درس زیرنویس</string>
+    <string name="word_lesson_sheet_title">یادگیری کلمه</string>
     <string name="lesson_translation_label">ترجمه</string>
     <string name="lesson_grammar_label">گرامر</string>
     <string name="lesson_explanation_label">توضیح</string>
@@ -463,9 +505,9 @@
     <string name="dict_not_loaded_for_learning">دیکشنری بارگذاری نشده.</string>
     <string name="learned_words_count">یادگیری از دیکشنری: %1$s کلمه ذخیره شد (از %2$s کلمه)</string>
     <string name="file_not_found_error">فایل پیدا نشد</string>
-    <string name="saved_at_path">✅ ذخیره شد: %1$s</string>
+    <string name="saved_at_path">ذخیره شد: %1$s</string>
     <string name="no_files_to_export">هیچ فایلی برای خروجی وجود ندارد</string>
-    <string name="exported_files_summary">✅ %1$s از %2$s فایل در Downloads ذخیره شد:\n%3$s</string>
+    <string name="exported_files_summary">%1$s از %2$s فایل در Downloads ذخیره شد:\n%3$s</string>
     <string name="no_fa_subtitle_exists">زیرنویس %1$s وجود ندارد</string>
     <string name="srt_create_error">خطا در ایجاد فایل SRT</string>
     <string name="downloads_create_error">خطا در ایجاد فایل در Downloads</string>
@@ -475,7 +517,35 @@
     <string name="word_added_to_leitner">«%1$s» به جعبه لایتنر اضافه شد</string>
     <string name="word_updated_in_leitner">معنای «%1$s» در جعبه لایتنر به‌روزرسانی شد</string>
     <string name="leitner_box_empty">جعبه لایتنر خالی است</string>
-    <string name="anki_export_saved">✅ خروجی Anki ذخیره شد: %1$s</string>
+    <string name="anki_export_saved">خروجی Anki ذخیره شد: %1$s</string>
+    <string name="anki_export_saved_detail">خروجی Anki ذخیره شد: %1$s (%2$d کارت واژه، %3$d کارت جمله)</string>
+    <string name="sentence_added_to_leitner">جمله به جعبهٔ لایتنر اضافه شد</string>
+    <string name="sentence_updated_in_leitner">کارت این جمله از قبل در جعبه بود؛ درس آن به‌روز شد</string>
+    <!-- ── کلیدهای مشترک مطالعه (کتاب‌خوان و زیرنویس) ── -->
+    <string name="study_challenge_mode">حالت چالش: پنهان کردن ترجمه</string>
+    <string name="study_focus_mode">حالت تمرکز: کم‌رنگ شدن بقیهٔ جمله‌ها</string>
+    <string name="study_lesson_display">درس جمله: درون متن یا پنجرهٔ شناور</string>
+    <string name="study_lesson_style">نمایش درس</string>
+    <string name="quiz_source_title">منبع سوال‌ها</string>
+    <string name="quiz_source_book">کتاب‌خوان</string>
+    <string name="quiz_source_movie">زیرنویس فیلم</string>
+    <string name="quiz_source_online">زیرنویس آنلاین</string>
+    <string name="quiz_source_both">همهٔ منابع</string>
+    <string name="quiz_mode_title">نوع آزمون</string>
+    <string name="quiz_mode_standard">معمولی</string>
+    <string name="quiz_mode_blur">معنی جمله</string>
+    <string name="quiz_blur_hint">فقط جمله‌ها: جمله می‌ماند و معنی‌ها پوشیده‌اند؛ اول معنی را از حفظ حدس بزن، بعد بزن تا گزینه‌ها پیدا شوند. با جواب غلط، دکمهٔ یک‌ضربه‌ای «افزودن به لایتنر» پیشنهاد می‌شود.</string>
+    <string name="quiz_source_badge_book">کتاب</string>
+    <string name="quiz_source_badge_movie">فیلم</string>
+    <string name="quiz_source_badge_online">آنلاین</string>
+    <string name="quiz_no_book_material">هنوز جمله‌ای از کتاب وارد نشده است؛ این منبع سوالی ندارد.</string>
+    <string name="quiz_no_online_material">هنوز JSON یادگیری برای ویدیوی آنلایانی وارد نشده؛ در تب آنلاین یک ویدیو را باز کن و پاسخ AI آن را پیست کن.</string>
+    <!-- ── کپی هوشمند صفحات ── -->
+    <string name="copy_next_pages">کپی %1$d صفحهٔ بعد برای هوش مصنوعی</string>
+    <string name="copy_next_pages_range">صفحات %1$d-%2$d • شناسه‌های %3$d-%4$d</string>
+    <string name="copy_next_pages_done">صفحات %1$d-%2$d کپی شد (%3$d جمله)</string>
+    <string name="copy_next_pages_empty">چیزی برای کپی در این سند باقی نمانده است</string>
+    <string name="copy_next_pages_no_document">اول یک PDF یا EPUB باز کن</string>
     <!-- ── Donate popup / About dialog ── -->
     <string name="social_title">ارتباط با ما</string>
     <string name="social_description">برای خبرها، پیشنهادها و پشتیبانی ما را دنبال کنید.</string>
@@ -488,6 +558,26 @@
     <string name="donate_dont_show_again_btn">دیگر نمایش نده</string>
     <string name="about_dialog_title">درباره</string>
     <string name="about_version_label">نسخه %1$s</string>
+    <!-- ── به‌روزرسانی درون‌برنامه‌ای ── -->
+    <string name="update_menu">بررسی به‌روزرسانی</string>
+    <string name="update_dialog_title">نسخه جدیدی در دسترس است</string>
+    <string name="update_current_version_label">نسخه فعلی: %1$s</string>
+    <string name="update_new_version_label">نسخه جدید: %1$s</string>
+    <string name="update_size_label">حجم: %1$s</string>
+    <string name="update_changelog_title">تغییرات این نسخه</string>
+    <string name="update_now_btn">همین حالا به‌روزرسانی کن</string>
+    <string name="update_later_btn">بعداً</string>
+    <string name="update_downloading_label">در حال دانلود به‌روزرسانی… ٪%1$d</string>
+    <string name="update_downloading_no_progress">در حال دانلود به‌روزرسانی…</string>
+    <string name="update_downloaded_label">دانلود کامل شد. در حال باز کردن برنامهٔ نصب…</string>
+    <string name="update_permission_hint">اندروید برای نصب برنامه از این منبع به اجازهٔ شما نیاز دارد. در صفحه‌ای که باز شد، گزینهٔ «نصب برنامه‌های ناشناس» را برای لنگوسفر فعال کنید و سپس دوباره دکمهٔ «همین حالا به‌روزرسانی کن» را بزنید.</string>
+    <string name="update_failed_message">دانلود یا نصب ناموفق بود. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.</string>
+    <string name="update_retry_btn">تلاش دوباره</string>
+    <string name="update_cancel_btn">لغو دانلود</string>
+    <string name="update_close_btn">بستن</string>
+    <string name="update_open_release_page">مشاهدهٔ صفحهٔ انتشار در گیت‌هاب</string>
+    <string name="update_uptodate_toast">شما همین حالا آخرین نسخه را دارید</string>
+    <string name="update_check_failed_toast">بررسی به‌روزرسانی ناموفق بود: %1$s</string>
     <string name="bitcoin_title">بیت‌کوین (Bitcoin)</string>
     <string name="tether_title">تتر (USDT)</string>
     <string name="ton_title">تون (TON)</string>
@@ -507,11 +597,17 @@
     <string name="study_top_unknown_hint">پرتکرارترین کلمات ناشناس — هرکدام را می‌دانی بزن:</string>
     <!-- Phase 2: design -->
     <string name="design_section_title">طراحی کل برنامه</string>
-    <string name="design_section_desc">پنج طراحی کامل و کاملاً متفاوت. با تغییر این گزینه فقط رنگ‌ها عوض نمی‌شود؛ شکل‌ها، فونت‌ها، دکمه‌ها، کارت‌ها، نوار تب‌ها و حتی آیکون‌ها همه با هم تغییر می‌کنند.</string>
+    <string name="design_section_desc">چهار طراحی کامل و کاملاً متفاوت. در متریال ۳ می‌توانید تب بالا یا پایین را انتخاب کنید؛ شکل‌ها، فونت‌ها، دکمه‌ها، کارت‌ها و آیکون‌ها هم با هر طراحی عوض می‌شوند.</string>
     <string name="design_langosphere">لنگوسفر</string>
-    <string name="design_material3">متریال ۳ تب بالا</string>
-    <string name="design_material_you">متریال ۳ تب پایین</string>
+    <string name="design_material3">متریال ۳</string>
+    <string name="design_material3_nav_title">تب‌های متریال ۳</string>
+    <string name="design_material3_nav_desc">تب‌های اصلی کجای صفحه نمایش داده شوند؟</string>
+    <string name="design_material3_top">تب بالا</string>
+    <string name="design_material3_bottom">تب پایین</string>
+    <string name="design_material_you">متریال یو</string>
     <string name="design_neobrutalism">نئوبروتالیسم</string>
+    <string name="design_friendly_neo">نیوبروتالیسم دوستانه</string>
+    <string name="design_friendly_neo_desc">پس‌زمینه کرم گرم، گوشه‌های گرد، رنگ‌های مرجانی و پاستلی و سایه‌های سخت و انتخابی.</string>
     <string name="design_anime">انیمه (کارتونی)</string>
     <string name="design_anime_mascot">نمایش سورا</string>
     <string name="design_anime_mascot_desc">شخصیت سورا در صفحه‌ها نمایش داده شود. با خاموش کردن آن، سورا فقط در آواتار دستیار باقی می‌ماند.</string>
@@ -556,7 +652,7 @@
     <!-- Phase 2: sheet -->
     <string name="speak_cd">خواندن</string>
     <string name="slowly_btn">آهسته</string>
-    <string name="known_marked">بلدم ✓</string>
+    <string name="known_marked">بلدم</string>
     <string name="i_know_this">بلدم</string>
     <!-- Phase 2: leitner -->
     <string name="swipe_hint_cards">برای جابه‌جایی بین کارت‌ها به چپ یا راست بکش • برای دیدن معنی بزن</string>
@@ -628,9 +724,9 @@
     <string name="ai_no_test_lines">خطی برای تست وجود ندارد</string>
     <string name="ai_server_error">خطای سرور %1$s: %2$s</string>
     <string name="ai_empty_response">پاسخ خالی از سرور</string>
-    <string name="ai_note_saved">✓ یادداشت/قانون ذخیره شد.</string>
+    <string name="ai_note_saved">یادداشت/قانون ذخیره شد.</string>
     <string name="sqlite_no_word_table">هیچ جدول واژه/تعریف قابل شناسایی در این فایل دیتابیس پیدا نشد</string>
-    <string name="memory_summary">حافظه هوش مصنوعی:\n  پرامپت‌های سفارشی: %1$s\n  اصلاحات: %2$s\n  قوانین و یادداشت‌ها: %3$s\n  واژه‌نامه: %4$s\n  یادداشت‌های دیکشنری: %5$s\n  ترجمه‌های ذخیره‌شده (کش): %6$s</string>
+    <string name="memory_summary">حافظه هوش مصنوعی:\n پرامپت‌های سفارشی: %1$s\n اصلاحات: %2$s\n قوانین و یادداشت‌ها: %3$s\n واژه‌نامه: %4$s\n یادداشت‌های دیکشنری: %5$s\n ترجمه‌های ذخیره‌شده (کش): %6$s</string>
     <!-- Phase 2: chat -->
     <string name="chat_new_title">چت جدید</string>
     <string name="chat_untitled">چت</string>
@@ -684,7 +780,7 @@
         <item>خانه‌ی انگلیسی، زیرنویس اصلی است و خانه‌ی ترجمه، همان فیلم به زبان خودت. این دو با هم نمایش دوخطی را می‌سازند.</item>
         <item>هر خانه هم فایل از حافظه را می‌پذیرد و هم زیرنویسی که در کلیپ‌بورد کپی کرده‌ای.</item>
         <item>خانه‌ی JSON، بسته‌ی کامل است: کنار ترجمه، برای هر جمله درس، گرامر، ساختار، فهرست کلمه‌ها، تلفظ و مثال هم دارد.</item>
-        <item>این فایل JSON را با پرامپت‌ساز در «تنظیمات ▸ آموزش و یادگیری AI» بساز: حالت و سطح را انتخاب کن، پرامپت را کپی کن، روی زیرنویس‌ات در هر چت هوش مصنوعی اجرا کن و نتیجه را در خانه‌ی JSON جای‌گذاری کن.</item>
+        <item>این فایل JSON را با پرامپت‌ساز در «تنظیمات ▸ پرامپت‌ها» بساز: حالت و سطح را انتخاب کن، پرامپت را کپی کن، روی زیرنویس‌ات در هر چت هوش مصنوعی اجرا کن و نتیجه را در خانه‌ی JSON جای‌گذاری کن.</item>
         <item>پنجره‌ی جای‌گذاری، قالب را همان لحظه تشخیص می‌دهد و یک نمونه‌ی آماده هم دارد تا قبل از کل فیلم، ورود اطلاعات را آزمایش کنی.</item>
         <item>کلید «دیکشنری یا JSON» تعیین می‌کند وقتی بسته‌ی JSON بارگذاری شده، ضربه روی کلمه چه چیزی باز کند: دیکشنری آفلاین یا توضیح JSON.</item>
         <item>دکمه‌ی «حذف زیرنویس‌های وارد‌شده» با یک ضربه داده‌های انگلیسی، ترجمه و JSON را پاک می‌کند و پخش‌کننده هم می‌تواند ترجمه‌ی فعلی را به‌شکل فایل SRT بیرون بدهد.</item>
@@ -730,7 +826,7 @@
         <item>حداکثر تعداد کلمه، متن‌خوان را از فایل‌های غول‌آسا حفظ می‌کند؛ عدد صفر یعنی بی‌نهایت.</item>
         <item>مدیریت فایل، هر چیزی که برنامه ذخیره کرده (خروجی‌ها، زیرنویس‌ها، پشتیبان‌ها) را فهرست می‌کند و می‌توانی هر کدام را بیرون بدهی یا پاک کنی.</item>
         <item>بخش پوسته، انتخاب‌گر کامل تم و رنگ‌های تأکیدی و رنگ زیرنویس‌ها را دارد.</item>
-        <item>بخش آموزش و یادگیری AI همان پرامپت‌ساز است: دو کادر زبان (زبان اصلی = زبانی که می‌خواهی یاد بگیری، زبان هدف = زبانی که می‌خواهی آموزش به آن باشد)، سطح یادگیری، کلید دیکشنری یا JSON، شش حالت پرامپت، اندازه‌ی هر بسته، یک نمونه‌ی حل‌شده و دکمه‌ی کپی. دایره‌ی ! کنار هر کادر توضیحش را نشان می‌دهد و هر چه بنویسی دقیقاً همان نوشته استفاده می‌شود — برنامه هیچ زبانی را به نام دیگری تبدیل نمی‌کند. همین جفت زبان، برچسب زیرنویس‌ها را هم در بقیه‌ی برنامه می‌سازد.</item>
+        <item>بخش «پرامپت‌ها» همان پرامپت‌ساز است: دو کادر زبان (زبان اصلی = زبانی که می‌خواهی یاد بگیری، زبان هدف = زبانی که می‌خواهی آموزش به آن باشد)، سطح یادگیری، کلید دیکشنری یا JSON، شش حالت پرامپت، اندازه‌ی هر بسته، یک نمونه‌ی حل‌شده و دکمه‌ی کپی. دایره‌ی ! کنار هر کادر توضیحش را نشان می‌دهد و هر چه بنویسی دقیقاً همان نوشته استفاده می‌شود — برنامه هیچ زبانی را به نام دیگری تبدیل نمی‌کند. همین جفت زبان، برچسب زیرنویس‌ها را هم در بقیه‌ی برنامه می‌سازد.</item>
         <item>راهنمای برنامه، همین پنجره است.</item>
         <item>درباره، نسخه‌ی برنامه و راه‌های حمایت را نشان می‌دهد.</item>
     </string-array>
@@ -744,4 +840,190 @@
         <item>کنترل‌های پخش‌کننده خودشان محو می‌شوند. یک ضربه برمی‌گرداندشان و مجموعه‌ی ابزار هم وقتی کنترل‌ها پنهان شوند، خودش جمع می‌شود.</item>
         <item>هیچ چیزی جایی بارگذاری نمی‌شود مگر روی سرویس هوش مصنوعی خودت؛ دیکشنری‌ها، کارت‌ها و حافظه همه روی دستگاه می‌مانند.</item>
     </string-array>
+    <!-- ── تب آنلاین (Invidious / Piped) ── -->
+    <string name="tab_online">آنلاین</string>
+    <string name="online_title">درس‌های آنلاین</string>
+    <string name="online_subtitle">یوتیوب از طریق سرورهای Invidious / Piped</string>
+    <string name="online_search_placeholder">جستجوی ویدیو یا چسباندن لینک یوتیوب…</string>
+    <string name="online_feed_chip">دنبال‌شده‌ها</string>
+    <string name="online_feed_title">تازه‌ترین ویدیوهای کانال‌های دنبال‌شده</string>
+    <string name="online_search_results_for">نتایج برای «%1$s»</string>
+    <string name="online_refresh">تازه‌سازی</string>
+    <string name="online_retry">تلاش دوباره</string>
+    <string name="online_load_more">بارگذاری بیشتر</string>
+    <string name="online_live_badge">زنده</string>
+    <string name="online_views">%1$s بازدید</string>
+    <string name="online_error_title">سرورها پاسخ ندادند</string>
+    <string name="online_all_instances_failed">هیچ‌کدام از سرورهای فعال پاسخ ندادند. سرورهای عمومی می‌آیند و می‌روند — فهرست سرورها را باز کن و سرور دیگری اضافه یا فعال کن.</string>
+    <string name="online_feed_unavailable">ویدیوهای تازه‌ی کانال‌ها بارگذاری نشد. اتصال اینترنت را بررسی کن یا سرور دیگری را امتحان کن.</string>
+    <string name="online_bot_blocked_hint">یوتیوب فعلاً این سرورهای عمومی را محدود کرده است («برای تأیید اینکه ربات نیستی وارد شو»). این مشکل سمت سرور است — چند دقیقه‌ی دیگر دوباره امتحان کن، سرور دیگری را به بالای فهرست ببر یا سرور شخصی خودت را اضافه کن.</string>
+    <string name="online_open_externally">باز کردن در برنامه‌ای دیگر</string>
+    <string name="online_feed_fallback_note">وقتی هیچ سروری نتواند ویدیوهای یک کانال را فهرست کند، فقط برای فهرست از فید عمومی همان کانال در youtube.com استفاده می‌شود. زیرنویس همیشه از سرور گرفته می‌شود.</string>
+    <string name="online_manage_instances_btn">مدیریت سرورها</string>
+    <string name="online_no_channels_title">هنوز کانالی را دنبال نمی‌کنی</string>
+    <string name="online_no_channels_desc">روی + بزن تا کانالی را جستجو کنی یا لینکش را بچسبانی، یا فهرست پیش‌فرض معلم‌های انگلیسی را برگردان.</string>
+    <string name="online_no_videos_title">فعلاً چیزی اینجا نیست</string>
+    <string name="online_no_videos_desc">برای این فهرست ویدیویی برنگشت.</string>
+    <string name="online_instances_title">سرورها (Instances)</string>
+    <string name="online_instances_desc">برنامه از طریق این واسط‌های آزاد پخش می‌کند و به‌ترتیب امتحانشان می‌کند تا یکی پاسخ دهد. سرور خودت را اضافه کن (سرور شخصی هم کار می‌کند)، یکی را خاموش کن یا به بالای فهرست ببر. آدرس Piped باید آدرس API باشد (مثلاً pipedapi.example.org). آدرس‌ها باید HTTPS باشند (http ساده فقط برای localhost).</string>
+    <string name="online_instances_summary">%1$d سرور تنظیم شده · %2$d سرور فعال</string>
+    <string name="online_check_all">بررسی همه</string>
+    <string name="online_check_instance">تست این اینستنس</string>
+    <string name="online_instance_checking">در حال بررسی…</string>
+    <string name="online_instance_playable">قابل پخش</string>
+    <string name="online_instance_failed_disabled">خراب · خاموش شد</string>
+    <string name="online_instance_not_checked">بررسی نشده</string>
+    <string name="online_instances_checked">%1$d سرور بررسی شد: %2$d قابل پخش، %3$d خاموش شد.</string>
+    <string name="online_instance_url_placeholder">https://instance.example.org</string>
+    <string name="online_instance_url_invalid">این آدرس معتبر به نظر نمی‌رسد</string>
+    <string name="online_kind_auto">تشخیص خودکار</string>
+    <string name="online_add_instance">افزودن سرور</string>
+    <string name="online_instance_active">فعال</string>
+    <string name="online_move_to_top">اول امتحان شود</string>
+    <string name="online_reset_instances">بازنشانی فهرست</string>
+    <string name="online_follow_channel_btn">دنبال‌کردن کانال</string>
+    <string name="online_follow_channel_title">دنبال‌کردن کانال</string>
+    <string name="online_follow_channel_desc">با نام جستجو کن، یا لینک کانال، شناسه‌ی UC… یا @handle را بچسبان.</string>
+    <string name="online_follow_placeholder">نام کانال، لینک یا @handle</string>
+    <string name="online_default_channels_hint">برنامه با فهرستی از معلم‌های انگلیسی شروع می‌کند (BBC Learning English، English with Lucy، Rachel’s English و…). کانال‌های حذف‌شده را می‌توانی همین‌جا برگردانی.</string>
+    <string name="online_restore_default_channels">برگرداندن معلم‌های پیش‌فرض</string>
+    <string name="online_follow_btn">دنبال کن</string>
+    <string name="online_unfollow_btn">لغو دنبال‌کردن</string>
+    <string name="online_unfollow_confirm_title">%1$s دیگر دنبال نشود؟</string>
+    <string name="online_unfollow_confirm_desc">کانال از فهرستت حذف می‌شود؛ هر وقت خواستی می‌توانی دوباره دنبالش کنی.</string>
+    <string name="online_channel_followed">%1$s دنبال شد</string>
+    <string name="online_channel_unfollowed">%1$s دیگر دنبال نمی‌شود</string>
+    <string name="online_channel_link_invalid">لینک کانال، شناسه‌ی UC… یا @handle را بچسبان — یا با نام جستجو کن.</string>
+    <string name="online_loading_video">در حال بارگذاری…</string>
+    <string name="online_resolving_stream">در حال گرفتن آدرس پخش از سرور…</string>
+    <string name="online_no_playable_stream">این سرور برای این ویدیو جریان قابل پخشی برنگرداند. سرور یا کیفیت دیگری را امتحان کن.</string>
+    <string name="online_fallback_player">پخش در حالت جایگزین</string>
+    <string name="online_fallback_active">حالت جایگزین (پخش‌کنندهٔ وب یوتیوب)</string>
+    <string name="online_direct_playback">تلاش دوباره برای پخش مستقیم</string>
+    <string name="online_fallback_auto_reason">پخش مستقیم روی سرورهای امتحان‌شده مسدود بود؛ ویدیو در حالت جایگزین پخش می‌شود. زیرنویس‌ها و درس JSON همچنان همگام می‌مانند.</string>
+    <string name="online_fallback_failed">پخش در حالت جایگزین هم ممکن نشد.</string>
+    <string name="online_fallback_host">پخش‌کنندهٔ وب یوتیوب</string>
+    <string name="online_direct_source">یوتیوب (مستقیم، بدون شلوغی)</string>
+    <string name="online_hub_search_hint">جستجو یا الصاق لینک ویدیو (YouTube)…</string>
+    <string name="online_paste_cd">الصاق از کلیپ‌بورد</string>
+    <string name="online_clipboard_empty">کلیپ‌بورد خالیه</string>
+    <string name="online_tab_following">دنبال‌شده‌ها</string>
+    <string name="online_tab_saved">ذخیره‌شده‌ها</string>
+    <string name="online_tab_history">تاریخچه</string>
+    <string name="online_tray_follow">دنبال کردن کانال</string>
+    <string name="online_tray_all">همه</string>
+    <string name="online_channel_new_cd">ویدیوی جدید</string>
+    <string name="online_saved_empty_title">هنوز ویدیویی ذخیره نکردی</string>
+    <string name="online_saved_empty_desc">روی ویدیوی در حال پخش، یا «ذخیره ویدیو» در منوی هر کارت بزن تا برای مطالعه اینجا بمونه.</string>
+    <string name="online_history_empty_title">هنوز ویدیویی تماشا نکردی</string>
+    <string name="online_history_empty_desc">ویدیوهایی که باز می‌کنی اینجا نشون داده می‌شن؛ جدیدترین اول.</string>
+    <string name="online_status_smart">هوشمند / دارای ترجمه</string>
+    <string name="online_status_raw">زیرنویس انگلیسی</string>
+    <string name="online_menu_save">ذخیره ویدیو</string>
+    <string name="online_menu_unsave">حذف از ذخیره‌شده‌ها</string>
+    <string name="online_menu_copy_url">کپی لینک</string>
+    <string name="online_menu_reextract">استخراج دوباره</string>
+    <string name="online_menu_remove_history">حذف از تاریخچه</string>
+    <string name="online_clear_history">پاک کردن تاریخچه</string>
+    <string name="online_more_cd">گزینه‌های بیشتر</string>
+    <string name="online_saved_toast">به ذخیره‌شده‌ها اضافه شد</string>
+    <string name="online_unsaved_toast">از ذخیره‌شده‌ها حذف شد</string>
+    <string name="online_bookmark_cd">ذخیره ویدیو</string>
+    <string name="online_tb_import_json">وارد کردن JSON</string>
+    <string name="online_tb_loop">تکرار جمله</string>
+    <string name="online_tb_challenge">حالت چالش (محو)</string>
+    <string name="online_cue_play_cd">پخش این بخش</string>
+    <string name="online_cue_leitner">+ لایتنر</string>
+    <string name="online_cue_leitner_saved">در لایتنر</string>
+    <string name="online_cue_leitner_cd">افزودن کل جمله به لایتنر</string>
+    <string name="online_cue_lesson_badge">نکته گرامری</string>
+    <string name="online_cue_translate_cd">ترجمه‌ی این جمله با هوش مصنوعی</string>
+    <string name="online_captions_menu">زیرنویس‌ها</string>
+    <string name="online_quality_label">کیفیت</string>
+    <string name="online_video_info">جزئیات ویدیو</string>
+    <string name="online_no_captions">زیرنویس</string>
+    <string name="online_no_captions_available">بدون زیرنویس</string>
+    <string name="online_captions_empty">این زیرنویس خالی بود</string>
+    <string name="online_no_captions_loaded">اول یک زیرنویس را بارگذاری کن</string>
+    <string name="online_export_chip">خروجی / کپی</string>
+    <string name="online_export_title">زیرنویس‌ها</string>
+    <string name="online_export_desc">%1$s خط بارگذاری شده. کپی‌شان کن یا در پوشه‌ی Downloads ذخیره کن.</string>
+    <string name="online_copy_srt">کپی به‌صورت SRT</string>
+    <string name="online_copy_text">کپی به‌صورت متن ساده</string>
+    <string name="online_save_srt">ذخیره‌ی SRT در Downloads</string>
+    <string name="online_save_text">ذخیره‌ی متن (.txt) در Downloads</string>
+    <string name="online_send_to_video_tab">استفاده به‌عنوان زیرنویس تب ویدیو</string>
+    <string name="online_copy_link">کپی لینک ویدیو</string>
+    <string name="online_captions_copied">%1$s خط در کلیپ‌بورد کپی شد</string>
+    <string name="online_ai_copy_loading">در حال دریافت زیرنویس... لطفاً چند لحظه صبر کنید</string>
+    <string name="online_ai_copy_no_captions">این ویدیو زیرنویسی ندارد (هیچ منبعی زیرنویس آن را نداد)</string>
+    <!-- ── تب آنلاین: کشوی ابزار زیر ویدیو ── -->
+    <string name="online_drawer_title">ابزارهای پخش</string>
+    <string name="online_drawer_toggle_cd">نمایش یا پنهان‌کردن ابزارهای پخش</string>
+    <string name="online_save_while_playing">ذخیره هنگام پخش</string>
+    <string name="online_save_while_playing_cd">ذخیرهٔ بخش‌های دیده‌شدهٔ ویدیو و زیرنویسش برای تماشای بعدی</string>
+    <string name="online_watch_cache_cd">مدیریت حافظهٔ ذخیرهٔ هنگام پخش: کلید ذخیره، حجم‌ها و کیفیت پیش‌فرض</string>
+    <string name="online_watch_cache_global_desc">وقتی روشن است، بخش‌های دیده‌شدهٔ همهٔ ویدیوهای آنلاین و زیرنویس‌هایشان برای تماشای بعدی ذخیره می‌شود.</string>
+    <string name="online_watch_cache_storage">ذخیره‌شده روی این دستگاه</string>
+    <string name="online_watch_cache_empty">هنوز چیزی ذخیره نشده — با کلید روشن چیزی تماشا کنید.</string>
+    <string name="online_watch_cache_delete_all">حذف همه</string>
+    <string name="online_watch_cache_delete_one_cd">حذف داده‌های ذخیره‌شدهٔ این ویدیو</string>
+    <string name="online_watch_cache_open_cd">بازکردن این ویدیو</string>
+    <string name="online_watch_cache_default_quality">کیفیت پیش‌فرض</string>
+    <string name="online_watch_cache_default_quality_desc">کیفیتی که ویدیوهای جدید با آن پخش و ذخیره می‌شوند.</string>
+    <string name="online_quality_auto">خودکار</string>
+    <string name="online_quality_highest">بالاترین</string>
+    <string name="online_watch_cache_total">در کل: %1$s</string>
+    <string name="online_quality_btn">کیفیت</string>
+    <string name="online_quality_none">در پخش جایگزین در دسترس نیست</string>
+    <string name="online_copy_raw_btn">کپی خام زیرنویس</string>
+    <string name="online_raw_copied_vtt">زیرنویس خام (VTT) کپی شد — %1$d خط، بدون هیچ پرامپتی</string>
+    <string name="online_raw_copied_srt">زیرنویس خام (SRT) کپی شد — %1$d خط، بدون هیچ پرامپتی</string>
+    <string name="online_import_main_btn">زیرنویس اصلی</string>
+    <string name="online_import_translation_btn">زیرنویس دوم</string>
+    <string name="online_import_pasted_name">پیست از کلیپ‌بورد</string>
+    <string name="online_import_subtitle_loaded">%1$s بارگذاری شد (%2$d خط)</string>
+    <string name="online_import_failed">خواندن فایل زیرنویس ناموفق بود</string>
+    <string name="online_captions_loading_chip">در حال دریافت زیرنویس…</string>
+    <string name="online_link_copied">لینک کپی شد</string>
+    <string name="online_attach_json_chip">پیوست درس JSON</string>
+    <string name="online_json_attached">درس JSON (%1$s خط)</string>
+    <string name="online_pick_caption_title">زیرنویس‌های ویدیو</string>
+    <string name="online_pick_caption_desc">زیرنویس اصلی به‌عنوان زیرنویس زبان مبدأ نمایش داده می‌شود — روی کلمه بزن برای دیکشنری، روی خط بزن برای درس.</string>
+    <string name="online_pick_translation_title">زیرنویس ترجمه</string>
+    <string name="online_pick_translation_desc">زیرنویس دوم (اختیاری) که به‌عنوان ترجمه زیر هر خط نمایش داده می‌شود.</string>
+    <string name="online_main_track_chip">اصلی</string>
+    <string name="online_translation_track_chip">ترجمه</string>
+    <string name="online_no_translation_track">بدون زیرنویس ترجمه</string>
+    <string name="online_auto_generated">خودکار</string>
+    <string name="online_hide_captions">پنهان‌کردن زیرنویس</string>
+    <string name="online_streams_info">%1$s جریان مستقیم · HLS: %2$s · %3$s زیرنویس</string>
+    <string name="online_yes">دارد</string>
+    <string name="online_no">ندارد</string>
+    <string name="guide_online_tab_title">تب آنلاین</string>
+    <string name="guide_online_tab_summary">کانال معلم‌ها، زیرنویس‌ها و درس JSON</string>
+    <!-- راهنمای تب آنلاین -->
+    <string-array name="guide_online_tab_points">
+        <item>این تب یوتیوب را از طریق سرورهای عمومی Invidious و Piped پخش می‌کند — واسط‌های نرم‌افزار آزاد — پس چیزی مستقیم با گوگل حرف نمی‌زند و به حساب کاربری هم نیازی نیست.</item>
+        <item>با فهرستی از کانال‌های معلم‌های انگلیسی شروع می‌شود (BBC Learning English، English with Lucy، Rachel’s English، mmmEnglish، Speak English With Vanessa و…). فهرست اول تازه‌ترین ویدیوهای آن‌هاست؛ روی چیپ هر کانال بزن تا همه‌ی ویدیوهایش را ببینی، و با «لغو دنبال‌کردن» حذفش کن.</item>
+        <item>دکمه‌ی + کانال تازه‌ای را دنبال می‌کند: با نام جستجو کن یا لینک، شناسه یا @handle کانال را بچسبان. جعبه‌ی جستجو لینک ویدیوی یوتیوب را هم می‌پذیرد و مستقیم بازش می‌کند.</item>
+        <item>پخش‌کننده همان پخش‌کننده‌ی تب ویدیوست: روی کلمه بزن برای دیکشنری، روی خط بزن برای درس، تکرار یک خط، تغییر سرعت، مکث هوشمند و حالت تمرکز.</item>
+        <item>چیپ زیرنویس فهرست زیرنویس‌های ویدیو را نشان می‌دهد؛ زیرنویس انگلیسی خودش بارگذاری می‌شود. زیرنویس دوم را می‌توان به‌عنوان خط ترجمه نشان داد و دکمه‌ی ترجمه‌ی خط‌به‌خط با هوش مصنوعی هم اینجا کار می‌کند.</item>
+        <item>«خروجی / کپی» زیرنویس‌ها را در کلیپ‌بورد می‌گذارد (SRT یا متن ساده) یا در Downloads ذخیره می‌کند، و می‌تواند آن‌ها را به‌عنوان زیرنویس معمولی به تب ویدیو بدهد.</item>
+        <item>«پیوست درس JSON» همان پنجره‌ی انتخاب فایل / جای‌گذاری تب ویدیو را باز می‌کند، پس فایل آموزشی ساخته‌شده با هوش مصنوعی با درس‌ها، تکه‌ها و هم‌زمان‌سازی‌اش همراه کلیپ آنلاین می‌آید.</item>
+        <item>فهرست سرورها (آیکون سرور) مال خودت است: سرور شخصی یا سرور عمومی دیگری اضافه کن، یکی را خاموش کن یا به بالا ببر. اگر چیزی بارگذاری نشد یا کلیپی پخش نشد («برای تأیید اینکه ربات نیستی وارد شو»)، یوتیوب آن سرور را محدود کرده است — چند دقیقه صبر کن یا سرور دیگری را امتحان کن.</item>
+        <item>فهرست کانال‌ها به‌خاطر یک سرور خراب خالی نمی‌ماند: وقتی هیچ سروری نتواند ویدیوهای کانالی را فهرست کند، فید عمومی همان کانال در youtube.com فهرست را پر می‌کند؛ زیرنویس همچنان از سرور گرفته می‌شود.</item>
+        <item>پخش روی یک سرور گیر نمی‌کند: خطای ۴۰۳، ۵xx یا تمام‌شدن مهلت، خودکار سرور بعدی را امتحان می‌کند (تا چهار سرور)، اول MP4 دارای صدا و تصویر باز می‌شود، و اگر یوتیوب پخش مستقیم را روی همه‌ی سرورها ببندد، ویدیو در «پخش در حالت جایگزین» (پخش‌کننده‌ی رسمی یوتیوب) با زیرنویس همگام پخش می‌شود. با دکمه‌ی زیر عنوان هر وقت خواستی بین این دو جابه‌جا شو.</item>
+    </string-array>
+
+    <!-- دکمهٔ یکپارچهٔ تنظیمات پخش‌کننده و کنترل‌های کوچک هر cue. -->
+    <string name="cue_replay_cd">پخش دوبارهٔ این بخش</string>
+    <string name="cue_loop_cd">تکرار پیوستهٔ این بخش</string>
+    <string name="cue_pause_at_end_cd">توقف نزدیک پایان بخش</string>
+    <string name="player_learning_title">پخش و مطالعه</string>
+    <string name="player_focus_mode">حالت تمرکز</string>
+    <string name="player_font_smaller">کوچک‌تر کردن متن زیرنویس</string>
+    <string name="player_font_larger">بزرگ‌تر کردن متن زیرنویس</string>
+    <string name="player_extra_actions">کارهای دیگر پخش‌کننده</string>
+
 </resources>

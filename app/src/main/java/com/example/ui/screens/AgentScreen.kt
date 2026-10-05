@@ -52,6 +52,8 @@ import com.example.logic.ChatSession
 import com.example.logic.autoTextDirection
 import com.example.model.SubtitleEntry
 import com.example.ui.components.EmptyState
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.example.ui.components.rememberConfinedSwipeConnection
 import com.example.ui.components.GlassCard
 import com.example.ui.components.GradientButton
 import com.example.ui.components.PillTone
@@ -318,7 +320,7 @@ fun AgentScreen(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                modifier = Modifier.fillMaxWidth().nestedScroll(rememberConfinedSwipeConnection()).horizontalScroll(rememberScrollState())
             ) {
                 if (subEnList.isNotEmpty()) {
                     StatusPill(text = "EN · ${subEnList.size}", tone = PillTone.Accent)
@@ -420,7 +422,7 @@ fun AgentScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().nestedScroll(rememberConfinedSwipeConnection()).horizontalScroll(rememberScrollState())) {
                         chatColorOptions.forEach { swatch ->
                             BubbleSwatch(
                                 color = swatch,
@@ -443,7 +445,7 @@ fun AgentScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().nestedScroll(rememberConfinedSwipeConnection()).horizontalScroll(rememberScrollState())) {
                         chatColorOptions.forEach { swatch ->
                             BubbleSwatch(
                                 color = swatch,
@@ -1037,7 +1039,7 @@ private fun PromptsTab(
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                    modifier = Modifier.fillMaxWidth().nestedScroll(rememberConfinedSwipeConnection()).horizontalScroll(rememberScrollState())
                 ) {
                     variables.forEach { variable ->
                         FilterChip(
@@ -1210,8 +1212,8 @@ private fun CorrectionsTab(context: Context, strings: AppStrings, onRefresh: () 
                     Column(modifier = Modifier.padding(10.dp)) {
                         Text(strings.sourceLabel(corr.sourceText.take(60)), style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Start, textDirection = strings.sourceLabel(corr.sourceText.take(60)).autoTextDirection()), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(3.dp))
-                        Text("✕ ${corr.wrongTranslation.take(60)}", style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Start, textDirection = corr.wrongTranslation.take(60).autoTextDirection()), color = MaterialTheme.colorScheme.error)
-                        Text("✓ ${corr.correctTranslation.take(60)}", style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Start, textDirection = corr.correctTranslation.take(60).autoTextDirection()), color = MaterialTheme.colorScheme.primary)
+                        Text(corr.wrongTranslation.take(60), style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Start, textDirection = corr.wrongTranslation.take(60).autoTextDirection()), color = MaterialTheme.colorScheme.error)
+                        Text(corr.correctTranslation.take(60), style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Start, textDirection = corr.correctTranslation.take(60).autoTextDirection()), color = MaterialTheme.colorScheme.primary)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             TextButton(onClick = { AiMemoryManager.removeCorrection(context, corr.id); localRefresh++; onRefresh() }, contentPadding = PaddingValues(horizontal = 8.dp)) {
                                 Text(strings.deleteCd, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
@@ -1306,7 +1308,7 @@ private fun SkillsTab(context: Context, strings: AppStrings, onRefresh: () -> Un
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = content, onValueChange = { content = it }, label = { Text(strings.textLabel, fontSize = 11.sp) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp), textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.Start, textDirection = content.autoTextDirection()))
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth().nestedScroll(rememberConfinedSwipeConnection()).horizontalScroll(rememberScrollState())) {
                         listOf("user_note" to strings.categoryUserNote, "translation_rule" to strings.categoryTranslationRule, "skill" to strings.categorySkill, "dictionary_tip" to strings.categoryDictionaryTip).forEach { (cat, label) ->
                             FilterChip(selected = category == cat, onClick = { category = cat }, label = { Text(label, fontSize = 10.sp) })
                         }
@@ -1414,8 +1416,8 @@ private suspend fun sendChat(context: Context, input: String, apiKey: String, ba
             val changes = parseSubtitleChanges(response)
             val readerUpdate = parseReaderTextUpdate(response)
             var displayResponse = response
-            if (changes != null) { val updated = workingSubFa.toMutableList(); changes.forEach { (idx, text) -> if (idx - 1 in updated.indices) updated[idx - 1] = updated[idx - 1].copy(text = text) }; onUpdateSubFa(updated); displayResponse = "✓ ${changes.size}\n$response" }
-            if (readerUpdate != null) { onUpdateReaderText(readerUpdate); displayResponse = "✓\n$response" }
+            if (changes != null) { val updated = workingSubFa.toMutableList(); changes.forEach { (idx, text) -> if (idx - 1 in updated.indices) updated[idx - 1] = updated[idx - 1].copy(text = text) }; onUpdateSubFa(updated); displayResponse = response }
+            if (readerUpdate != null) { onUpdateReaderText(readerUpdate); displayResponse = response }
             onMessages(currentMessages + Pair("user", userMessage) + Pair("assistant", displayResponse))
         }, onFailure = { e -> onError(strings.apiErrorMessage(e)); onMessages(currentMessages + Pair("user", userMessage)) })
     } catch (e: Exception) { onError(strings.apiErrorMessage(e)); onMessages(currentMessages + Pair("user", userMessage)) }

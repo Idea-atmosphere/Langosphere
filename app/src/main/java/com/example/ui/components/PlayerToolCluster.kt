@@ -3,31 +3,20 @@ package com.example.ui.components
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.example.ui.components.anime.inkBorder
-import com.example.ui.components.anime.inkShadow
-import com.example.ui.theme.isAnimeDesign
-import com.example.ui.theme.isNeobrutalismDesign
 
 /**
  * One action inside [PlayerToolCluster].
@@ -47,9 +36,9 @@ data class PlayerToolAction(
  * behind one button: tapping it slides the rest out with a staggered spring,
  * tapping again folds them back.
  *
- * Deliberately built from [animateFloatAsState] and per-item width instead of
- * AnimatedVisibility, because this cluster is placed inside boxes nested in
- * columns where the scoped AnimatedVisibility overloads cannot resolve.
+ * Deliberately built from [animateFloatAsState] rather than AnimatedVisibility,
+ * because this cluster is placed inside boxes nested in columns where the
+ * scoped AnimatedVisibility overloads cannot resolve.
  */
 @Composable
 fun PlayerToolCluster(
@@ -78,61 +67,36 @@ fun PlayerToolCluster(
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         if (progress > 0.01f && actions.isNotEmpty()) {
-            val neo = isNeobrutalismDesign()
-            val anime = isAnimeDesign()
-            // The toon cluster is a floating white pill with an ink edge, so
-            // the expanded tools read as one drawn control strip instead of
-            // a translucent smear over the video.
-            val clusterShape = if (neo) RoundedCornerShape(0.dp) else RoundedCornerShape(percent = 50)
+            // Each action remains a standalone circle. There is deliberately
+            // no shared pill/scrim behind the row and no animated width that
+            // could squeeze a circle into an oval while opening or closing.
             Row(
-                modifier = Modifier
-                    .then(
-                        if (anime) {
-                            Modifier
-                                .inkShadow(offset = 3.dp, shape = clusterShape)
-                                .clip(clusterShape)
-                                .background(MaterialTheme.colorScheme.surface)
-                                .inkBorder(2.dp, clusterShape)
-                        } else {
-                            Modifier
-                                .clip(clusterShape)
-                                .background(
-                                    if (neo) Color.Transparent
-                                    else Color.Black.copy(alpha = 0.38f * progress)
-                                )
-                        }
-                    )
-                    .padding(horizontal = 3.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // The last action is closest to the toggle, so it should be the
-                // first one to appear; the stagger reads as one gesture.
+                // The last action is closest to the toggle, so it appears
+                // first; only opacity/scale animates, never the circle's size.
                 actions.forEachIndexed { index, action ->
                     val delay = 0.09f * (actions.lastIndex - index)
                     val span = (1f - delay).coerceAtLeast(0.25f)
                     val itemProgress = ((progress - delay) / span).coerceIn(0f, 1f)
                     Box(
                         modifier = Modifier
-                            .width((buttonSize * itemProgress).dp)
-                            .clipToBounds(),
+                            .size(buttonSize.dp)
+                            .graphicsLayer {
+                                alpha = itemProgress
+                                scaleX = 0.72f + 0.28f * itemProgress
+                                scaleY = 0.72f + 0.28f * itemProgress
+                            },
                         contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier.graphicsLayer {
-                                alpha = itemProgress
-                                scaleX = 0.6f + 0.4f * itemProgress
-                                scaleY = 0.6f + 0.4f * itemProgress
-                            }
-                        ) {
-                            PlayerGlassButton(
-                                icon = action.icon,
-                                contentDescription = action.contentDescription,
-                                onClick = action.onClick,
-                                size = buttonSize.dp,
-                                active = action.active
-                            )
-                        }
+                        PlayerGlassButton(
+                            icon = action.icon,
+                            contentDescription = action.contentDescription,
+                            onClick = action.onClick,
+                            size = buttonSize.dp,
+                            active = action.active
+                        )
                     }
                 }
             }

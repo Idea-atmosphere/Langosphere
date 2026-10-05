@@ -1,0 +1,43 @@
+# Configuration for GitHub's automatically generated release notes.
+#
+# The Release workflow publishes every `v*` tag with
+# `generate_release_notes: true`, so GitHub writes the release's "body"
+# (the changelog) from the PRs and commits between the previous tag and the
+# new one. GitHub reads THIS file to decide how those notes are grouped —
+# it is the same engine as the "Generate release notes" button in the
+# release UI, and the API used by the workflow honours it too.
+#
+# The in-app updater shows exactly that "body" in its update dialog
+# (AppUpdateManager.checkForUpdate → UpdateInfo.releaseNotes →
+# ReleaseNotesParser), so what this file groups is what users read.
+#
+# Labels are optional: a pull request without any of the labels below
+# simply lands in "Other changes". To use the categories, add the matching
+# label to a pull request before it is merged.
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - dependabot
+      - github-actions[bot]
+  categories:
+    - title: "✨ New features"
+      labels:
+        - enhancement
+        - feature
+    - title: "🐛 Bug fixes"
+      labels:
+        - bug
+        - fix
+    - title: "📖 Learning content"
+      labels:
+        - content
+        - dictionary
+    - title: "🧹 Maintenance"
+      labels:
+        - chore
+        - dependencies
+    - title: "Other changes"
+      labels:
+        - "*"
