@@ -9,7 +9,7 @@ lifecycleViewmodelCompose = "2.8.7"
 lifecycleRuntimeCompose = "2.8.7"
 activityCompose = "1.10.1"
 kotlin = "2.4.21"
-composeBom = "2024.09.00"
+composeBom = "2026.09.00"
 googleDevtoolsKsp = "2.3.12"
 navigationCompose = "2.10.2"
 roomRuntime = "2.8.5"
@@ -38,7 +38,10 @@ webkit = "1.18.0"
 # Material 3 Expressive (Material You) — the expressive APIs (MaterialExpressiveTheme,
 # MotionScheme.expressive()) are only available on the 1.4.0-alpha track; they were
 # removed from the stable 1.4.0 release and moved to the 1.5.0-alphas.
-material3 = "1.4.0-alpha16"
+# Must stay ahead of the material3 version pinned by the Compose BOM: in 1.4.0
+# stable the Expressive theme APIs used by ui/theme/Theme.kt (MaterialExpressiveTheme,
+# MotionScheme.expressive) are internal; they are public (experimental) again in 1.5.x.
+material3 = "1.5.0-beta02"
 jsoup = "1.23.2"
 pdfbox = "2.0.27.0"
 
