@@ -34,11 +34,6 @@ updates:
       security-fixes:
         applies-to: security-updates
         patterns: ["*"]
-    ignore:
-      # material3 is intentionally on the 1.4.0-alpha track (Expressive APIs).
-      # Allow newer 1.4.0-alphaNN, block jumps to 1.5.x. Delete if unwanted.
-      - dependency-name: "androidx.compose.material3:material3"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   # The six actions pinned by SHA in .github/workflows/*.yml. Dependabot
   # updates the SHA and keeps the "# vX.Y.Z" comment in sync.
