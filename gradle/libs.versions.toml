@@ -1,6 +1,6 @@
 [versions]
-agp = "9.1.1"
-coreKtx = "1.18.0"
+agp = "9.5.0"
+coreKtx = "1.19.1"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
@@ -11,10 +11,10 @@ activityCompose = "1.10.1"
 kotlin = "2.4.21"
 composeBom = "2024.09.00"
 googleDevtoolsKsp = "2.3.12"
-navigationCompose = "2.8.9"
-roomRuntime = "2.7.0"
-roomKtx = "2.7.0"
-roomCompiler = "2.7.0"
+navigationCompose = "2.10.2"
+roomRuntime = "2.8.5"
+roomKtx = "2.8.5"
+roomCompiler = "2.8.5"
 kotlinxCoroutinesTest = "1.11.0"
 core = "1.6.1"
 runner = "1.6.2"
@@ -30,11 +30,11 @@ cameraCore = "1.5.0"
 okhttp = "4.10.0"
 moshiKotlin = "1.15.2"
 moshiKotlinCodegen = "1.15.2"
-datastorePreferences = "1.1.7"
+datastorePreferences = "1.3.0"
 robolectric = "4.17"
 roborazzi = "1.77.0"
 media3 = "1.5.1"
-webkit = "1.12.1"
+webkit = "1.18.0"
 # Material 3 Expressive (Material You) — the expressive APIs (MaterialExpressiveTheme,
 # MotionScheme.expressive()) are only available on the 1.4.0-alpha track; they were
 # removed from the stable 1.4.0 release and moved to the 1.5.0-alphas.
@@ -97,7 +97,7 @@ androidx-media3-exoplayer-dash = { group = "androidx.media3", name = "media3-exo
 androidx-media3-exoplayer-hls = { group = "androidx.media3", name = "media3-exoplayer-hls", version.ref = "media3" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 pdfbox-android = { group = "com.tom-roush", name = "pdfbox-android", version.ref = "pdfbox" }
-documentfile = { group = "androidx.documentfile", name = "documentfile", version = "1.0.1" }
+documentfile = { group = "androidx.documentfile", name = "documentfile", version = "1.1.0" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
