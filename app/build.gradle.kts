@@ -39,7 +39,9 @@ val minifyRelease =
 
 android {
   namespace = "com.example"
-  compileSdk { version = release(36) { minorApiLevel = 1 } }
+  // 37 is required by androidx.core 1.19+ and Compose 1.12+. targetSdk is
+  // unchanged, so runtime behaviour on devices does not change.
+  compileSdk { version = release(37) }
 
   defaultConfig {
     applicationId = "com.langosphere"
