@@ -31,15 +31,15 @@ okhttp = "4.10.0"
 moshiKotlin = "1.15.2"
 moshiKotlinCodegen = "1.15.2"
 datastorePreferences = "1.1.7"
-robolectric = "4.16.1"
-roborazzi = "1.59.0"
+robolectric = "4.17"
+roborazzi = "1.77.0"
 media3 = "1.5.1"
 webkit = "1.12.1"
 # Material 3 Expressive (Material You) — the expressive APIs (MaterialExpressiveTheme,
 # MotionScheme.expressive()) are only available on the 1.4.0-alpha track; they were
 # removed from the stable 1.4.0 release and moved to the 1.5.0-alphas.
 material3 = "1.4.0-alpha16"
-jsoup = "1.17.2"
+jsoup = "1.23.2"
 pdfbox = "2.0.27.0"
 
 # Langosphere ships as free software only. Every entry below must be
