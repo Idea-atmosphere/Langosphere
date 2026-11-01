@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to build, without the leading v (e.g. 0.0.5)"
+        description: "Version to build, without the leading v (e.g. 0.0.7). Manual runs never publish a release: the signed APK is attached to the run as an artifact."
         required: true
-        default: "0.0.5"
+        default: "0.0.7"
       minify:
         description: "Run R8 code and resource shrinking (off = diagnostic build)"
         type: choice
@@ -18,20 +18,38 @@ on:
 permissions:
   contents: read
 
+# Two jobs on purpose.
+#
+#   build  - sees NO secrets. Everything that executes code pulled from the
+#            internet (Gradle plugins, dependencies, KSP, R8) happens here and
+#            produces an UNSIGNED APK.
+#   sign   - no checkout, no Gradle, no third-party code at all. It downloads
+#            that APK, signs it with apksigner from the runner's own SDK,
+#            verifies it and publishes it.
+#
+# A compromised dependency can therefore run with full freedom in `build` and
+# still find nothing worth stealing.
 jobs:
-  release:
-
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    permissions:
-      # Write access is granted to this job only, not to the whole workflow.
-      contents: write
+    # Tag pushes are already limited to v* by the trigger. A manual run from
+    # any branch other than main would otherwise build - and later sign -
+    # whatever that branch happens to contain.
+    if: github.event_name == 'push' || github.ref == 'refs/heads/main'
+    outputs:
+      name: ${{ steps.version.outputs.name }}
+      tag: ${{ steps.version.outputs.tag }}
+      code: ${{ steps.version.outputs.code }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          # Full history so the generated changelog can reach the previous tag.
-          fetch-depth: 0
+          # Nothing in this job may push, so the token must not be left in
+          # .git/config where the Gradle build could read it. Release notes
+          # are generated server-side by `gh release create --generate-notes`,
+          # so the full history (fetch-depth: 0) is no longer needed either.
+          persist-credentials: false
 
       - name: Derive version
         id: version
@@ -59,7 +77,7 @@ jobs:
           echo "Building Langosphere $NAME (versionCode $CODE)"
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
         with:
           java-version: "17"
           distribution: temurin
@@ -72,19 +90,74 @@ jobs:
       # remaining platform itself, so this step only needs to accept licences
       # and export ANDROID_HOME.
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
         with:
           packages: ''
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
         with:
           cache-read-only: true
 
-      # $RUNNER_TEMP is outside the git checkout, so the keystore cannot be
-      # matched by an artifact glob, committed, or copied into the APK output
-      # directory. Nothing derived from the secret is ever printed.
-      - name: Decode signing keystore outside the workspace
+      # No KEYSTORE_PATH / passwords in the environment, so app/build.gradle.kts
+      # takes its `canSignRelease = false` path and emits app-release-unsigned.apk.
+      - name: Build unsigned release APK
+        env:
+          APP_VERSION_NAME: ${{ steps.version.outputs.name }}
+          APP_VERSION_CODE: ${{ steps.version.outputs.code }}
+          # Tag builds always shrink. A manual run can turn shrinking off to
+          # isolate an R8 problem.
+          ENABLE_MINIFY: ${{ github.event_name == 'workflow_dispatch' && inputs.minify || 'true' }}
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          echo "R8 shrinking: $ENABLE_MINIFY"
+          ./gradlew --no-daemon --stacktrace \
+            -PappVersionName="$APP_VERSION_NAME" \
+            -PappVersionCode="$APP_VERSION_CODE" \
+            -PenableMinify="$ENABLE_MINIFY" \
+            assembleRelease
+          SRC="$(find app/build/outputs/apk/release -name '*.apk' | head -n 1)"
+          if [ -z "$SRC" ]; then
+            echo "::error::No release APK was produced."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/handoff"
+          cp "$SRC" "$RUNNER_TEMP/handoff/unsigned.apk"
+          echo "Unsigned APK sha256: $(sha256sum "$RUNNER_TEMP/handoff/unsigned.apk" | cut -d' ' -f1)"
+
+      - name: Hand the unsigned APK to the signing job
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: unsigned-apk
+          path: ${{ runner.temp }}/handoff/unsigned.apk
+          if-no-files-found: error
+          retention-days: 1
+
+  sign:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      # Write access is granted to this job only, and only to publish.
+      contents: write
+    # When the signing secrets are ever moved into a GitHub Environment with
+    # required reviewers, this single line turns on the approval gate:
+    # environment: release
+
+    steps:
+      # Deliberately NO actions/checkout here: nothing from the repository
+      # runs in the job that holds the key.
+      - name: Fetch the unsigned APK
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: unsigned-apk
+          path: ${{ runner.temp }}/in
+
+      # $RUNNER_TEMP is outside any workspace, so the keystore cannot be
+      # matched by an artifact glob or end up next to the APK output.
+      # Nothing derived from the secret is ever printed.
+      - name: Decode signing keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
@@ -100,63 +173,73 @@ jobs:
           fi
           echo "Keystore decoded ($(stat -c%s "$RUNNER_TEMP/release.jks") bytes)."
 
-      - name: Build signed release APK
+      # Same key, same v2+v3 scheme and v1 disabled, exactly as the Gradle
+      # signingConfig did, so installed copies accept the update.
+      # Passwords reach apksigner through `env:` so they never appear on a
+      # command line.
+      - name: Sign and verify
+        id: apk
         env:
-          KEYSTORE_PATH: ${{ runner.temp }}/release.jks
           STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          # Tag builds always shrink. A manual run can turn shrinking off to
-          # isolate an R8 problem.
-          ENABLE_MINIFY: ${{ github.event_name == 'workflow_dispatch' && inputs.minify || 'true' }}
+          TAG: ${{ needs.build.outputs.tag }}
         run: |
           set -euo pipefail
-          chmod +x gradlew
-          echo "R8 shrinking: $ENABLE_MINIFY"
-          ./gradlew --no-daemon --stacktrace \
-            -PappVersionName="${{ steps.version.outputs.name }}" \
-            -PappVersionCode="${{ steps.version.outputs.code }}" \
-            -PenableMinify="$ENABLE_MINIFY" \
-            assembleRelease
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          IN="$RUNNER_TEMP/in/unsigned.apk"
+          ALIGNED="$RUNNER_TEMP/aligned.apk"
+          OUT="$RUNNER_TEMP/Langosphere-${TAG}.apk"
+          [ -s "$IN" ] || { echo "::error::Unsigned APK missing."; exit 1; }
+          # AGP already aligns its output; re-align only if the check fails.
+          if "$BT/zipalign" -c 4 "$IN"; then cp "$IN" "$ALIGNED"; else "$BT/zipalign" -f 4 "$IN" "$ALIGNED"; fi
+          "$BT/apksigner" sign \
+            --ks "$RUNNER_TEMP/release.jks" \
+            --ks-pass env:STORE_PASSWORD \
+            --ks-key-alias "$KEY_ALIAS" \
+            --key-pass env:KEY_PASSWORD \
+            --v1-signing-enabled false \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out "$OUT" "$ALIGNED"
+          "$BT/apksigner" verify --print-certs "$OUT"
+          echo "Signed APK sha256: $(sha256sum "$OUT" | cut -d' ' -f1)"
+          echo "path=$OUT" >> "$GITHUB_OUTPUT"
 
-      # Runs even when the build fails, so the key never outlives the job.
+      # Runs even when signing fails, so the key never outlives the job.
       - name: Destroy the keystore
         if: always()
         run: shred -u "$RUNNER_TEMP/release.jks" 2>/dev/null || rm -f "$RUNNER_TEMP/release.jks"
 
-      # No mapping.txt is published: R8 no longer renames anything (see
-      # app/proguard-rules.pro), so stack traces already carry real class,
-      # method and line names and need no translation table.
-      - name: Verify and name the APK
-        id: apk
+      # `gh release create` uploads the asset to a draft and publishes in one
+      # go, which is what immutable releases require (assets cannot be added
+      # to a release after it is published). --verify-tag refuses to invent a
+      # tag that does not already exist on the remote. Notes honour
+      # .github/release.yml. No mapping.txt is published: R8 no longer renames
+      # anything (see app/proguard-rules.pro).
+      - name: Publish the GitHub release (tag builds only)
+        if: github.event_name == 'push'
         env:
-          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.build.outputs.tag }}
+          APK: ${{ steps.apk.outputs.path }}
         run: |
           set -euo pipefail
-          SRC="$(find app/build/outputs/apk/release -name '*.apk' | head -n 1)"
-          if [ -z "$SRC" ]; then
-            echo "::error::No release APK was produced."
-            exit 1
-          fi
-          case "$SRC" in
-            *unsigned*)
-              echo "::error::The APK is unsigned, which means the signing secrets were not applied. Refusing to publish it."
-              exit 1
-              ;;
-          esac
-          "$(find "$ANDROID_HOME/build-tools" -name apksigner | sort | tail -n 1)" verify "$SRC"
-          DEST="app/build/outputs/apk/release/Langosphere-${TAG}.apk"
-          [ "$SRC" = "$DEST" ] || mv "$SRC" "$DEST"
-          echo "path=$DEST" >> "$GITHUB_OUTPUT"
+          gh release create "$TAG" "$APK" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "Langosphere $TAG" \
+            --generate-notes \
+            --latest
 
-      - name: Publish the GitHub release
-        uses: softprops/action-gh-release@v2
+      # A manual run is a diagnostic build. It is never published as a
+      # release (so it can never become "Latest" and be offered to users by
+      # the in-app updater); the signed APK is attached to the run instead.
+      - name: Attach the diagnostic APK to this run (manual builds only)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: Langosphere ${{ steps.version.outputs.tag }}
-          generate_release_notes: ${{ github.event_name == 'push' }}
-          # A manual run is a diagnostic build: it is marked as a prerelease
-          # and never becomes the "Latest" release.
-          prerelease: ${{ github.event_name != 'push' }}
-          make_latest: ${{ github.event_name == 'push' }}
-          files: ${{ steps.apk.outputs.path }}
+          name: Langosphere-${{ needs.build.outputs.tag }}-diagnostic
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 7

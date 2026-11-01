@@ -1,0 +1,56 @@
+version: 2
+updates:
+  # Gradle: libs.versions.toml, app/build.gradle.kts, settings plugins, wrapper.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    groups:
+      # Kotlin, KSP and the Compose compiler plugin must move together.
+      kotlin-toolchain:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "com.google.devtools.ksp*"
+      # AndroidX + AGP minor/patch in one PR. Majors (e.g. AGP 10) arrive as
+      # separate PRs so they can be tested on their own.
+      android-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - "androidx.*"
+          - "com.android.*"
+        update-types: [minor, patch]
+      third-party-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        exclude-patterns:
+          - "androidx.*"
+          - "com.android.*"
+          - "org.jetbrains.kotlin*"
+          - "com.google.devtools.ksp*"
+        update-types: [minor, patch]
+      # Without this, security fixes open one PR per package.
+      security-fixes:
+        applies-to: security-updates
+        patterns: ["*"]
+    ignore:
+      # material3 is intentionally on the 1.4.0-alpha track (Expressive APIs).
+      # Allow newer 1.4.0-alphaNN, block jumps to 1.5.x. Delete if unwanted.
+      - dependency-name: "androidx.compose.material3:material3"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  # The six actions pinned by SHA in .github/workflows/*.yml. Dependabot
+  # updates the SHA and keeps the "# vX.Y.Z" comment in sync.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels: [dependencies]
+    groups:
+      actions:
+        applies-to: version-updates
+        patterns: ["*"]
+      actions-security-fixes:
+        applies-to: security-updates
+        patterns: ["*"]

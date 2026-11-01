@@ -1,0 +1,16 @@
+# Only paths whose change can alter what gets built, signed or installed.
+# Everything else (Kotlin UI code, docs, resources) stays reviewable without
+# a code-owner gate so contributions are not discouraged.
+/.github/                                                   @Idea-atmosphere
+/build.gradle.kts                                           @Idea-atmosphere
+/settings.gradle.kts                                        @Idea-atmosphere
+/gradle.properties                                          @Idea-atmosphere
+/gradle/                                                    @Idea-atmosphere
+/gradlew                                                    @Idea-atmosphere
+/gradlew.bat                                                @Idea-atmosphere
+/app/build.gradle.kts                                       @Idea-atmosphere
+/app/proguard-rules.pro                                     @Idea-atmosphere
+/app/src/main/AndroidManifest.xml                           @Idea-atmosphere
+/app/src/main/res/xml/network_security_config.xml           @Idea-atmosphere
+# The in-app updater decides which APK users install: treat it like build code.
+/app/src/main/java/com/example/logic/AppUpdateManager.kt    @Idea-atmosphere
