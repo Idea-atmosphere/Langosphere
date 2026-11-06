@@ -1,0 +1,224 @@
+# Unofficial test build, started by hand from the Actions tab.
+#
+# Purpose: try a branch out on a real phone BEFORE it is released -- without
+# touching the release key, without creating a release, and without the
+# in-app updater ever noticing it.
+#
+#   * The build passes -PtestBuild=true, which app/build.gradle.kts turns into
+#     a separate app: "Langosphere TEST", applicationId com.langosphere.test,
+#     always versionCode 1 / versionName "1-test.r<run>.<commit>". It installs
+#     NEXT TO the real app with its own data, and every new test build is
+#     simply installed over the previous one.
+#   * Signing uses a DEDICATED TEST KEY from the repository secrets
+#     TEST_KEYSTORE_BASE64 + TEST_KEYSTORE_PASSWORD (PKCS12, store and key
+#     password identical). That key can sign nothing but the test app, which
+#     is why it may live in plain repository secrets and be used from any
+#     branch. The release key (ANDROID_*) is never referenced here.
+#     If the TEST_* secrets are missing, a random one-off key is generated in
+#     the run instead; the build still works, but cannot be installed over an
+#     earlier test build (uninstall it first). The summary says which one was used.
+#   * The APK is attached to the run as an artifact for 7 days. It is never
+#     published as a release, so `releases/latest` -- the only thing the in-app
+#     updater looks at -- is unaffected.
+#   * Nothing here may ever reference the ANDROID_* release secrets.
+name: Test Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build:
+        description: "release = exactly what a real release would be (R8 on). release-no-minify = release build with R8 off, for readable stack traces. debug = debuggable build for adb / logcat / Layout Inspector."
+        type: choice
+        options: ["release", "release-no-minify", "debug"]
+        default: "release"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # No ref guard on purpose: unlike the Release workflow, building any branch
+    # is exactly the point here. Nothing in this job can sign with the real
+    # key or publish anything.
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing here may push, so the token must not be left in .git/config
+          # where the Gradle build could read it.
+          persist-credentials: false
+
+      # r<run number>.<short commit> ends up in the versionName (shown in the
+      # app) and in the artifact name, so two test builds can be told apart
+      # even though they all carry versionCode 1.
+      - name: Derive build id
+        id: build
+        run: |
+          set -euo pipefail
+          SHORT="${GITHUB_SHA::7}"
+          {
+            echo "id=r${GITHUB_RUN_NUMBER}.${SHORT}"
+            echo "label=test-r${GITHUB_RUN_NUMBER}-${SHORT}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Test build r${GITHUB_RUN_NUMBER}.${SHORT} of '$GITHUB_REF_NAME'"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          java-version: "17"
+          distribution: temurin
+
+      # `packages: ''` is deliberate -- see the same step in release.yml.
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          packages: ''
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-read-only: true
+
+      # The keystore lives in $RUNNER_TEMP, outside the workspace, so no
+      # artifact glob can pick it up, and it is shredded at the end of the job.
+      # app/build.gradle.kts reads the same four variables the real release
+      # signing uses, so both build types sign with this key.
+      - name: Prepare the test signing key
+        env:
+          TEST_KEYSTORE_BASE64: ${{ secrets.TEST_KEYSTORE_BASE64 }}
+          TEST_KEYSTORE_PASSWORD: ${{ secrets.TEST_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KS="$RUNNER_TEMP/test.jks"
+          if [ -n "${TEST_KEYSTORE_BASE64:-}" ] && [ -n "${TEST_KEYSTORE_PASSWORD:-}" ]; then
+            printf '%s' "$TEST_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$KS"
+            if [ ! -s "$KS" ]; then
+              echo "::error::TEST_KEYSTORE_BASE64 decoded to an empty file. Re-create the secret with: base64 -w0 langosphere-test.p12"
+              exit 1
+            fi
+            PASS="$TEST_KEYSTORE_PASSWORD"
+            MODE="dedicated test key (secrets TEST_KEYSTORE_*): installs over earlier test builds"
+          else
+            PASS="$(openssl rand -hex 24)"
+            echo "::add-mask::$PASS"
+            keytool -genkeypair \
+              -keystore "$KS" -storetype PKCS12 \
+              -storepass "$PASS" -keypass "$PASS" \
+              -alias test -keyalg RSA -keysize 2048 -validity 90 \
+              -dname "CN=Langosphere TEST BUILD (one-off key), O=unofficial" 2>/dev/null
+            MODE="random one-off key: secrets TEST_KEYSTORE_BASE64 / TEST_KEYSTORE_PASSWORD are not set, so this build can NOT be installed over an earlier test build (uninstall it first)"
+            echo "::warning::$MODE"
+          fi
+          # The alias is read from the keystore so the secret does not have to
+          # be created with any particular name.
+          ALIAS="$( (keytool -list -keystore "$KS" -storepass "$PASS" 2>/dev/null || true) | awk -F, '/PrivateKeyEntry/ {print $1; exit}')"
+          if [ -z "$ALIAS" ]; then
+            echo "::error::No private key found in the test keystore (wrong password, or the file is not a keystore)."
+            exit 1
+          fi
+          {
+            echo "KEYSTORE_PATH=$KS"
+            echo "STORE_PASSWORD=$PASS"
+            echo "KEY_ALIAS=$ALIAS"
+            echo "KEY_PASSWORD=$PASS"
+            echo "SIGNING_MODE=$MODE"
+          } >> "$GITHUB_ENV"
+          echo "Signing mode: $MODE"
+          echo "Test certificate: $(keytool -list -v -keystore "$KS" -storepass "$PASS" -alias "$ALIAS" 2>/dev/null | grep -m1 'SHA256:' | sed 's/^[[:space:]]*//')"
+
+      - name: Build the test APK
+        id: apk
+        env:
+          BUILD_ID: ${{ steps.build.outputs.id }}
+          LABEL: ${{ steps.build.outputs.label }}
+          BUILD: ${{ inputs.build }}
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          case "$BUILD" in
+            release)           TASK=assembleRelease; MINIFY=true;  DIR=release ;;
+            release-no-minify) TASK=assembleRelease; MINIFY=false; DIR=release ;;
+            debug)             TASK=assembleDebug;   MINIFY=true;  DIR=debug ;;
+            *) echo "::error::Unknown build '$BUILD'."; exit 1 ;;
+          esac
+          echo "Building $TASK (R8 shrinking: $MINIFY) as com.langosphere.test, version 1-test.$BUILD_ID"
+          ./gradlew --no-daemon --stacktrace \
+            -PtestBuild=true \
+            -PtestBuildId="$BUILD_ID" \
+            -PenableMinify="$MINIFY" \
+            "$TASK"
+
+          SRC="$(find "app/build/outputs/apk/$DIR" -name '*.apk' | head -n 1)"
+          if [ -z "$SRC" ]; then
+            echo "::error::No APK was produced."
+            exit 1
+          fi
+          case "$SRC" in
+            *unsigned*) echo "::error::The APK is unsigned: the test signing config was not picked up."; exit 1 ;;
+          esac
+
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          mkdir -p "$RUNNER_TEMP/out"
+          OUT="$RUNNER_TEMP/out/Langosphere-${LABEL}.apk"
+          cp "$SRC" "$OUT"
+
+          # Refuse to hand out anything that could collide with the real app
+          # or break the "always reinstall over the last one" contract.
+          BADGING="$("$BT/aapt2" dump badging "$OUT" | grep -m1 '^package:')"
+          echo "$BADGING"
+          case "$BADGING" in
+            *"name='com.langosphere.test'"*"versionCode='1'"*) ;;
+            *) echo "::error::Expected applicationId com.langosphere.test with versionCode 1 (see -PtestBuild in app/build.gradle.kts), got: $BADGING"; exit 1 ;;
+          esac
+
+          "$BT/apksigner" verify --print-certs "$OUT" | tee "$RUNNER_TEMP/certs.txt"
+          SHA="$(sha256sum "$OUT" | cut -d' ' -f1)"
+          echo "APK sha256: $SHA"
+          {
+            echo "path=$OUT"
+            echo "sha256=$SHA"
+          } >> "$GITHUB_OUTPUT"
+
+      # Runs even when the build fails, so the key never outlives the job.
+      - name: Destroy the test key
+        if: always()
+        run: shred -u "$RUNNER_TEMP/test.jks" 2>/dev/null || rm -f "$RUNNER_TEMP/test.jks"
+
+      - name: Write the run summary
+        env:
+          BUILD_ID: ${{ steps.build.outputs.id }}
+          BUILD: ${{ inputs.build }}
+          SHA: ${{ steps.apk.outputs.sha256 }}
+        run: |
+          {
+            echo "## Langosphere TEST build \`$BUILD_ID\`"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Source | \`$GITHUB_REF_NAME\` @ \`${GITHUB_SHA::7}\` |"
+            echo "| Variant | \`$BUILD\` |"
+            echo "| Installs as | **Langosphere TEST** (\`com.langosphere.test\`), version \`1-test.$BUILD_ID\`, next to the real app |"
+            echo "| Signing | $SIGNING_MODE |"
+            echo "| APK SHA-256 | \`$SHA\` |"
+            echo
+            echo "**Unofficial build.** Not a release; the in-app updater will never offer it, and it can"
+            echo "never be installed over the real app."
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/certs.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attach the test APK to this run
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Langosphere-${{ steps.build.outputs.label }}
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 7

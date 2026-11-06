@@ -37,6 +37,20 @@ val canSignRelease =
 val minifyRelease =
   providers.gradleProperty("enableMinify").map { it.toBoolean() }.getOrElse(true)
 
+// Unofficial test builds (.github/workflows/test-build.yml):
+//
+//   ./gradlew -PtestBuild=true [-PtestBuildId=r15.7d99234] assembleRelease
+//
+// turn the output into a separate app -- "Langosphere TEST", applicationId
+// com.langosphere.test, always versionCode 1 / versionName "1-test.<id>" --
+// so it installs NEXT TO the real app with its own data, and every new test
+// build is simply reinstalled over the previous one. Test builds are signed
+// with a dedicated test key, never the release key. Off by default; a normal
+// or tagged release build never enters this path. Never set it for a release.
+val isTestBuild =
+  providers.gradleProperty("testBuild").map { it.toBoolean() }.getOrElse(false)
+val testBuildId = providers.gradleProperty("testBuildId").orNull
+
 android {
   namespace = "com.example"
   // 37 is required by androidx.core 1.19+ and Compose 1.12+. targetSdk is
@@ -56,6 +70,14 @@ android {
     // downgrade on a freshly checked-out debug build.
     versionCode = providers.gradleProperty("appVersionCode").map(String::toInt).getOrElse(98)
     versionName = providers.gradleProperty("appVersionName").getOrElse("0.0.98")
+    if (isTestBuild) {
+      // One fixed version for every test build: Android accepts an install
+      // over the same versionCode, so each test build replaces the last one.
+      // (SemanticVersion reads this as 1.0.0, which is above every real
+      // release, so the in-app updater never offers a "downgrade".)
+      versionCode = 1
+      versionName = "1"
+    }
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -82,6 +104,24 @@ android {
       isShrinkResources = minifyRelease
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = if (canSignRelease) signingConfigs.getByName("release") else null
+    }
+    if (isTestBuild) {
+      configureEach {
+        applicationIdSuffix = ".test"
+        versionNameSuffix = if (testBuildId.isNullOrBlank()) "-test" else "-test.$testBuildId"
+        // The debug variant signs with the same test key, so debug and
+        // release test builds can be installed over each other.
+        if (canSignRelease) signingConfig = signingConfigs.getByName("release")
+      }
+    }
+  }
+  if (isTestBuild) {
+    // Launcher label "Langosphere TEST" for both locales. Build-type source
+    // sets take priority over src/main/res, so this overrides app_name without
+    // touching the real strings.
+    sourceSets {
+      getByName("debug") { res.srcDir("src/unofficial/res") }
+      getByName("release") { res.srcDir("src/unofficial/res") }
     }
   }
   compileOptions {
