@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Used only by unofficial test builds (-PtestBuild=true); see app/build.gradle.kts. -->
+<resources>
+    <string name="app_name">Langosphere TEST</string>
+</resources>
