@@ -31,6 +31,9 @@ class TutorialTargets {
 
     operator fun get(key: String): Rect? = rects[key]
 
+    /** True when the control is composed and has a real size right now. */
+    fun isPresent(key: String): Boolean = rects[key]?.let { it.width > 1f && it.height > 1f } == true
+
     fun set(key: String, rect: Rect) {
         // Layout passes report the same rectangle again and again; only a
         // real change should invalidate the overlay.
@@ -65,8 +68,29 @@ class TutorialController(
     var stepIndex: Int by mutableIntStateOf(0)
         private set
 
-    /** Bumped on every [start], so hosts can re-run their preparation even for the same topic. */
-    var session: Int by mutableIntStateOf(0)
+    /**
+     * Bumped on every [start] and whenever hands-on mode ends, so hosts re-run
+     * their preparation (bring the tab back, re-open the drawer, …) even when
+     * the topic and the step did not change.
+     */
+    var prepareRequest: Int by mutableIntStateOf(0)
+        private set
+
+    /**
+     * Hands-on mode («خودم امتحان می‌کنم»): the scrim and the card step aside
+     * and only a small floating bar remains, so the user can use whatever the
+     * step just explained — open a video, browse a manager page, type a
+     * search — and then come back to the same step with «Continue».
+     */
+    var handsOn: Boolean by mutableStateOf(false)
+        private set
+
+    /**
+     * Whether the current step was reached going forward. A step that skips
+     * itself because its condition is already met must keep moving in the
+     * same direction, or «Back» could never get past it.
+     */
+    var movingForward: Boolean by mutableStateOf(true)
         private set
 
     val isActive: Boolean get() = topics.isNotEmpty()
@@ -89,10 +113,26 @@ class TutorialController(
         this.topics = topics
         topicIndex = 0
         stepIndex = 0
-        session++
+        handsOn = false
+        movingForward = true
+        prepareRequest++
+    }
+
+    /** Step aside: hide the scrim and the card, keep only the floating bar. */
+    fun enterHandsOn() {
+        handsOn = true
+    }
+
+    /** «Continue»: bring the card back and let the hosts re-prepare the step. */
+    fun leaveHandsOn() {
+        if (!handsOn) return
+        handsOn = false
+        prepareRequest++
     }
 
     fun next() {
+        handsOn = false
+        movingForward = true
         when {
             stepIndex < currentSteps.lastIndex -> stepIndex++
             topicIndex < topics.lastIndex -> {
@@ -104,6 +144,8 @@ class TutorialController(
     }
 
     fun back() {
+        handsOn = false
+        movingForward = false
         when {
             stepIndex > 0 -> stepIndex--
             topicIndex > 0 -> {
@@ -117,6 +159,7 @@ class TutorialController(
         topics = emptyList()
         topicIndex = 0
         stepIndex = 0
+        handsOn = false
     }
 }
 

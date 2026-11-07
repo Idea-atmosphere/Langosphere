@@ -143,8 +143,14 @@ fun AgentScreen(
     var showMemory by remember { mutableStateOf(false) }
     var memorySummary by remember { mutableStateOf("") }
     var refreshMemory by remember { mutableStateOf(0) }
-    LaunchedEffect(tutorial.currentStepId) {
+    LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
         when (tutorial.currentStepId) {
+            // The two button steps start with both panels folded, so the
+            // learner's own tap is what opens them (and moves the tour on).
+            "agent.settings", "agent.memory" -> {
+                showSettings = false
+                showMemory = false
+            }
             "agent.settingsCard" -> {
                 showMemory = false
                 showSettings = true

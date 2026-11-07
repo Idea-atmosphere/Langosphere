@@ -1644,7 +1644,9 @@ private fun MainScreenContent(
     // no focus mode, no fullscreen reader dialog — a dialog window would
     // cover the overlay), and each topic first brings its own tab on screen
     // so the controls it points at are composed and registered.
-    LaunchedEffect(tutorial.session, tutorial.currentTopic) {
+    // `prepareRequest` also bumps when the learner comes back from a
+    // hands-on detour, so the tab is put back in place at that moment.
+    LaunchedEffect(tutorial.prepareRequest, tutorial.currentTopic) {
         if (!tutorial.isActive) return@LaunchedEffect
         isFullScreen = false
         focusMode = false
@@ -1657,7 +1659,7 @@ private fun MainScreenContent(
     }
     // The Video tab's import drawer must be open for the steps that point
     // at its tiles.
-    LaunchedEffect(tutorial.currentStepId) {
+    LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
         val stepId = tutorial.currentStepId ?: return@LaunchedEffect
         if (stepId.startsWith("video.") && !isImportSectionExpanded) {
             isImportSectionExpanded = true
@@ -1665,7 +1667,8 @@ private fun MainScreenContent(
         }
     }
     // The spotlight layer: the LAST child, so it draws over the Scaffold,
-    // its navigation bars and the quiz overlay alike, and swallows touches.
+    // its navigation bars and the quiz overlay alike. Touches inside the
+    // spotlight reach the real control; the dimmed area swallows them.
     TutorialOverlay(controller = tutorial, appLanguage = appLanguage)
 }
 

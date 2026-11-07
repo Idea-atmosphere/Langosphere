@@ -96,6 +96,7 @@ import com.example.ui.components.anime.inkShadow
 import com.example.ui.theme.AnimeColors
 import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
+import com.example.ui.tutorial.LocalTutorial
 import com.example.ui.tutorial.tutorialTarget
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
@@ -137,6 +138,16 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
     // Saveable: a trip to Recents (or the system reclaiming the activity)
     // keeps the learner on the tool they had open.
     var tool by rememberSaveable(stateSaver = ToolSaver) { mutableStateOf(LearningTool.LEITNER) }
+    // The tutorial steps about the header, export, pills and deck only exist
+    // while the Leitner tool is selected; after the learner tried the quiz
+    // tool (or wandered off hands-on) switch back so they are on screen.
+    val tutorial = LocalTutorial.current
+    LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
+        when (tutorial.currentStepId) {
+            "leitner.header", "leitner.export", "leitner.pills", "leitner.deck" ->
+                tool = LearningTool.LEITNER
+        }
+    }
 
     // BETA: the "quiz from JSON" dialog (see JsonQuizBetaDialog).
 

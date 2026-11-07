@@ -245,7 +245,7 @@ fun OnlineVideoScreen(
     // starts; the player steps leave an open clip alone (and are explained
     // without a spotlight when none is open).
     val tutorial = LocalTutorial.current
-    LaunchedEffect(tutorial.currentStepId) {
+    LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
         val stepId = tutorial.currentStepId ?: return@LaunchedEffect
         val hubStep = stepId == "online.search" || stepId == "online.hubTabs" ||
             stepId == "online.channelTray" || stepId == "online.instances" || stepId == "online.watchCache"
@@ -473,7 +473,7 @@ private fun OnlineBrowsePane(viewModel: OnlineVideoViewModel, strings: AppString
                 (fadeIn(tween(220)) + slideInHorizontally(tween(260)) { w -> if (forward) w / 10 else -w / 10 }) togetherWith
                     fadeOut(tween(140))
             },
-            modifier = Modifier.weight(1f).fillMaxWidth(),
+            modifier = Modifier.weight(1f).fillMaxWidth().tutorialTarget("online.videoGrid"),
             label = "hubTab"
         ) { tab ->
             when (tab) {

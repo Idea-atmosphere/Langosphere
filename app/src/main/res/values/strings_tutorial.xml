@@ -18,6 +18,8 @@
     <string name="tutorial_back">Back</string>
     <string name="tutorial_skip">Skip</string>
     <string name="tutorial_finish">Finish</string>
+    <string name="tutorial_try_it">Try it</string>
+    <string name="tutorial_continue">Continue</string>
     <string name="tutorial_step_of">%1$d / %2$d</string>
     <string name="tutorial_not_on_screen">This control is not on the screen right now (for example, no file is open yet) — the explanation still applies once it appears.</string>
 
@@ -40,8 +42,10 @@
     <string name="tut_basics_1_body">This short tour shows where everything is. In each step the bright, outlined area is the control being explained; everything else is dimmed. Use Next and Back, or Skip at any time. Any part can be repeated later from Settings ▸ Interactive tutorial.</string>
     <string name="tut_basics_2_title">The settings menu</string>
     <string name="tut_basics_2_body">Everything that applies to the whole app lives behind this button: the light / dark / system chips, the app language, the word limit for huge files, the file manager, the Theme section (full theme picker, accent and subtitle colours), the Prompts studio, the written App guide, this tutorial, the update check and About.</string>
+    <string name="tut_basics_2_action">Tap the button to open the menu; closing the menu brings you back here.</string>
     <string name="tut_basics_3_title">The sections of the app</string>
     <string name="tut_basics_3_body">Reader, Video player, Online, AI and Leitner. Tap a tab, or swipe left and right across the page. Their order — and whether the bar sits at the top or the bottom — can be changed in Settings ▸ Theme ▸ Customize ▸ Layout &amp; shapes.</string>
+    <string name="tut_basics_3_action">Tap a tab to switch to it — the tour keeps running.</string>
     <string name="tut_basics_4_title">Tutorial language</string>
     <string name="tut_basics_4_body">The two chips at the bottom of this card switch the tutorial between Persian and English, on the spot, without touching the app language. The app language itself is in Settings ▸ App language.</string>
     <string name="tut_basics_5_title">Words and sentences</string>
@@ -50,82 +54,113 @@
     <!-- Reader -->
     <string name="tut_reader_1_title">Offline dictionary</string>
     <string name="tut_reader_1_body">Import a dictionary file here (MDX or SQLite). The popup only reads what is on the device, so with no dictionary a word tap shows nothing. Imported files are listed under the card and can be removed one by one, or all at once.</string>
+    <string name="tut_reader_1_action">Tap Add dictionary to import a file now, if you have one.</string>
     <string name="tut_reader_2_title">Open a document</string>
     <string name="tut_reader_2_body">Tap here to load a text, PDF or EPUB file. Your reading position is remembered per file, and very large files are protected by the word limit in the settings menu, so the screen never freezes.</string>
+    <string name="tut_reader_2_action">Tap here and pick a file — the tour continues by itself once it opens (or press Next to skip).</string>
     <string name="tut_reader_3_title">Document tools</string>
     <string name="tut_reader_3_body">Next to the title: import an AI lesson JSON made for this book, copy a page range to feed an AI chat, and the ⋮ menu with the comfort sheet, the chapter list for EPUBs and the page-image mode for PDFs.</string>
+    <string name="tut_reader_3_action">Tap ⋮ to see the menu.</string>
     <string name="tut_reader_4_title">Reading comfort</string>
     <string name="tut_reader_4_body">Font size steps and the day / night paper live here. Line height, margins, warm tint and dimming are in the comfort sheet behind the ⋮ menu. This row appears once a document is open.</string>
+    <string name="tut_reader_4_action">Tap A- / A+ or the moon to try them.</string>
     <string name="tut_reader_5_title">Fullscreen reading</string>
     <string name="tut_reader_5_body">Hides everything except the page. Tapping the page or pressing Back brings the normal layout back.</string>
     <string name="tut_reader_6_title">The page</string>
     <string name="tut_reader_6_body">Tap any word for the dictionary popup, with its sentence as context; tap a sentence for its lesson. Save words to the Leitner box straight from the popup. The AI tab can rewrite or correct this very text — it edits the same text you are reading.</string>
+    <string name="tut_reader_6_action">Tap a word or a sentence to try the popups.</string>
 
     <!-- Video -->
     <string name="tut_video_1_title">Import panel</string>
     <string name="tut_video_1_body">Tap this header to fold or unfold the import drawer. It also folds by itself when you scroll down the subtitle list and opens again when you scroll back to the top, so the video gets the room.</string>
+    <string name="tut_video_1_action">Tap the header to fold and unfold the panel.</string>
     <string name="tut_video_2_title">Video or audio file</string>
     <string name="tut_video_2_body">The wide tile picks the media file. Audio files work too — the player then shows artwork instead of a picture. Your position in each file is remembered.</string>
+    <string name="tut_video_2_action">Tap it to pick a video or audio file now, if you like.</string>
     <string name="tut_video_3_title">Original subtitle</string>
     <string name="tut_video_3_body">The subtitle in the language you are learning. Pick a file from storage or paste a subtitle you copied; the chooser asks which. If it drifts, shift it by tenths of a second in the sync section of the player settings.</string>
+    <string name="tut_video_3_action">Tap it to see the file / paste chooser.</string>
     <string name="tut_video_4_title">Translated subtitle</string>
     <string name="tut_video_4_body">The same film in your language. Together with the original it builds the two-line view. Lines that have no translation yet can be translated one by one with the AI button on their card.</string>
     <string name="tut_video_5_title">JSON learning package</string>
     <string name="tut_video_5_body">The rich slot: besides the translation it carries the lesson, grammar, word list, pronunciation and examples for every line. Build it with Settings ▸ Prompts, run the prompt in any AI chat and paste the answer here — CHUNK 1-50 style answers are merged automatically, and the chunks panel lists, removes and exports them.</string>
     <string name="tut_video_6_title">The player</string>
     <string name="tut_video_6_body">Tap the picture once to show or hide the controls; double-tap the left or right side to jump by the skip amount. The speed pill in the controls opens the study panel: speed, repeat this line, listen mode and coverage. Smart pause stops at the end of every line so you can read it.</string>
+    <string name="tut_video_6_action">Tap the picture to show the controls.</string>
     <string name="tut_video_7_title">Video height</string>
     <string name="tut_video_7_body">Drag this handle up or down to change how tall the video is compared to the subtitle list. The ratio is remembered.</string>
+    <string name="tut_video_7_action">Drag the handle up or down.</string>
     <string name="tut_video_8_title">Subtitle cards</string>
     <string name="tut_video_8_body">Every line is a card: tap a word for the dictionary, the line itself for its lesson, the speaker to hear it, and + to save the sentence to Leitner. The active card follows playback, and tapping a card seeks the video to that line.</string>
+    <string name="tut_video_8_action">Tap a word or a line to try the popups.</string>
     <string name="tut_video_9_title">Tool cluster</string>
     <string name="tut_video_9_body">The three dots unfold player settings (subtitle display, sync, smart pause, skip amount, audio track), A-B repeat, the subtitle switch, focus mode and fullscreen. A-B repeat: first tap marks the start, second the end, third turns the loop off. Focus mode hides everything except the video and the subtitles.</string>
+    <string name="tut_video_9_action">Tap the three dots to unfold the cluster.</string>
 
     <!-- Online -->
     <string name="tut_online_1_title">Search</string>
     <string name="tut_online_1_body">Type a channel name, or paste a YouTube video link, a channel link, an id or an @handle. A video link opens straight away. Nothing talks to Google directly: the tab streams through public Invidious and Piped instances, with no account.</string>
+    <string name="tut_online_1_action">Tap the field to type or paste a search.</string>
     <string name="tut_online_2_title">Following and Saved</string>
     <string name="tut_online_2_body">Following shows the latest uploads of the channels you follow; Saved keeps the clips you starred so they can be watched again offline.</string>
+    <string name="tut_online_2_action">Tap a tab to switch between them.</string>
     <string name="tut_online_3_title">Channels</string>
     <string name="tut_online_3_body">Tap a channel to see all of its videos, + to follow a new one, and long-press or Unfollow to drop it. The list starts with well-known English teachers (BBC Learning English, English with Lucy, Rachel’s English, …).</string>
+    <string name="tut_online_3_action">Tap a channel to open its videos, or + to follow one.</string>
     <string name="tut_online_4_title">Instances</string>
     <string name="tut_online_4_body">Which Invidious / Piped servers answer. Add your own, switch one off or move one to the top. If a clip refuses to play («sign in to confirm you’re not a bot»), that instance is being rate-limited — wait a few minutes or try another; playback also moves on to the next instance by itself.</string>
+    <string name="tut_online_4_action">Tap it to open the instance manager; Back returns.</string>
     <string name="tut_online_5_title">Watch cache</string>
     <string name="tut_online_5_body">The saving switch for all videos, the storage each clip holds and the default play / save quality.</string>
-    <string name="tut_online_6_title">The online player</string>
-    <string name="tut_online_6_body">A clip opens in the same player as the Video tab: words, lessons, loops, speed, smart pause and focus mode all work here. The chip under the title switches between direct streams and the fallback web player when YouTube blocks a stream.</string>
-    <string name="tut_online_7_title">Action drawer</string>
-    <string name="tut_online_7_body">Above the subtitle cards: the captions chip lists the video’s caption tracks (English loads by itself, a second track can be the translation line), export / copy puts the captions on the clipboard, in Downloads or in the Video tab, Attach JSON lesson adds an AI learning file to the clip, and the quality picker and the other player actions sit here too.</string>
-    <string name="tut_online_8_title">Tool cluster</string>
-    <string name="tut_online_8_body">The same three-dot cluster as the Video tab: player settings, A-B repeat, the subtitle switch, screen rotation, focus mode and fullscreen.</string>
+    <string name="tut_online_5_action">Tap it to open the watch cache; Back returns.</string>
+    <string name="tut_online_6_title">Open a video</string>
+    <string name="tut_online_6_body">The cards are the videos of the channel, the search or the saved list. The small pill says whether an AI lesson is attached (Smart) or only raw captions are available, and ⋮ saves the clip or copies its link.</string>
+    <string name="tut_online_6_action">Tap any card to open it — the tour continues by itself in the player (or press Next to skip).</string>
+    <string name="tut_online_7_title">The online player</string>
+    <string name="tut_online_7_body">A clip opens in the same player as the Video tab: words, lessons, loops, speed, smart pause and focus mode all work here. The chip under the title switches between direct streams and the fallback web player when YouTube blocks a stream.</string>
+    <string name="tut_online_7_action">Tap the picture to show the controls.</string>
+    <string name="tut_online_8_title">Action drawer</string>
+    <string name="tut_online_8_body">Above the subtitle cards: the captions chip lists the video’s caption tracks (English loads by itself, a second track can be the translation line), export / copy puts the captions on the clipboard, in Downloads or in the Video tab, Attach JSON lesson adds an AI learning file to the clip, and the quality picker and the other player actions sit here too.</string>
+    <string name="tut_online_8_action">Tap the captions chip to see the tracks.</string>
+    <string name="tut_online_9_title">Tool cluster</string>
+    <string name="tut_online_9_body">The same three-dot cluster as the Video tab: player settings, A-B repeat, the subtitle switch, screen rotation, focus mode and fullscreen.</string>
+    <string name="tut_online_9_action">Tap the three dots to unfold the cluster.</string>
 
     <!-- AI -->
     <string name="tut_agent_1_title">Connection</string>
     <string name="tut_agent_1_body">This button opens the settings card. Fill in the base URL, the API key, the model name and your target language — any OpenAI-compatible endpoint works. Nothing is uploaded anywhere except to that endpoint.</string>
+    <string name="tut_agent_1_action">Tap the gear — the card opens below and the tour moves on.</string>
     <string name="tut_agent_2_title">The settings card</string>
     <string name="tut_agent_2_body">Base URL, API key, model and target language, plus the colours of the chat bubbles. The key is stored only on this device. A request that fails with an authentication or model error is not retried on purpose, so a broken key never costs you anything.</string>
     <string name="tut_agent_3_title">Memory</string>
     <string name="tut_agent_3_body">Opens the memory panel: prompts, corrections, skills and export / import — what the assistant has learned from you.</string>
+    <string name="tut_agent_3_action">Tap it — the panel opens below and the tour moves on.</string>
     <string name="tut_agent_4_title">The memory panel</string>
     <string name="tut_agent_4_body">Prompts: every system prompt is editable, with the variables as chips, a reset button and a test run on three real lines. Corrections and skills: each translation you fix becomes a pattern sent along with future requests. Export / import moves the whole memory to a file — the safest way to another phone.</string>
+    <string name="tut_agent_4_action">Tap the pills to switch between the four tabs.</string>
     <string name="tut_agent_5_title">Chat sessions</string>
     <string name="tut_agent_5_body">Conversations are saved as sessions, so you can leave one and come back to it later. The + button starts a fresh chat.</string>
+    <string name="tut_agent_5_action">Tap it to see your sessions.</string>
     <string name="tut_agent_6_title">The conversation</string>
     <string name="tut_agent_6_body">The pills above show what the assistant can see right now: the loaded subtitles or the reader text. Answers that change a subtitle or the reader text are written straight back into the app.</string>
     <string name="tut_agent_7_title">Ask the assistant</string>
     <string name="tut_agent_7_body">Translate a subtitle, fix a translation, explain grammar or rewrite the reader text. Translation runs in batches with a cache, so identical lines are never paid for twice, and it can be stopped mid-run.</string>
+    <string name="tut_agent_7_action">Tap the field to type a question.</string>
 
     <!-- Leitner -->
     <string name="tut_leitner_1_title">Leitner box</string>
     <string name="tut_leitner_1_body">The flashcards you saved from the word and sentence popups — this tab reviews and manages them. Five boxes: a correct answer moves a card up and brings it back later; a miss sends it down and brings it back sooner. The last box counts as mastered.</string>
     <string name="tut_leitner_2_title">Quiz from JSON (beta)</string>
     <string name="tut_leitner_2_body">Turns the imported AI learning file into a multiple-choice quiz on its words, sentences and grammar points. Pick a file or paste a raw AI answer, choose how many questions you want, and send every word you miss to the Leitner box with one tap.</string>
+    <string name="tut_leitner_2_action">Tap it to see the quiz card; the next step returns to the Leitner box.</string>
     <string name="tut_leitner_3_title">Progress</string>
     <string name="tut_leitner_3_body">The ring is the share of mastered cards; the text beside it counts the whole deck and the cards due today.</string>
     <string name="tut_leitner_4_title">Export</string>
     <string name="tut_leitner_4_body">Exports every card as an Anki-compatible file, so the deck can be used in Anki or kept as a backup.</string>
     <string name="tut_leitner_5_title">Today or everything</string>
     <string name="tut_leitner_5_body">Review today shows only the cards that are due; All cards lists the whole deck for browsing and deleting.</string>
+    <string name="tut_leitner_5_action">Tap a pill to switch.</string>
     <string name="tut_leitner_6_title">Reviewing</string>
     <string name="tut_leitner_6_body">Swipe left or right between the cards; tap a card to flip it in 3D and reveal the meaning — the answer buttons appear once it is face-up. The dots show the box level, and long definitions scroll inside the card.</string>
+    <string name="tut_leitner_6_action">Tap the card to flip it; swipe for the next one.</string>
 </resources>

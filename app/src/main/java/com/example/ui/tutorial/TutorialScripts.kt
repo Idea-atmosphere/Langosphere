@@ -12,12 +12,22 @@ import com.example.ui.theme.icon
  * One step of a tutorial: the control it points at (a [tutorialTarget] key,
  * or null for a step that is only a card in the middle of the screen) and
  * the texts, which live in strings_tutorial.xml in both languages.
+ *
+ * The spotlighted control stays live — touches inside the hole reach it —
+ * so a step can invite an action: [actionHint] is the «tap it to …» line on
+ * the card, and [advanceWhen] names a target whose appearance (a control
+ * that was not on the screen when the step began, e.g. the online player
+ * once a clip is opened) moves the tour on by itself. [skipIfMet] skips the
+ * step outright when that control is already there.
  */
 data class TutorialStep(
     val id: String,
     val target: String?,
     @StringRes val title: Int,
     @StringRes val body: Int,
+    @StringRes val actionHint: Int? = null,
+    val advanceWhen: String? = null,
+    val skipIfMet: Boolean = false,
 )
 
 /**
@@ -53,66 +63,89 @@ enum class TutorialTopic(
 /** The scripts. Step ids double as target keys (see the `tutorialTarget` calls in the screens). */
 object TutorialScripts {
 
-    private fun step(id: String, @StringRes title: Int, @StringRes body: Int, target: String? = id) =
-        TutorialStep(id = id, target = target, title = title, body = body)
+    private fun step(
+        id: String,
+        @StringRes title: Int,
+        @StringRes body: Int,
+        target: String? = id,
+        @StringRes action: Int? = null,
+        advanceWhen: String? = null,
+        skipIfMet: Boolean = false,
+    ) = TutorialStep(
+        id = id,
+        target = target,
+        title = title,
+        body = body,
+        actionHint = action,
+        advanceWhen = advanceWhen,
+        skipIfMet = skipIfMet,
+    )
 
     private val basics = listOf(
         step("basics.welcome", R.string.tut_basics_1_title, R.string.tut_basics_1_body, target = null),
-        step("header.settings", R.string.tut_basics_2_title, R.string.tut_basics_2_body),
-        step("nav.bar", R.string.tut_basics_3_title, R.string.tut_basics_3_body),
+        step("header.settings", R.string.tut_basics_2_title, R.string.tut_basics_2_body, action = R.string.tut_basics_2_action),
+        step("nav.bar", R.string.tut_basics_3_title, R.string.tut_basics_3_body, action = R.string.tut_basics_3_action),
         step("basics.language", R.string.tut_basics_4_title, R.string.tut_basics_4_body, target = null),
         step("basics.popups", R.string.tut_basics_5_title, R.string.tut_basics_5_body, target = null),
     )
 
     private val reader = listOf(
-        step("reader.dictionary", R.string.tut_reader_1_title, R.string.tut_reader_1_body),
-        step("reader.openFile", R.string.tut_reader_2_title, R.string.tut_reader_2_body),
-        step("reader.actions", R.string.tut_reader_3_title, R.string.tut_reader_3_body),
-        step("reader.toolbar", R.string.tut_reader_4_title, R.string.tut_reader_4_body),
+        step("reader.dictionary", R.string.tut_reader_1_title, R.string.tut_reader_1_body, action = R.string.tut_reader_1_action),
+        // Opening a file is a real action: the system picker opens, and the
+        // tour moves on by itself once the reading toolbar (= a document)
+        // appears. With a document already open the step just explains the
+        // title pill.
+        step("reader.openFile", R.string.tut_reader_2_title, R.string.tut_reader_2_body, action = R.string.tut_reader_2_action, advanceWhen = "reader.toolbar"),
+        step("reader.actions", R.string.tut_reader_3_title, R.string.tut_reader_3_body, action = R.string.tut_reader_3_action),
+        step("reader.toolbar", R.string.tut_reader_4_title, R.string.tut_reader_4_body, action = R.string.tut_reader_4_action),
         step("reader.fullscreen", R.string.tut_reader_5_title, R.string.tut_reader_5_body),
-        step("reader.paper", R.string.tut_reader_6_title, R.string.tut_reader_6_body),
+        step("reader.paper", R.string.tut_reader_6_title, R.string.tut_reader_6_body, action = R.string.tut_reader_6_action),
     )
 
     private val video = listOf(
-        step("video.importHeader", R.string.tut_video_1_title, R.string.tut_video_1_body),
-        step("video.mediaTile", R.string.tut_video_2_title, R.string.tut_video_2_body),
-        step("video.subEn", R.string.tut_video_3_title, R.string.tut_video_3_body),
+        step("video.importHeader", R.string.tut_video_1_title, R.string.tut_video_1_body, action = R.string.tut_video_1_action),
+        step("video.mediaTile", R.string.tut_video_2_title, R.string.tut_video_2_body, action = R.string.tut_video_2_action),
+        step("video.subEn", R.string.tut_video_3_title, R.string.tut_video_3_body, action = R.string.tut_video_3_action),
         step("video.subFa", R.string.tut_video_4_title, R.string.tut_video_4_body),
         step("video.subJson", R.string.tut_video_5_title, R.string.tut_video_5_body),
-        step("video.stage", R.string.tut_video_6_title, R.string.tut_video_6_body),
-        step("video.splitHandle", R.string.tut_video_7_title, R.string.tut_video_7_body),
-        step("video.transcript", R.string.tut_video_8_title, R.string.tut_video_8_body),
-        step("video.toolCluster", R.string.tut_video_9_title, R.string.tut_video_9_body),
+        step("video.stage", R.string.tut_video_6_title, R.string.tut_video_6_body, action = R.string.tut_video_6_action),
+        step("video.splitHandle", R.string.tut_video_7_title, R.string.tut_video_7_body, action = R.string.tut_video_7_action),
+        step("video.transcript", R.string.tut_video_8_title, R.string.tut_video_8_body, action = R.string.tut_video_8_action),
+        step("video.toolCluster", R.string.tut_video_9_title, R.string.tut_video_9_body, action = R.string.tut_video_9_action),
     )
 
     private val online = listOf(
-        step("online.search", R.string.tut_online_1_title, R.string.tut_online_1_body),
-        step("online.hubTabs", R.string.tut_online_2_title, R.string.tut_online_2_body),
-        step("online.channelTray", R.string.tut_online_3_title, R.string.tut_online_3_body),
-        step("online.instances", R.string.tut_online_4_title, R.string.tut_online_4_body),
-        step("online.watchCache", R.string.tut_online_5_title, R.string.tut_online_5_body),
-        step("online.stage", R.string.tut_online_6_title, R.string.tut_online_6_body),
-        step("online.drawer", R.string.tut_online_7_title, R.string.tut_online_7_body),
-        step("online.toolCluster", R.string.tut_online_8_title, R.string.tut_online_8_body),
+        step("online.search", R.string.tut_online_1_title, R.string.tut_online_1_body, action = R.string.tut_online_1_action),
+        step("online.hubTabs", R.string.tut_online_2_title, R.string.tut_online_2_body, action = R.string.tut_online_2_action),
+        step("online.channelTray", R.string.tut_online_3_title, R.string.tut_online_3_body, action = R.string.tut_online_3_action),
+        step("online.instances", R.string.tut_online_4_title, R.string.tut_online_4_body, action = R.string.tut_online_4_action),
+        step("online.watchCache", R.string.tut_online_5_title, R.string.tut_online_5_body, action = R.string.tut_online_5_action),
+        // The hands-on step of this tab: tap a card, the clip opens, and the
+        // player steps that follow point at the real player. Skipped when a
+        // clip is already playing.
+        step("online.videoGrid", R.string.tut_online_6_title, R.string.tut_online_6_body, action = R.string.tut_online_6_action, advanceWhen = "online.stage", skipIfMet = true),
+        step("online.stage", R.string.tut_online_7_title, R.string.tut_online_7_body, action = R.string.tut_online_7_action),
+        step("online.drawer", R.string.tut_online_8_title, R.string.tut_online_8_body, action = R.string.tut_online_8_action),
+        step("online.toolCluster", R.string.tut_online_9_title, R.string.tut_online_9_body, action = R.string.tut_online_9_action),
     )
 
     private val agent = listOf(
-        step("agent.settings", R.string.tut_agent_1_title, R.string.tut_agent_1_body),
+        step("agent.settings", R.string.tut_agent_1_title, R.string.tut_agent_1_body, action = R.string.tut_agent_1_action, advanceWhen = "agent.settingsCard"),
         step("agent.settingsCard", R.string.tut_agent_2_title, R.string.tut_agent_2_body),
-        step("agent.memory", R.string.tut_agent_3_title, R.string.tut_agent_3_body),
-        step("agent.memoryPanel", R.string.tut_agent_4_title, R.string.tut_agent_4_body),
-        step("agent.history", R.string.tut_agent_5_title, R.string.tut_agent_5_body),
+        step("agent.memory", R.string.tut_agent_3_title, R.string.tut_agent_3_body, action = R.string.tut_agent_3_action, advanceWhen = "agent.memoryPanel"),
+        step("agent.memoryPanel", R.string.tut_agent_4_title, R.string.tut_agent_4_body, action = R.string.tut_agent_4_action),
+        step("agent.history", R.string.tut_agent_5_title, R.string.tut_agent_5_body, action = R.string.tut_agent_5_action),
         step("agent.chat", R.string.tut_agent_6_title, R.string.tut_agent_6_body),
-        step("agent.composer", R.string.tut_agent_7_title, R.string.tut_agent_7_body),
+        step("agent.composer", R.string.tut_agent_7_title, R.string.tut_agent_7_body, action = R.string.tut_agent_7_action),
     )
 
     private val leitner = listOf(
         step("leitner.toolLeitner", R.string.tut_leitner_1_title, R.string.tut_leitner_1_body),
-        step("leitner.toolQuiz", R.string.tut_leitner_2_title, R.string.tut_leitner_2_body),
+        step("leitner.toolQuiz", R.string.tut_leitner_2_title, R.string.tut_leitner_2_body, action = R.string.tut_leitner_2_action),
         step("leitner.header", R.string.tut_leitner_3_title, R.string.tut_leitner_3_body),
         step("leitner.export", R.string.tut_leitner_4_title, R.string.tut_leitner_4_body),
-        step("leitner.pills", R.string.tut_leitner_5_title, R.string.tut_leitner_5_body),
-        step("leitner.deck", R.string.tut_leitner_6_title, R.string.tut_leitner_6_body),
+        step("leitner.pills", R.string.tut_leitner_5_title, R.string.tut_leitner_5_body, action = R.string.tut_leitner_5_action),
+        step("leitner.deck", R.string.tut_leitner_6_title, R.string.tut_leitner_6_body, action = R.string.tut_leitner_6_action),
     )
 
     fun stepsFor(topic: TutorialTopic): List<TutorialStep> = when (topic) {
