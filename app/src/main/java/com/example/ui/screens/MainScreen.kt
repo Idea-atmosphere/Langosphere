@@ -117,6 +117,7 @@ import com.example.ui.theme.Typography as AppTypography
 import com.example.ui.theme.forAppLanguage
 import com.example.ui.theme.withFontFamily
 import com.example.ui.tutorial.LocalTutorial
+import com.example.ui.tutorial.TutorialHost
 import com.example.ui.tutorial.TutorialOverlay
 import com.example.ui.tutorial.TutorialPickerDialog
 import com.example.ui.tutorial.rememberTutorialController
@@ -407,6 +408,8 @@ private fun MainScreenContent(
     // activity recreate that switching design triggers.
     val themeNav = rememberThemeSettingsNav()
     var showTutorialDialog by remember { mutableStateOf(false) }
+    // True while the interactive tutorial keeps the Prompts window open.
+    var promptsOpenedByTutorial by remember { mutableStateOf(false) }
     var showAppGuide by remember { mutableStateOf(false) }
     // Settings ▸ Interactive tutorial: the picker dialog, and the running
     // tutorial itself (LocalTutorial, drawn by TutorialOverlay at the end of
@@ -1596,7 +1599,13 @@ private fun MainScreenContent(
                 useDictionaryWithJson = useDictionaryWithJson,
                 onLearningLevelChange = { viewModel.setLearningLevel(it) },
                 onDictionaryToggleChange = { viewModel.setUseDictionaryWithJson(it) },
-                onDismiss = { showTutorialDialog = false }
+                onDismiss = {
+                    showTutorialDialog = false
+                    promptsOpenedByTutorial = false
+                    // Closing the window during the tutorial's JSON chapter
+                    // means «done here»: the tour carries on at the player.
+                    tutorial.skipHost(TutorialHost.PROMPTS)
+                }
             )
         }
 
@@ -1664,6 +1673,19 @@ private fun MainScreenContent(
         if (stepId.startsWith("video.") && !isImportSectionExpanded) {
             isImportSectionExpanded = true
             sharedPrefs.edit().putBoolean("video_import_section_expanded", true).apply()
+        }
+    }
+    // The JSON-package chapter plays inside Settings ▸ Prompts: the window
+    // opens when the chapter starts (right after the JSON slot) and closes
+    // again when the chapter is left — forward, backward or by finishing.
+    LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
+        val inPrompts = tutorial.currentStep?.host == TutorialHost.PROMPTS
+        if (inPrompts) {
+            showTutorialDialog = true
+            promptsOpenedByTutorial = true
+        } else if (promptsOpenedByTutorial) {
+            showTutorialDialog = false
+            promptsOpenedByTutorial = false
         }
     }
     // The spotlight layer: the LAST child, so it draws over the Scaffold,

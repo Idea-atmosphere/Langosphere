@@ -28,20 +28,27 @@ import com.example.ui.theme.AppLanguage
 /** Window-space bounds of every registered control, keyed by [TutorialStep.target]. */
 class TutorialTargets {
     private val rects = mutableStateMapOf<String, Rect>()
+    private val layouts = mutableStateMapOf<String, Rect>()
 
+    /** The visible (clipped) bounds, in window coordinates. */
     operator fun get(key: String): Rect? = rects[key]
+
+    /** The unclipped bounds, in window coordinates — for scrolling a control into view. */
+    fun layoutBounds(key: String): Rect? = layouts[key]
 
     /** True when the control is composed and has a real size right now. */
     fun isPresent(key: String): Boolean = rects[key]?.let { it.width > 1f && it.height > 1f } == true
 
-    fun set(key: String, rect: Rect) {
-        // Layout passes report the same rectangle again and again; only a
+    fun set(key: String, visible: Rect, layout: Rect) {
+        // Layout passes report the same rectangles again and again; only a
         // real change should invalidate the overlay.
-        if (rects[key] != rect) rects[key] = rect
+        if (rects[key] != visible) rects[key] = visible
+        if (layouts[key] != layout) layouts[key] = layout
     }
 
     fun remove(key: String) {
         rects.remove(key)
+        layouts.remove(key)
     }
 }
 
@@ -152,6 +159,24 @@ class TutorialController(
                 topicIndex--
                 stepIndex = currentSteps.lastIndex.coerceAtLeast(0)
             }
+        }
+    }
+
+    /**
+     * The window that hosts the current chapter was closed by the user (the
+     * Prompts dialog's ✕ / Close): move forward past every remaining step of
+     * that host, or finish when nothing else follows.
+     */
+    fun skipHost(host: TutorialHost) {
+        if (currentStep?.host != host) return
+        handsOn = false
+        movingForward = true
+        while (isActive && currentStep?.host == host) {
+            if (isLastStep) {
+                finish()
+                return
+            }
+            next()
         }
     }
 

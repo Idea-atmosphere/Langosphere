@@ -100,17 +100,24 @@ import kotlin.math.roundToInt
  * the same on request.
  *
  * Must be the last child of the screen's root so it draws over everything,
- * including the navigation chrome.
+ * including the navigation chrome. A second instance lives inside the
+ * Prompts dialog ([TutorialHost.PROMPTS]); each instance renders only the
+ * steps of its own window.
  */
 @Composable
 fun TutorialOverlay(
     controller: TutorialController,
     appLanguage: AppLanguage,
     modifier: Modifier = Modifier,
+    host: TutorialHost = TutorialHost.MAIN,
 ) {
     if (!controller.isActive) return
     val step = controller.currentStep ?: return
     val topic = controller.currentTopic ?: return
+    // One overlay per window; a step is rendered (and driven — the
+    // auto-advance and hands-on effects below) only by the overlay of the
+    // window it belongs to.
+    if (step.host != host) return
     val language = controller.languageFor(appLanguage)
     val context = LocalContext.current
     val res = remember(language, context) { context.applicationContext.localizedFor(language).resources }

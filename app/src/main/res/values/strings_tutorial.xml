@@ -36,6 +36,8 @@
     <string name="tutorial_topic_agent_desc">Connection settings, memory, chat sessions and what the assistant can do.</string>
     <string name="tutorial_topic_leitner">Leitner tab</string>
     <string name="tutorial_topic_leitner_desc">The Leitner box, the JSON quiz, progress, export and reviewing cards.</string>
+    <string name="tutorial_topic_prompts">JSON lesson &amp; prompts</string>
+    <string name="tutorial_topic_prompts_desc">The Prompts window part by part: level, modes, language pair, chunks, copying the prompt — and how the answer gets into the player.</string>
 
     <!-- Basics -->
     <string name="tut_basics_1_title">Welcome to Langosphere</string>
@@ -83,7 +85,8 @@
     <string name="tut_video_4_title">Translated subtitle</string>
     <string name="tut_video_4_body">The same film in your language. Together with the original it builds the two-line view. Lines that have no translation yet can be translated one by one with the AI button on their card.</string>
     <string name="tut_video_5_title">JSON learning package</string>
-    <string name="tut_video_5_body">The rich slot: besides the translation it carries the lesson, grammar, word list, pronunciation and examples for every line. Build it with Settings ▸ Prompts, run the prompt in any AI chat and paste the answer here — CHUNK 1-50 style answers are merged automatically, and the chunks panel lists, removes and exports them.</string>
+    <string name="tut_video_5_body">The rich slot: besides the translation it carries the lesson, grammar, word list, pronunciation and examples for every line. It takes a .json file or a pasted AI answer; CHUNK 1-50 style answers are merged automatically, and the chunks panel lists, removes and exports them. The next steps open the Prompts window, where this package is made.</string>
+    <string name="tut_video_5_action">Tap it to see the file / paste chooser; Next opens the Prompts window.</string>
     <string name="tut_video_6_title">The player</string>
     <string name="tut_video_6_body">Tap the picture once to show or hide the controls; double-tap the left or right side to jump by the skip amount. The speed pill in the controls opens the study panel: speed, repeat this line, listen mode and coverage. Smart pause stops at the end of every line so you can read it.</string>
     <string name="tut_video_6_action">Tap the picture to show the controls.</string>
@@ -96,6 +99,42 @@
     <string name="tut_video_9_title">Tool cluster</string>
     <string name="tut_video_9_body">The three dots unfold player settings (subtitle display, sync, smart pause, skip amount, audio track), A-B repeat, the subtitle switch, focus mode and fullscreen. A-B repeat: first tap marks the start, second the end, third turns the loop off. Focus mode hides everything except the video and the subtitles.</string>
     <string name="tut_video_9_action">Tap the three dots to unfold the cluster.</string>
+
+    <!-- Prompts window (Settings ▸ Prompts) — the JSON learning package chapter -->
+    <string name="tut_prompts_1_title">The Prompts window</string>
+    <string name="tut_prompts_1_body">This is where the JSON learning package is made: a ready prompt for any AI chat, whose answer the app imports. Two families: Film subtitles — anchored to the video timeline, the one for the player — and Books &amp; PDF, anchored to pages and paragraphs for the Reader. Keep Film subtitles selected.</string>
+    <string name="tut_prompts_1_action">Tap a family to compare them; the tour keeps Film subtitles.</string>
+    <string name="tut_prompts_2_title">Your learning level</string>
+    <string name="tut_prompts_2_body">A1 to C2. Every explanation, example and prompt in the app is tuned to this level — pick honestly: too high and the lessons skip what you need, too low and they bore you. This is your app-wide level; the prompt further down can use a different one.</string>
+    <string name="tut_prompts_2_action">Tap your level.</string>
+    <string name="tut_prompts_3_title">Dictionary or JSON lesson?</string>
+    <string name="tut_prompts_3_body">Once a line has a JSON lesson, tapping a word can open either the normal dictionary (switch on) or the lesson’s own explanation of that word (switch off). Off is the richer choice after your package is imported; on keeps the dictionary habit.</string>
+    <string name="tut_prompts_3_action">Flip the switch to read both descriptions.</string>
+    <string name="tut_prompts_4_title">How to use this — the five steps</string>
+    <string name="tut_prompts_4_body">The whole workflow, unfolded for you: 1) pick level and mode and copy the prompt; 2) open any AI chat (ChatGPT, Claude, Gemini…), paste the prompt, then attach or paste your .srt file; 3) save the JSON answer as a .json file or copy it; 4) in the app: Video tab ▸ import drawer ▸ JSON slot ▸ select file or paste; 5) long films arrive in chunks — reply “continue” until the file is finished.</string>
+    <string name="tut_prompts_5_title">Six prompt modes</string>
+    <string name="tut_prompts_5_body">Each mode asks the AI for a different package. Translation only: line, timing, translation — fastest and cheapest. Translation + full lesson: the complete package the player is built around — the usual choice. Vocabulary &amp; pronunciation: IPA, stress and fast-speech forms for listen mode. Grammar coach: one grammar point per line, explained and drilled. Leitner flashcards: only the words worth memorizing, as card fronts and backs. Single word analysis: one word and its sentence, for chat use — not an importable file.</string>
+    <string name="tut_prompts_5_action">Tap a mode card — the prompt text below changes with it.</string>
+    <string name="tut_prompts_6_title">From which language, to which?</string>
+    <string name="tut_prompts_6_body">Type the language you are learning (From) and your own language (To) exactly as you want them used; the prompt is rebuilt live and any pair works. The pills under the generator repeat what the prompt will say.</string>
+    <string name="tut_prompts_6_action">Edit a field and watch the pills change.</string>
+    <string name="tut_prompts_7_title">What the prompt will ask for</string>
+    <string name="tut_prompts_7_body">Three pills sum up the prompt before you copy it: From, To, and whether the answer is an Importable JSON (the five package modes) or For chat use (word analysis).</string>
+    <string name="tut_prompts_8_title">Prompt level</string>
+    <string name="tut_prompts_8_body">Starts at your own level but can be changed on its own — build an A2 package for a friend without touching your setting. It sets the vocabulary of the translations and the depth of the explanations the AI writes.</string>
+    <string name="tut_prompts_8_action">Tap a level chip.</string>
+    <string name="tut_prompts_9_title">Cues per request</string>
+    <string name="tut_prompts_9_body">A film has 800–1500 subtitle lines; no AI can write them all in one answer without being cut off. The prompt tells it to process this many cues, then stop and wait for the word “continue”. Every answer starts with a CHUNK 1-50 style marker and is a complete JSON on its own — the app recognises the marker and merges the chunks into one file. Smaller chunks never get truncated; 50 is a good default.</string>
+    <string name="tut_prompts_9_action">Tap a size.</string>
+    <string name="tut_prompts_10_title">Copy the prompt</string>
+    <string name="tut_prompts_10_body">One tap copies the whole prompt. Then: open an AI chat, paste it, send your .srt (attach the file or paste its text) and copy the JSON answer back. The prompt also tells the AI how to check its own answer: only JSON, strict syntax, every cue exactly once with its id, times in seconds.</string>
+    <string name="tut_prompts_10_action">Tap Copy prompt — you can paste it anywhere afterwards.</string>
+    <string name="tut_prompts_11_title">Read the prompt once</string>
+    <string name="tut_prompts_11_body">The text is unfolded below: the role and the level it writes for; the TASK (turn an .srt into a Langosphere JSON package, From → To); the RULES of the chosen mode; the JSON SCHEMA — the exact fields the app can import; the LONG FILES rules (chunks and the CHUNK marker); and the CHECK BEFORE YOU ANSWER list. Nothing needs editing, but reading it once makes the answers predictable.</string>
+    <string name="tut_prompts_11_action">Scroll through the text; it is selectable.</string>
+    <string name="tut_prompts_12_title">Back to the player</string>
+    <string name="tut_prompts_12_body">Close this window once the prompt is copied. In the Video tab, the JSON slot takes the file or the pasted answer; chunks arrive one after another and the chunks panel lists, removes and exports them. Next: the player itself.</string>
+    <string name="tut_prompts_12_action">Tap Close — the tour continues at the player.</string>
 
     <!-- Online -->
     <string name="tut_online_1_title">Search</string>

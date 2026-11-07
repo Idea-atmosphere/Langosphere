@@ -69,6 +69,7 @@ fun TutorialPickerDialog(
     }
     val direction = if (language == AppLanguage.FA) LayoutDirection.Rtl else LayoutDirection.Ltr
     val topics = remember(tabOrder) { TutorialTopic.fullTour(tabOrder) }
+    val rows = remember(tabOrder) { TutorialTopic.pickerList(tabOrder) }
 
     CompositionLocalProvider(LocalLayoutDirection provides direction) {
         MaterialTheme(typography = typography) {
@@ -113,7 +114,7 @@ fun TutorialPickerDialog(
                             fontWeight = FontWeight.SemiBold,
                         )
                         Spacer(modifier = Modifier.height(6.dp))
-                        topics.forEach { topic ->
+                        rows.forEach { topic ->
                             TopicRow(
                                 title = res.getString(topic.title),
                                 description = res.getString(topic.description),
