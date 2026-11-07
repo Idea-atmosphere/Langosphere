@@ -96,6 +96,7 @@ import com.example.ui.components.anime.inkShadow
 import com.example.ui.theme.AnimeColors
 import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
+import com.example.ui.tutorial.tutorialTarget
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
@@ -178,14 +179,14 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
                 text = strings.toolLeitnerBox,
                 selected = tool == LearningTool.LEITNER,
                 onClick = { tool = LearningTool.LEITNER },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).tutorialTarget("leitner.toolLeitner"),
             )
             LearningToolButton(
                 text = strings.toolJsonQuiz,
                 selected = tool == LearningTool.JSON_QUIZ,
                 onClick = { tool = LearningTool.JSON_QUIZ },
                 badge = strings.jsonQuizBetaBadge,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).tutorialTarget("leitner.toolQuiz"),
             )
         }
 
@@ -215,7 +216,10 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
             // color and labelled with how many cards are sitting in it.
             val dueFill = toonSoft(AnimeColors.SunnySoft)
             val learnedFill = toonSoft(AnimeColors.MintSoft)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.tutorialTarget("leitner.header"),
+            ) {
                 ToonCard(
                     fill = dueFill,
                     modifier = Modifier.weight(1f),
@@ -277,14 +281,14 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
             ToonButton(
                 text = strings.exportAnki,
                 onClick = { viewModel.exportLeitnerToAnki() },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().tutorialTarget("leitner.export"),
                 icon = Icons.Filled.Download,
                 fill = AnimeColors.Lavender,
                 enabled = allCards.isNotEmpty(),
             )
         } else {
         GlassCard(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().tutorialTarget("leitner.header"),
             tint = MaterialTheme.colorScheme.primary,
             contentPadding = PaddingValues(14.dp),
         ) {
@@ -314,6 +318,7 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
                     icon = Icons.Filled.Download,
                     contentDescription = strings.exportAnki,
                     onClick = { viewModel.exportLeitnerToAnki() },
+                    modifier = Modifier.tutorialTarget("leitner.export"),
                     enabled = allCards.isNotEmpty(),
                 )
             }
@@ -329,6 +334,7 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
             ),
             selectedIndex = if (reviewMode) 0 else 1,
             onSelect = { reviewMode = it == 0 },
+            modifier = Modifier.tutorialTarget("leitner.pills"),
         )
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -338,7 +344,7 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
                 EmptyState(
                     icon = Icons.Filled.Style,
                     title = if (allCards.isEmpty()) strings.leitnerEmptyAddHint else strings.leitnerEmptyDoneToday,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).tutorialTarget("leitner.deck"),
                 )
             } else {
                 val currentIndex = deckState.currentPage.coerceIn(0, dueCards.lastIndex)
@@ -348,7 +354,8 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
                     state = deckState,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .weight(1f)
+                        .tutorialTarget("leitner.deck"),
                     pageSpacing = 12.dp,
                 ) { page ->
                     val pageCard = dueCards.getOrNull(page)
@@ -427,11 +434,11 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
                 EmptyState(
                     icon = Icons.Filled.Style,
                     title = strings.leitnerEmptyNoCards,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).tutorialTarget("leitner.deck"),
                 )
             } else {
                 LazyColumn(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).tutorialTarget("leitner.deck"),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     contentPadding = PaddingValues(bottom = 12.dp),
                 ) {

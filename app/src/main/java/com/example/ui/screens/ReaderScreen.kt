@@ -75,6 +75,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.example.ui.components.BookReaderActionBar
+import com.example.ui.tutorial.tutorialTarget
 import com.example.ui.components.BookText
 import com.example.ui.components.EmptyState
 import com.example.ui.components.GlassCard
@@ -638,7 +639,7 @@ fun ReaderScreen(viewModel: AppViewModel) {
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp)) {
         // ── Dictionary panel: state, actions and (collapsed) imported files ──
         GlassCard(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().tutorialTarget("reader.dictionary"),
             tint = if (isDictLoaded) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error,
             contentPadding = PaddingValues(16.dp),
         ) {
@@ -776,6 +777,7 @@ fun ReaderScreen(viewModel: AppViewModel) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .tutorialTarget("reader.openFile")
                     .then(
                         if (neo) {
                             Modifier
@@ -834,17 +836,19 @@ fun ReaderScreen(viewModel: AppViewModel) {
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                BookReaderActionBar(
-                    docUri = bookState.docUri,
-                    docName = docTitle,
-                    docKey = docKey,
-                    isEpub = isEpub,
-                    currentPageNumber = currentPage + 1,
-                    onOpenFileClick = { textFileLauncher.launch(arrayOf("*/*")) },
-                    onSentencesUpdated = { bookSentencesVersion++ },
-                    fa = fa,
-                    onComfortClick = { showComfortSheet = true },
-                )
+                Box(modifier = Modifier.tutorialTarget("reader.actions")) {
+                    BookReaderActionBar(
+                        docUri = bookState.docUri,
+                        docName = docTitle,
+                        docKey = docKey,
+                        isEpub = isEpub,
+                        currentPageNumber = currentPage + 1,
+                        onOpenFileClick = { textFileLauncher.launch(arrayOf("*/*")) },
+                        onSentencesUpdated = { bookSentencesVersion++ },
+                        fa = fa,
+                        onComfortClick = { showComfortSheet = true },
+                    )
+                }
             }
         } else {
             val neo = isNeobrutalismDesign()
@@ -855,6 +859,7 @@ fun ReaderScreen(viewModel: AppViewModel) {
                 Row(
                     modifier = Modifier
                         .weight(1f)
+                        .tutorialTarget("reader.openFile")
                         .clip(if (neo) RoundedCornerShape(0.dp) else CircleShape)
                         .background(
                             if (neo) {
@@ -888,6 +893,7 @@ fun ReaderScreen(viewModel: AppViewModel) {
                 // JSON import and page-range copy stay beside the document title;
                 // less-frequent actions remain in the kebab (⋮) menu.
                 Spacer(modifier = Modifier.width(4.dp))
+                Box(modifier = Modifier.tutorialTarget("reader.actions")) {
                 BookReaderActionBar(
                     docUri = bookState.docUri,
                     docName = docTitle,
@@ -910,6 +916,7 @@ fun ReaderScreen(viewModel: AppViewModel) {
                     },
                     pageImageMode = bookState.pageImageMode,
                 )
+                }
 
                 if (hasContent) {
                     Spacer(modifier = Modifier.width(8.dp))
@@ -917,6 +924,7 @@ fun ReaderScreen(viewModel: AppViewModel) {
                         icon = Icons.Default.Fullscreen,
                         contentDescription = strings.fullscreenCd,
                         onClick = { viewModel.toggleReaderFullscreen() },
+                        modifier = Modifier.tutorialTarget("reader.fullscreen"),
                         size = 36.dp,
                     )
                 }
@@ -929,7 +937,9 @@ fun ReaderScreen(viewModel: AppViewModel) {
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    ReaderToolbar(labels = labels, night = night)
+                    Box(modifier = Modifier.tutorialTarget("reader.toolbar")) {
+                        ReaderToolbar(labels = labels, night = night)
+                    }
                     Spacer(modifier = Modifier.weight(1f))
                     if (ReaderComfortState.showChapterProgress) {
                         Text(
@@ -1224,6 +1234,7 @@ fun ReaderScreen(viewModel: AppViewModel) {
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
+                        .tutorialTarget("reader.paper")
                         .clip(RoundedCornerShape(24.dp))
                         .background(MaterialTheme.colorScheme.surface)
                 ) {
@@ -1257,7 +1268,7 @@ fun ReaderScreen(viewModel: AppViewModel) {
             }
         } else {
             ReaderPaper(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
+                modifier = Modifier.weight(1f).fillMaxWidth().tutorialTarget("reader.paper"),
                 bodyText = bodyText,
                 epubBlocks = if (isEpub) chapter?.blocks else null,
                 bookState = bookState,
