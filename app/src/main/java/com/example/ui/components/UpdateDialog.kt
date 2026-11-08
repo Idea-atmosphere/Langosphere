@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -14,12 +15,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,8 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -42,23 +43,24 @@ import androidx.compose.ui.unit.dp
 import com.example.logic.AppUpdateManager
 import com.example.logic.ReleaseNotesParser
 import com.example.ui.theme.AppStrings
-import kotlinx.coroutines.delay
 
 /**
  * The in-app update dialog: shows the new version against the installed one,
- * renders the GitHub release notes (markdown) as the changelog, and drives
- * the download → install flow.
+ * renders the GitHub release notes (markdown) as the changelog, and hands the
+ * APK's download link to the browser.
  *
- * Where the update goes:
+ * Nothing is downloaded or installed by the app itself. "Download in
+ * browser" opens the release asset's `browser_download_url`; the browser
+ * downloads the file and the user installs it from the browser's download
+ * notification, like any other APK. Two smaller actions cover the rest:
+ * the release page on GitHub, and copying the download link (for a download
+ * manager, or when no browser could be opened).
  *
- * 1. "Update now" checks Android 8.0+'s "Install unknown apps" grant first;
- *    if it is missing, the system settings screen is opened and the dialog
- *    explains what to do once the user comes back.
- * 2. With the grant in place, the APK is handed to the system DownloadManager
- *    (progress notification included) and polled here for a progress bar.
- * 3. When the download completes, the file is shared with the system package
- *    installer through FileProvider (FLAG_GRANT_READ_URI_PERMISSION), so the
- *    installer can read the APK out of the app's private storage.
+ * Dismissal has two flavours: [onLater] (the "Later" button, tapping
+ * outside, Back) marks this version as skipped so the launch check stops
+ * asking until a newer release appears; [onClose] (after the link was opened)
+ * only closes the dialog, so an update that was downloaded but not installed
+ * is offered again next time.
  *
  * Styling follows the app's existing dialogs (DonateDialog / AboutDialog):
  * a Material 3 AlertDialog, localized copy through [AppStrings], and a
@@ -67,16 +69,13 @@ import kotlinx.coroutines.delay
 
 /** Where the dialog's flow currently is. */
 private enum class UpdateStage {
-    /** Changelog + "Update now" / "Later". */
+    /** Changelog + "Download in browser" / "Later". */
     CONFIRM,
 
-    /** The APK is coming down through the system DownloadManager. */
-    DOWNLOADING,
+    /** The link was handed to the browser; the download runs there. */
+    OPENED,
 
-    /** The installer was launched; it now owns the screen. */
-    DONE,
-
-    /** The download or the installer hand-off failed. */
+    /** No app on the device could open the link. */
     FAILED
 }
 
@@ -85,82 +84,28 @@ fun UpdateDialog(
     updateInfo: AppUpdateManager.UpdateInfo,
     currentVersionName: String,
     strings: AppStrings,
-    onDismiss: () -> Unit
+    onLater: () -> Unit,
+    onClose: () -> Unit
 ) {
     val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
+    val clipboard = LocalClipboardManager.current
     var stage by remember { mutableStateOf(UpdateStage.CONFIRM) }
-    var downloadId by remember { mutableStateOf<Long?>(null) }
-    var downloadFileName by remember { mutableStateOf<String?>(null) }
-    var progressPercent by remember { mutableStateOf<Int?>(null) }
-    var permissionHint by remember { mutableStateOf(false) }
 
-    fun beginDownload() {
-        val download = AppUpdateManager.startApkDownload(context, updateInfo)
-        if (download == null) {
-            stage = UpdateStage.FAILED
-            return
-        }
-        downloadId = download.downloadId
-        downloadFileName = download.fileName
-        progressPercent = null
-        permissionHint = false
-        stage = UpdateStage.DOWNLOADING
-    }
-
-    fun onUpdateNowClicked() {
-        if (!AppUpdateManager.canRequestPackageInstalls(context)) {
-            // Android 8.0+ : the user must explicitly allow this app to
-            // install packages. Open the system screen for it and explain
-            // what to do when they come back; the button stays available,
-            // so the second tap simply proceeds.
-            permissionHint = true
-            AppUpdateManager.openInstallPermissionSettings(context)
+    fun openDownload() {
+        stage = if (AppUpdateManager.openApkDownload(context, updateInfo)) {
+            UpdateStage.OPENED
         } else {
-            beginDownload()
+            UpdateStage.FAILED
         }
     }
 
-    // Poll the system download while it runs. The loop is tied to the
-    // download id, so a retry replaces it, and it is cancelled automatically
-    // when the dialog leaves composition.
-    LaunchedEffect(downloadId, downloadFileName) {
-        val id = downloadId ?: return@LaunchedEffect
-        while (true) {
-            when (val status = AppUpdateManager.queryDownload(context, id)) {
-                is AppUpdateManager.DownloadStatus.Successful -> {
-                    // COLUMN_LOCAL_URI is a file:// URI when the destination
-                    // was a file path; the installer needs the FileProvider
-                    // content:// URI instead.
-                    val apkUri = status.localUri
-                        ?: downloadFileName?.let { AppUpdateManager.downloadedApkContentUri(context, it) }
-                    stage = if (apkUri != null && AppUpdateManager.installApk(context, apkUri)) {
-                        UpdateStage.DONE
-                    } else {
-                        UpdateStage.FAILED
-                    }
-                    return@LaunchedEffect
-                }
-
-                is AppUpdateManager.DownloadStatus.Failed -> {
-                    stage = UpdateStage.FAILED
-                    return@LaunchedEffect
-                }
-
-                is AppUpdateManager.DownloadStatus.Running -> {
-                    progressPercent = ((status.bytesSoFar * 100) / status.totalBytes).toInt()
-                }
-
-                is AppUpdateManager.DownloadStatus.Pending -> {
-                    progressPercent = null
-                }
-            }
-            delay(500)
-        }
+    fun copyLink() {
+        clipboard.setText(AnnotatedString(updateInfo.apkUrl))
+        Toast.makeText(context, strings.updateLinkCopiedToast, Toast.LENGTH_SHORT).show()
     }
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (stage == UpdateStage.OPENED) onClose() else onLater() },
         title = { Text(strings.updateDialogTitle) },
         text = {
             Column(
@@ -218,79 +163,62 @@ fun UpdateDialog(
                 }
 
                 when (stage) {
-                    UpdateStage.DOWNLOADING -> {
-                        val percent = progressPercent
-                        if (percent != null) {
-                            LinearProgressIndicator(
-                                progress = { percent / 100f },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Text(
-                                strings.updateDownloadingLabel(percent),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } else {
-                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                            Text(
-                                strings.updateDownloadingNoProgress,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    UpdateStage.DONE -> Text(
-                        strings.updateDownloadedLabel,
+                    UpdateStage.OPENED -> Text(
+                        strings.updateOpenedInBrowser,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
 
-                    UpdateStage.FAILED -> Text(
-                        strings.updateFailedMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    UpdateStage.FAILED -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            strings.updateFailedMessage,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            updateInfo.apkUrl,
+                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
                     UpdateStage.CONFIRM -> {}
                 }
 
-                if (permissionHint && stage == UpdateStage.CONFIRM) {
-                    Text(
-                        strings.updatePermissionHint,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
+                // Secondary actions, kept out of the button bar: the release
+                // page (notes, every asset) and the raw link (download
+                // managers, or no browser at all).
+                Column(horizontalAlignment = Alignment.Start) {
+                    TextButton(
+                        onClick = { AppUpdateManager.openReleasePage(context, updateInfo) },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                    ) {
+                        Text(strings.updateOpenReleasePage, style = MaterialTheme.typography.bodySmall)
+                    }
+                    TextButton(
+                        onClick = { copyLink() },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                    ) {
+                        Text(strings.updateCopyLinkBtn, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         },
         confirmButton = {
             when (stage) {
-                UpdateStage.CONFIRM -> TextButton(onClick = { onUpdateNowClicked() }) {
+                UpdateStage.CONFIRM,
+                UpdateStage.FAILED -> TextButton(onClick = { openDownload() }) {
                     Text(strings.updateNowBtn)
                 }
 
-                UpdateStage.DOWNLOADING -> TextButton(
-                    onClick = {
-                        downloadId?.let { AppUpdateManager.cancelDownload(context, it) }
-                        downloadId = null
-                        progressPercent = null
-                        stage = UpdateStage.CONFIRM
-                    }
-                ) { Text(strings.updateCancelBtn) }
-
-                UpdateStage.DONE -> TextButton(onClick = onDismiss) {
+                UpdateStage.OPENED -> TextButton(onClick = onClose) {
                     Text(strings.updateCloseBtn)
-                }
-
-                UpdateStage.FAILED -> TextButton(onClick = { onUpdateNowClicked() }) {
-                    Text(strings.updateRetryBtn)
                 }
             }
         },
         dismissButton = {
-            if (stage == UpdateStage.CONFIRM || stage == UpdateStage.FAILED) {
-                TextButton(onClick = onDismiss) { Text(strings.updateLaterBtn) }
+            if (stage != UpdateStage.OPENED) {
+                TextButton(onClick = onLater) { Text(strings.updateLaterBtn) }
             }
         }
     )

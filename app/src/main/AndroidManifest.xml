@@ -2,14 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- INTERNET is the only permission. The in-app update check reads the
+         latest GitHub release and hands the APK's download link to the
+         browser; the app itself never downloads or installs packages, so
+         it does not request REQUEST_INSTALL_PACKAGES. -->
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- In-app updater: lets the app offer the APK attached to the latest
-         GitHub release for installation with the system package installer.
-         Android 8.0+ still asks the user for the "Install unknown apps"
-         grant at runtime (see AppUpdateManager), so nothing installs
-         silently. -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".LangosphereApp"
