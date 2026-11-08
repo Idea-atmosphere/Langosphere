@@ -115,14 +115,7 @@ class AppUpdateManagerJsonTest {
         assertEquals("v0.0.73", info?.releaseName)
     }
 
-    // ── file name / size helpers ──
-
-    @Test
-    fun `file names are sanitized for the download directory`() {
-        assertEquals("Langosphere-v0.0.73.apk", AppUpdateManager.sanitizeFileName("Langosphere-v0.0.73.apk"))
-        assertEquals("my_app__1_.apk", AppUpdateManager.sanitizeFileName("my app (1).apk"))
-        assertEquals("langosphere-update.apk", AppUpdateManager.sanitizeFileName("   "))
-    }
+    // ── size helper ──
 
     @Test
     fun `byte sizes render as KB and MB`() {

@@ -1561,20 +1561,22 @@ private fun MainScreenContent(
 
         // In-app update: shown when the latest GitHub release is newer than
         // the installed build (silent launch check, or the settings-menu
-        // item, which ignores the skipped tag). Dismissing it remembers the
+        // item, which ignores the skipped tag). "Later" remembers the
         // skipped tag, so the launch check stops asking until a NEWER
-        // release appears.
+        // release appears; closing after the download link was opened does
+        // not, so a downloaded-but-not-installed update is offered again.
         availableUpdate?.let { updateInfo ->
             UpdateDialog(
                 updateInfo = updateInfo,
                 currentVersionName = appVersionName,
                 strings = strings,
-                onDismiss = {
+                onLater = {
                     sharedPrefs.edit()
                         .putString(AppUpdateManager.PREFS_SKIPPED_TAG_KEY, updateInfo.tagName)
                         .apply()
                     availableUpdate = null
-                }
+                },
+                onClose = { availableUpdate = null }
             )
         }
 
