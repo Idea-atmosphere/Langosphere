@@ -6,11 +6,15 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to build, without the leading v (e.g. 0.0.7). Manual runs never publish a release: the signed APK is attached to the run as an artifact."
+        description: "Version without the leading v (e.g. 0.0.8)"
         required: true
-        default: "0.0.7"
+      mode:
+        description: "draft = build, sign and put the APK into a DRAFT release v<version> that you then publish from the Releases page. artifact = diagnostic build attached to this run only, never published."
+        type: choice
+        options: ["draft", "artifact"]
+        default: "draft"
       minify:
-        description: "Run R8 code and resource shrinking (off = diagnostic build)"
+        description: "Run R8 code and resource shrinking (artifact mode only; drafts always shrink)"
         type: choice
         options: ["true", "false"]
         default: "true"
@@ -18,8 +22,39 @@ on:
 permissions:
   contents: read
 
-# Two jobs on purpose.
+# Releases in this repository are IMMUTABLE: once a release is published, no
+# file can be added to it and its tag can never be reused. The APK therefore
+# has to be in place BEFORE the release is published, which gives three
+# entry points:
 #
+#   Run workflow, mode=draft  (the normal way, from the website)
+#       Builds main, signs, and creates a draft release v<version> with the
+#       APK attached, pinned to the exact commit that was built. Nothing is
+#       public yet. You open the draft, write the notes, click Publish; that
+#       creates the tag and seals the release. If you made the draft yourself
+#       first (Save draft), the APK is attached to that draft instead.
+#
+#   Tag push  (git / API users)
+#       `gh release create` uploads the APK to a draft and publishes it in
+#       one go. When the tag was created by clicking Publish on a draft that
+#       already carries its APK, this run notices and does nothing.
+#
+#   Run workflow, mode=artifact
+#       Diagnostic build. The signed APK is attached to the run as an
+#       artifact and can never become "Latest" for the in-app updater.
+#
+# GitHub does not run workflows for draft-release events, so the draft path
+# has to be started by hand.
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+# Three jobs on purpose.
+#
+#   plan   - no checkout, no third-party code: derives the version and decides
+#            whether this run publishes, fills a draft, attaches an artifact
+#            or has nothing to do.
 #   build  - sees NO secrets. Everything that executes code pulled from the
 #            internet (Gradle plugins, dependencies, KSP, R8) happens here and
 #            produces an UNSIGNED APK.
@@ -30,17 +65,85 @@ permissions:
 # A compromised dependency can therefore run with full freedom in `build` and
 # still find nothing worth stealing.
 jobs:
-  build:
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 5
     # Tag pushes are already limited to v* by the trigger. A manual run from
     # any branch other than main would otherwise build - and later sign -
     # whatever that branch happens to contain.
     if: github.event_name == 'push' || github.ref == 'refs/heads/main'
     outputs:
-      name: ${{ steps.version.outputs.name }}
-      tag: ${{ steps.version.outputs.tag }}
-      code: ${{ steps.version.outputs.code }}
+      action: ${{ steps.plan.outputs.action }}
+      name: ${{ steps.plan.outputs.name }}
+      tag: ${{ steps.plan.outputs.tag }}
+      code: ${{ steps.plan.outputs.code }}
+
+    steps:
+      - name: Derive version and decide what this run does
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MANUAL_VERSION: ${{ inputs.version }}
+          MANUAL_MODE: ${{ inputs.mode }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            NAME="${MANUAL_VERSION#v}"
+          else
+            NAME="${GITHUB_REF_NAME#v}"
+          fi
+          if ! [[ "$NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must look like 0.0.8 (MAJOR.MINOR.PATCH), got '${NAME}'."
+            exit 1
+          fi
+          TAG="v$NAME"
+          MAJOR="${NAME%%.*}"
+          REST="${NAME#*.}"
+          MINOR="${REST%%.*}"
+          PATCH="${REST#*.}"
+          CODE=$(( 10#$MAJOR * 10000 + 10#$MINOR * 100 + 10#$PATCH ))
+
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$MANUAL_MODE" = "draft" ]; then ACTION=draft; else ACTION=artifact; fi
+          else
+            # Is there already a PUBLISHED release for this tag? (Drafts are
+            # not returned by this endpoint, and they do not own a tag anyway.)
+            set +e
+            EXISTING="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" 2>"$RUNNER_TEMP/api.err")"
+            RC=$?
+            set -e
+            if [ "$RC" -eq 0 ]; then
+              APKS="$(printf '%s' "$EXISTING" | jq -r '[.assets[].name | select(test("\\.apk$"; "i"))] | length')"
+              if [ "$APKS" -gt 0 ]; then
+                # The tag was created by clicking Publish on a draft that
+                # already carries its APK. Nothing left to do.
+                echo "::notice title=Already published::$TAG is published with its APK. Nothing to do."
+                ACTION=skip
+              else
+                echo "::error title=Release without APK::A release for $TAG is already published but has no APK. Releases here are immutable, so the file can no longer be added and the tag name cannot be reused. Use the next version number and run this workflow with mode=draft; publish the draft only after the APK shows up under Assets."
+                exit 1
+              fi
+            elif grep -qi "Not Found" "$RUNNER_TEMP/api.err"; then
+              ACTION=publish
+            else
+              cat "$RUNNER_TEMP/api.err"
+              exit 1
+            fi
+          fi
+
+          echo "action=$ACTION" >> "$GITHUB_OUTPUT"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "Langosphere $NAME (versionCode $CODE): $ACTION"
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.action != 'skip'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      sha: ${{ steps.built.outputs.sha }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -51,30 +154,11 @@ jobs:
           # so the full history (fetch-depth: 0) is no longer needed either.
           persist-credentials: false
 
-      - name: Derive version
-        id: version
-        env:
-          MANUAL_VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            NAME="${MANUAL_VERSION#v}"
-          else
-            NAME="${GITHUB_REF_NAME#v}"
-          fi
-          if ! [[ "$NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Version must look like 0.0.6 (MAJOR.MINOR.PATCH), got '${NAME}'."
-            exit 1
-          fi
-          MAJOR="${NAME%%.*}"
-          REST="${NAME#*.}"
-          MINOR="${REST%%.*}"
-          PATCH="${REST#*.}"
-          CODE=$(( 10#$MAJOR * 10000 + 10#$MINOR * 100 + 10#$PATCH ))
-          echo "name=$NAME" >> "$GITHUB_OUTPUT"
-          echo "tag=v$NAME" >> "$GITHUB_OUTPUT"
-          echo "code=$CODE" >> "$GITHUB_OUTPUT"
-          echo "Building Langosphere $NAME (versionCode $CODE)"
+      # A draft is pinned to this commit, so the tag that Publish creates
+      # later points at exactly what was built, even if main moves meanwhile.
+      - name: Record the commit being built
+        id: built
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Set up JDK 17
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
@@ -103,11 +187,11 @@ jobs:
       # takes its `canSignRelease = false` path and emits app-release-unsigned.apk.
       - name: Build unsigned release APK
         env:
-          APP_VERSION_NAME: ${{ steps.version.outputs.name }}
-          APP_VERSION_CODE: ${{ steps.version.outputs.code }}
-          # Tag builds always shrink. A manual run can turn shrinking off to
-          # isolate an R8 problem.
-          ENABLE_MINIFY: ${{ github.event_name == 'workflow_dispatch' && inputs.minify || 'true' }}
+          APP_VERSION_NAME: ${{ needs.plan.outputs.name }}
+          APP_VERSION_CODE: ${{ needs.plan.outputs.code }}
+          # Anything that can be published (tag builds, drafts) always
+          # shrinks. Only a diagnostic artifact build can turn R8 off.
+          ENABLE_MINIFY: ${{ needs.plan.outputs.action == 'artifact' && inputs.minify || 'true' }}
         run: |
           set -euo pipefail
           chmod +x gradlew
@@ -135,7 +219,7 @@ jobs:
           retention-days: 1
 
   sign:
-    needs: build
+    needs: [plan, build]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -183,7 +267,7 @@ jobs:
           STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          TAG: ${{ needs.build.outputs.tag }}
+          TAG: ${{ needs.plan.outputs.tag }}
         run: |
           set -euo pipefail
           BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
@@ -218,10 +302,10 @@ jobs:
       # .github/release.yml. No mapping.txt is published: R8 no longer renames
       # anything (see app/proguard-rules.pro).
       - name: Publish the GitHub release (tag builds only)
-        if: github.event_name == 'push'
+        if: needs.plan.outputs.action == 'publish'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.build.outputs.tag }}
+          TAG: ${{ needs.plan.outputs.tag }}
           APK: ${{ steps.apk.outputs.path }}
         run: |
           set -euo pipefail
@@ -232,14 +316,55 @@ jobs:
             --generate-notes \
             --latest
 
+      # The website path. A draft owns no tag and is not immutable yet, so the
+      # APK can be attached now and the release published later by a human.
+      # Publishing creates the tag at --target, i.e. at the commit that was
+      # actually built. `gh` finds drafts by their pending tag name, so a
+      # draft you saved yourself beforehand is filled instead of duplicated.
+      - name: Put the APK into a draft release (manual draft mode only)
+        if: needs.plan.outputs.action == 'draft'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          APK: ${{ steps.apk.outputs.path }}
+          SHA: ${{ needs.build.outputs.sha }}
+        run: |
+          set -euo pipefail
+          set +e
+          INFO="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft 2>"$RUNNER_TEMP/view.err")"
+          RC=$?
+          set -e
+          if [ "$RC" -eq 0 ]; then
+            if [ "$(printf '%s' "$INFO" | jq -r '.isDraft')" != "true" ]; then
+              echo "::error title=Already published::$TAG is already published. Releases here are immutable, so the APK can no longer be added and the tag name cannot be reused. Run again with the next version number."
+              exit 1
+            fi
+            echo "Draft $TAG already exists: attaching the APK and pinning it to $SHA."
+            gh release upload "$TAG" "$APK" --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --target "$SHA"
+          elif grep -qi "not found" "$RUNNER_TEMP/view.err"; then
+            echo "Creating draft $TAG at $SHA."
+            gh release create "$TAG" "$APK" \
+              --repo "$GITHUB_REPOSITORY" \
+              --draft \
+              --target "$SHA" \
+              --title "Langosphere $TAG" \
+              --generate-notes \
+              --latest
+          else
+            cat "$RUNNER_TEMP/view.err"
+            exit 1
+          fi
+          echo "::notice title=Draft ready::$TAG is a draft with $(basename "$APK") attached. Open Releases, check the file under Assets, write the notes and click Publish release."
+
       # A manual run is a diagnostic build. It is never published as a
       # release (so it can never become "Latest" and be offered to users by
       # the in-app updater); the signed APK is attached to the run instead.
-      - name: Attach the diagnostic APK to this run (manual builds only)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Attach the diagnostic APK to this run (manual artifact mode only)
+        if: needs.plan.outputs.action == 'artifact'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: Langosphere-${{ needs.build.outputs.tag }}-diagnostic
+          name: Langosphere-${{ needs.plan.outputs.tag }}-diagnostic
           path: ${{ steps.apk.outputs.path }}
           if-no-files-found: error
           retention-days: 7
