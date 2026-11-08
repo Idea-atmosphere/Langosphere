@@ -78,6 +78,8 @@ import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.showSoraMascot
 import com.example.ui.theme.LanguagePairState
 import com.example.ui.theme.MessageColorState
+import com.example.ui.tutorial.LocalTutorial
+import com.example.ui.tutorial.tutorialTarget
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -133,10 +135,33 @@ fun AgentScreen(
         if (targetLang.trim() != storedTargetLang) targetLang = storedTargetLang
     }
     var showSettings by remember { mutableStateOf(false) }
+    // Interactive tutorial: the steps that point at the settings card and
+    // the memory panel open them (one at a time, so the composer stays on
+    // the screen); nothing is closed again afterwards.
+    val tutorial = LocalTutorial.current
 
     var showMemory by remember { mutableStateOf(false) }
     var memorySummary by remember { mutableStateOf("") }
     var refreshMemory by remember { mutableStateOf(0) }
+    LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
+        when (tutorial.currentStepId) {
+            // The two button steps start with both panels folded, so the
+            // learner's own tap is what opens them (and moves the tour on).
+            "agent.settings", "agent.memory" -> {
+                showSettings = false
+                showMemory = false
+            }
+            "agent.settingsCard" -> {
+                showMemory = false
+                showSettings = true
+            }
+            "agent.memoryPanel" -> {
+                showSettings = false
+                showMemory = true
+                refreshMemory++
+            }
+        }
+    }
 
     var workingSubFa by remember { mutableStateOf(subFaList) }
     LaunchedEffect(subFaList) { workingSubFa = subFaList }
@@ -285,6 +310,7 @@ fun AgentScreen(
                         currentSession = ChatHistoryManager.createNewSession(strings.chatNewTitle)
                         chatMessages = emptyList()
                     },
+                    modifier = Modifier.tutorialTarget("agent.newChat"),
                     size = 34.dp
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -295,6 +321,7 @@ fun AgentScreen(
                         chatHistoryList = ChatHistoryManager.listSessions(context, strings.chatUntitled)
                         showChatHistory = true
                     },
+                    modifier = Modifier.tutorialTarget("agent.history"),
                     size = 34.dp
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -302,6 +329,7 @@ fun AgentScreen(
                     icon = Icons.Filled.Psychology,
                     contentDescription = strings.agentMemoryCd,
                     onClick = { showMemory = !showMemory; refreshMemory++ },
+                    modifier = Modifier.tutorialTarget("agent.memory"),
                     tint = if (showMemory) MaterialTheme.colorScheme.primary else null,
                     size = 34.dp
                 )
@@ -310,6 +338,7 @@ fun AgentScreen(
                     icon = Icons.Filled.Settings,
                     contentDescription = strings.agentSettingsCd,
                     onClick = { showSettings = !showSettings },
+                    modifier = Modifier.tutorialTarget("agent.settings"),
                     tint = if (showSettings) MaterialTheme.colorScheme.primary else null,
                     size = 34.dp
                 )
@@ -351,14 +380,15 @@ fun AgentScreen(
                 config = AiService.TranslationConfig(apiKey, baseUrl, model),
                 targetLang = targetLang,
                 sampleLines = subEnList.map { it.text }.filter { it.isNotBlank() }.take(3),
-                onRefresh = { refreshMemory++ }
+                onRefresh = { refreshMemory++ },
+                modifier = Modifier.tutorialTarget("agent.memoryPanel")
             )
         }
 
         // ── Connection & appearance settings ──
         AnimatedVisibility(visible = showSettings) {
             GlassCard(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).tutorialTarget("agent.settingsCard"),
                 cornerRadius = 22.dp,
                 contentPadding = PaddingValues(14.dp)
             ) {
@@ -518,7 +548,7 @@ fun AgentScreen(
         }
 
         // ── Conversation ──
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth().tutorialTarget("agent.chat")) {
             if (chatMessages.isEmpty() && !isThinking && isAnimeDesign()) {
                 // Sora introduces herself instead of a generic empty state.
                 Column(
@@ -601,7 +631,7 @@ fun AgentScreen(
 
         // ── Composer ──
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).tutorialTarget("agent.composer"),
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -878,12 +908,13 @@ private fun MemoryPanel(
     config: AiService.TranslationConfig,
     targetLang: String,
     sampleLines: List<String>,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf(strings.memoryTabPrompts, strings.memoryTabCorrections, strings.memoryTabSkills, strings.memoryTabExportImport)
     GlassCard(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
         cornerRadius = 22.dp,
         contentPadding = PaddingValues(14.dp)
     ) {

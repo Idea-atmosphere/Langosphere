@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Settings
@@ -115,6 +116,12 @@ import com.example.ui.theme.isNeobrutalismDesign
 import com.example.ui.theme.Typography as AppTypography
 import com.example.ui.theme.forAppLanguage
 import com.example.ui.theme.withFontFamily
+import com.example.ui.tutorial.LocalTutorial
+import com.example.ui.tutorial.TutorialHost
+import com.example.ui.tutorial.TutorialOverlay
+import com.example.ui.tutorial.TutorialPickerDialog
+import com.example.ui.tutorial.rememberTutorialController
+import com.example.ui.tutorial.tutorialTarget
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
@@ -154,7 +161,14 @@ fun MainScreen(
     // String.autoTextDirection / TextDirectionUtils.isRtl) — a Persian line
     // still reads right-to-left inside itself, and no wording changes.
     val appLayoutDirection = LayoutDirection.Ltr
-    CompositionLocalProvider(LocalLayoutDirection provides appLayoutDirection) {
+    // The interactive tutorial (Settings ▸ Interactive tutorial): one
+    // controller for the whole screen, so every tab can register the
+    // controls it wants explained and the overlay can point at them.
+    val tutorial = rememberTutorialController()
+    CompositionLocalProvider(
+        LocalLayoutDirection provides appLayoutDirection,
+        LocalTutorial provides tutorial,
+    ) {
         MaterialTheme(typography = typography) {
             MainScreenContent(
                 viewModel = viewModel,
@@ -210,16 +224,19 @@ private fun PrimaryNavBar(
                 // settles.
                 indicatorPosition = indicatorPosition,
                 onTabSelected = onTabSelected,
+                modifier = Modifier.tutorialTarget("nav.bar"),
             )
             materialYou -> M3NavigationBar(
                 items = tabs,
                 selectedIndex = selectedTab,
                 onTabSelected = onTabSelected,
+                modifier = Modifier.tutorialTarget("nav.bar"),
             )
             else -> LiquidTabBar(
                 items = tabs,
                 indicatorPosition = indicatorPosition,
                 onTabSelected = onTabSelected,
+                modifier = Modifier.tutorialTarget("nav.bar"),
             )
         }
     }
@@ -391,7 +408,14 @@ private fun MainScreenContent(
     // activity recreate that switching design triggers.
     val themeNav = rememberThemeSettingsNav()
     var showTutorialDialog by remember { mutableStateOf(false) }
+    // True while the interactive tutorial keeps the Prompts window open.
+    var promptsOpenedByTutorial by remember { mutableStateOf(false) }
     var showAppGuide by remember { mutableStateOf(false) }
+    // Settings ▸ Interactive tutorial: the picker dialog, and the running
+    // tutorial itself (LocalTutorial, drawn by TutorialOverlay at the end of
+    // this composable).
+    var showTutorialPicker by remember { mutableStateOf(false) }
+    val tutorial = LocalTutorial.current
 
     // Add-subtitle chooser: tapping a subtitle button first opens this popup,
     // where the user either picks a subtitle file or pastes one straight from
@@ -485,6 +509,7 @@ private fun MainScreenContent(
                     onTabSelected = { index ->
                         pagerScope.launch { pagerState.animateScrollToPage(index) }
                     },
+                    modifier = Modifier.tutorialTarget("nav.bar"),
                 )
             }
         }
@@ -497,6 +522,7 @@ private fun MainScreenContent(
                     onTabSelected = { index ->
                         pagerScope.launch { pagerState.animateScrollToPage(index) }
                     },
+                    modifier = Modifier.tutorialTarget("nav.bar"),
                 )
             }
         }
@@ -617,6 +643,7 @@ private fun MainScreenContent(
                                 icon = themeIcon,
                                 contentDescription = strings.changeThemeCd,
                                 onClick = { showThemeMenu = true },
+                                modifier = Modifier.tutorialTarget("header.settings"),
                                 size = 38.dp
                             )
                             DropdownMenu(
@@ -760,6 +787,19 @@ private fun MainScreenContent(
                                     onClick = {
                                         showThemeMenu = false
                                         showAppGuide = true
+                                    }
+                                )
+                                // Settings ▸ Interactive tutorial — the same
+                                // material as the guide, but played on the
+                                // screen itself with the real buttons
+                                // highlighted; one tutorial per tab, in a
+                                // language chosen separately from the app's.
+                                DropdownMenuItem(
+                                    text = { Text(strings.interactiveTutorialMenu) },
+                                    leadingIcon = { MenuIcon(Icons.Filled.School) },
+                                    onClick = {
+                                        showThemeMenu = false
+                                        showTutorialPicker = true
                                     }
                                 )
                                 HorizontalDivider()
@@ -911,6 +951,7 @@ private fun MainScreenContent(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .tutorialTarget("video.importHeader")
                                         .clip(if (neoChrome) RoundedCornerShape(0.dp) else RoundedCornerShape(14.dp))
                                         .then(
                                             if (neoChrome) Modifier.border(1.5.dp, MaterialTheme.colorScheme.outline) else Modifier
@@ -963,18 +1004,20 @@ private fun MainScreenContent(
                                     Column(modifier = Modifier.padding(top = 10.dp)) {
                                         // Media file: the widest tile, since
                                         // it is the one that is always needed.
-                                        MediaImportTile(
-                                            label = strings.videoAudioLabel,
-                                            fileName = videoFileName,
-                                            onClick = { videoLauncher.launch(arrayOf("video/*", "audio/*")) }
-                                        )
+                                        Box(modifier = Modifier.fillMaxWidth().tutorialTarget("video.mediaTile")) {
+                                            MediaImportTile(
+                                                label = strings.videoAudioLabel,
+                                                fileName = videoFileName,
+                                                onClick = { videoLauncher.launch(arrayOf("video/*", "audio/*")) }
+                                            )
+                                        }
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
                                             ImportSlot(
-                                                modifier = Modifier.weight(1f),
+                                                modifier = Modifier.weight(1f).tutorialTarget("video.subEn"),
                                                 icon = Icons.Filled.Subtitles,
                                                 label = strings.subEnLabel,
                                                 fileName = subEnFileName,
@@ -982,7 +1025,7 @@ private fun MainScreenContent(
                                                 onClick = { subtitleChooserTarget = 0 }
                                             )
                                             ImportSlot(
-                                                modifier = Modifier.weight(1f),
+                                                modifier = Modifier.weight(1f).tutorialTarget("video.subFa"),
                                                 icon = Icons.Filled.Subtitles,
                                                 label = strings.subFaLabel,
                                                 fileName = subFaFileName,
@@ -990,7 +1033,7 @@ private fun MainScreenContent(
                                                 onClick = { subtitleChooserTarget = 1 }
                                             )
                                             ImportSlot(
-                                                modifier = Modifier.weight(1f),
+                                                modifier = Modifier.weight(1f).tutorialTarget("video.subJson"),
                                                 icon = Icons.Filled.Style,
                                                 label = strings.subJsonLabel,
                                                 fileName = jsonSubFileName,
@@ -1556,7 +1599,13 @@ private fun MainScreenContent(
                 useDictionaryWithJson = useDictionaryWithJson,
                 onLearningLevelChange = { viewModel.setLearningLevel(it) },
                 onDictionaryToggleChange = { viewModel.setUseDictionaryWithJson(it) },
-                onDismiss = { showTutorialDialog = false }
+                onDismiss = {
+                    showTutorialDialog = false
+                    promptsOpenedByTutorial = false
+                    // Closing the window during the tutorial's JSON chapter
+                    // means «done here»: the tour carries on at the player.
+                    tutorial.skipHost(TutorialHost.PROMPTS)
+                }
             )
         }
 
@@ -1565,6 +1614,20 @@ private fun MainScreenContent(
             AppGuideDialog(
                 strings = strings,
                 onDismiss = { showAppGuide = false }
+            )
+        }
+
+        // Settings ▸ Interactive tutorial — pick the language and a section.
+        if (showTutorialPicker) {
+            TutorialPickerDialog(
+                appLanguage = appLanguage,
+                controller = tutorial,
+                tabOrder = tabOrder,
+                onStart = { topics ->
+                    showTutorialPicker = false
+                    tutorial.start(topics)
+                },
+                onDismiss = { showTutorialPicker = false },
             )
         }
         }
@@ -1584,6 +1647,51 @@ private fun MainScreenContent(
             )
         }
     }
+
+    // ── Interactive tutorial ──
+    // Preparation: every tutorial runs on the normal layout (no fullscreen,
+    // no focus mode, no fullscreen reader dialog — a dialog window would
+    // cover the overlay), and each topic first brings its own tab on screen
+    // so the controls it points at are composed and registered.
+    // `prepareRequest` also bumps when the learner comes back from a
+    // hands-on detour, so the tab is put back in place at that moment.
+    LaunchedEffect(tutorial.prepareRequest, tutorial.currentTopic) {
+        if (!tutorial.isActive) return@LaunchedEffect
+        isFullScreen = false
+        focusMode = false
+        viewModel.setReaderFullscreen(false)
+        val tab = tutorial.currentTopic?.tab ?: return@LaunchedEffect
+        val index = tabOrder.indexOf(tab)
+        if (index >= 0 && pagerState.currentPage != index) {
+            pagerState.animateScrollToPage(index)
+        }
+    }
+    // The Video tab's import drawer must be open for the steps that point
+    // at its tiles.
+    LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
+        val stepId = tutorial.currentStepId ?: return@LaunchedEffect
+        if (stepId.startsWith("video.") && !isImportSectionExpanded) {
+            isImportSectionExpanded = true
+            sharedPrefs.edit().putBoolean("video_import_section_expanded", true).apply()
+        }
+    }
+    // The JSON-package chapter plays inside Settings ▸ Prompts: the window
+    // opens when the chapter starts (right after the JSON slot) and closes
+    // again when the chapter is left — forward, backward or by finishing.
+    LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
+        val inPrompts = tutorial.currentStep?.host == TutorialHost.PROMPTS
+        if (inPrompts) {
+            showTutorialDialog = true
+            promptsOpenedByTutorial = true
+        } else if (promptsOpenedByTutorial) {
+            showTutorialDialog = false
+            promptsOpenedByTutorial = false
+        }
+    }
+    // The spotlight layer: the LAST child, so it draws over the Scaffold,
+    // its navigation bars and the quiz overlay alike. Touches inside the
+    // spotlight reach the real control; the dimmed area swallows them.
+    TutorialOverlay(controller = tutorial, appLanguage = appLanguage)
 }
 
 /** Small leading icon used by the top-right settings menu. */

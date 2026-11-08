@@ -6,6 +6,7 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -23,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -39,8 +41,13 @@ import com.example.ui.components.SectionHeader
 import com.example.ui.components.SoftIconButton
 import com.example.ui.components.StatusPill
 import com.example.ui.components.brandBrush
+import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.AppStrings
 import com.example.ui.theme.LanguagePairState
+import com.example.ui.tutorial.LocalTutorial
+import com.example.ui.tutorial.TutorialHost
+import com.example.ui.tutorial.TutorialOverlay
+import com.example.ui.tutorial.tutorialTarget
 
 /**
  * Settings > "Prompts".
@@ -61,6 +68,17 @@ import com.example.ui.theme.LanguagePairState
  * app's learning/quiz/Leitner pipeline.
  */
 private enum class TutorialSection { SUBTITLES, BOOK }
+
+/**
+ * The sections the interactive tutorial scrolls into view; everything else
+ * it points at (the family buttons, the Close button) sits outside the
+ * scrolling column.
+ */
+private val SCROLLED_TUTORIAL_TARGETS = setOf(
+    "prompts.level", "prompts.dictionary", "prompts.guide", "prompts.modes",
+    "prompts.languagePair", "prompts.pills", "prompts.promptLevel", "prompts.chunk",
+    "prompts.copy", "prompts.preview",
+)
 
 @Composable
 fun TutorialAiDialog(
@@ -90,6 +108,33 @@ fun TutorialAiDialog(
     var bookTitle by remember { mutableStateOf("") }
     var showGuide by remember { mutableStateOf(false) }
     var showPreview by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+
+    // The interactive tutorial's JSON chapter plays inside this window (its
+    // steps are TutorialHost.PROMPTS; the overlay at the bottom of the card
+    // renders them). Each step keeps the film family selected, unfolds what
+    // it talks about and scrolls its section under the spotlight — also
+    // after a hands-on detour («Continue» bumps prepareRequest).
+    val tutorial = LocalTutorial.current
+    val density = LocalDensity.current
+    LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
+        val step = tutorial.currentStep ?: return@LaunchedEffect
+        if (step.host != TutorialHost.PROMPTS) return@LaunchedEffect
+        section = TutorialSection.SUBTITLES
+        when (step.id) {
+            "prompts.guide" -> showGuide = true
+            "prompts.preview" -> showPreview = true
+        }
+        val key = step.target ?: return@LaunchedEffect
+        if (key !in SCROLLED_TUTORIAL_TARGETS) return@LaunchedEffect
+        // Two frames, so the section (and anything just unfolded) is laid out.
+        withFrameNanos { }
+        withFrameNanos { }
+        val target = tutorial.targets.layoutBounds(key) ?: return@LaunchedEffect
+        val viewport = tutorial.targets.layoutBounds("prompts.viewport") ?: return@LaunchedEffect
+        val margin = with(density) { 12.dp.toPx() }
+        scrollState.animateScrollBy(target.top - viewport.top - margin)
+    }
 
     // The prompt teaches whichever pair the learner typed in the two fields
     // just below (free text, any language to any language, used exactly as
@@ -143,6 +188,7 @@ fun TutorialAiDialog(
             shape = RoundedCornerShape(28.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
+            Box(modifier = Modifier.fillMaxSize()) {
             // The prompt builder mirrors for Persian.
             CompositionLocalProvider(
                 LocalLayoutDirection provides if (strings.isEn) LayoutDirection.Ltr else LayoutDirection.Rtl
@@ -186,7 +232,8 @@ fun TutorialAiDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .tutorialTarget("prompts.family"),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     SectionToggleButton(
@@ -235,14 +282,15 @@ fun TutorialAiDialog(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
+                        .tutorialTarget("prompts.viewport")
+                        .verticalScroll(scrollState)
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
 
                     // -- Learning level --
                     GlassCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().tutorialTarget("prompts.level"),
                         tint = MaterialTheme.colorScheme.primary,
                         contentPadding = PaddingValues(16.dp)
                     ) {
@@ -281,7 +329,7 @@ fun TutorialAiDialog(
 
                     // -- Dictionary toggle --
                     GlassCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().tutorialTarget("prompts.dictionary"),
                         contentPadding = PaddingValues(16.dp)
                     ) {
                         Row(
@@ -315,7 +363,7 @@ fun TutorialAiDialog(
 
                     // -- Usage guide, collapsed by default --
                     GlassCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().tutorialTarget("prompts.guide"),
                         tint = MaterialTheme.colorScheme.tertiary,
                         contentPadding = PaddingValues(16.dp)
                     ) {
@@ -372,28 +420,33 @@ fun TutorialAiDialog(
                         }
                     }
 
-                    // -- Prompt modes --
-                    SectionHeader(
-                        title = strings.promptModeTitle,
-                        subtitle = strings.promptModesSubtitle
-                    )
-                    if (isBook) {
-                        BookPromptTemplates.BookPromptMode.values().forEach { mode ->
-                            PromptModeCard(
-                                title = BookPromptTemplates.modeName(mode, fa),
-                                description = BookPromptTemplates.modeDescription(mode, fa),
-                                selected = selectedBookMode == mode,
-                                onClick = { selectedBookMode = mode }
-                            )
-                        }
-                    } else {
-                        AiPromptTemplates.PromptMode.values().forEach { mode ->
-                            PromptModeCard(
-                                title = strings.promptModeName(mode),
-                                description = strings.promptModeDesc(mode),
-                                selected = selectedMode == mode,
-                                onClick = { selectedMode = mode }
-                            )
+                    // -- Prompt modes -- (one block, so the tutorial can frame it)
+                    Column(
+                        modifier = Modifier.fillMaxWidth().tutorialTarget("prompts.modes"),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        SectionHeader(
+                            title = strings.promptModeTitle,
+                            subtitle = strings.promptModesSubtitle
+                        )
+                        if (isBook) {
+                            BookPromptTemplates.BookPromptMode.values().forEach { mode ->
+                                PromptModeCard(
+                                    title = BookPromptTemplates.modeName(mode, fa),
+                                    description = BookPromptTemplates.modeDescription(mode, fa),
+                                    selected = selectedBookMode == mode,
+                                    onClick = { selectedBookMode = mode }
+                                )
+                            }
+                        } else {
+                            AiPromptTemplates.PromptMode.values().forEach { mode ->
+                                PromptModeCard(
+                                    title = strings.promptModeName(mode),
+                                    description = strings.promptModeDesc(mode),
+                                    selected = selectedMode == mode,
+                                    onClick = { selectedMode = mode }
+                                )
+                            }
                         }
                     }
 
@@ -402,6 +455,7 @@ fun TutorialAiDialog(
                     // the pills below show what the pair changes.
                     LanguagePairFields(
                         strings = strings,
+                        modifier = Modifier.tutorialTarget("prompts.languagePair"),
                         showPreview = true
                     )
 
@@ -427,6 +481,7 @@ fun TutorialAiDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .tutorialTarget("prompts.pills")
                                 .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
@@ -449,6 +504,7 @@ fun TutorialAiDialog(
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
+                        Column(modifier = Modifier.fillMaxWidth().tutorialTarget("prompts.promptLevel")) {
                         Text(
                             text = strings.promptLevelLabel,
                             style = MaterialTheme.typography.labelMedium,
@@ -475,6 +531,7 @@ fun TutorialAiDialog(
                                 )
                             }
                         }
+                        }  // prompts.promptLevel
 
                         // A book's title goes into the package metadata and into
                         // the location strings, which makes several chapters of the
@@ -498,6 +555,7 @@ fun TutorialAiDialog(
                         // Chunk size only matters for the modes that eat a whole file.
                         if (isPackageMode) {
                             Spacer(modifier = Modifier.height(12.dp))
+                            Column(modifier = Modifier.fillMaxWidth().tutorialTarget("prompts.chunk")) {
                             Text(
                                 text = if (isBook) {
                                     if (fa) "تعداد پاراگراف در هر درخواست" else "Paragraphs per request"
@@ -548,6 +606,7 @@ fun TutorialAiDialog(
                                     )
                                 }
                             }
+                            }  // prompts.chunk
                         }
 
                         Spacer(modifier = Modifier.height(14.dp))
@@ -561,12 +620,12 @@ fun TutorialAiDialog(
                                 )
                                 Toast.makeText(context, strings.promptCopiedToast, Toast.LENGTH_SHORT).show()
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().tutorialTarget("prompts.copy")
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().tutorialTarget("prompts.preview"),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -615,13 +674,23 @@ fun TutorialAiDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 16.dp)
-                        .height(46.dp),
+                        .height(46.dp)
+                        .tutorialTarget("prompts.close"),
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Text(strings.close, fontWeight = FontWeight.Bold)
                 }
             }
             }  // RTL provider
+
+            // The tutorial's spotlight for this window — last child, so it
+            // draws over the card; its hole lets taps reach the real controls.
+            TutorialOverlay(
+                controller = tutorial,
+                appLanguage = if (strings.isEn) AppLanguage.EN else AppLanguage.FA,
+                host = TutorialHost.PROMPTS,
+            )
+            }  // Box
         }
     }
 }

@@ -1,0 +1,213 @@
+package com.example.ui.tutorial
+
+import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalContext
+import com.example.ui.theme.AppLanguage
+
+/**
+ * The interactive, on-screen tutorial («آموزش تعاملی»).
+ *
+ * Unlike the static App guide, this one runs on top of the real UI: every
+ * step points at (cuts a spotlight around) the actual control it talks
+ * about. Screens register the controls they want to be explainable with
+ * [tutorialTarget]; the overlay ([TutorialOverlay]) reads those positions and
+ * draws the scrim, the hole and the explanation card. Nothing else about the
+ * screens changes, and when no tutorial is running the registry is a
+ * handful of rectangles kept up to date for free.
+ */
+
+/** Window-space bounds of every registered control, keyed by [TutorialStep.target]. */
+class TutorialTargets {
+    private val rects = mutableStateMapOf<String, Rect>()
+    private val layouts = mutableStateMapOf<String, Rect>()
+
+    /** The visible (clipped) bounds, in window coordinates. */
+    operator fun get(key: String): Rect? = rects[key]
+
+    /** The unclipped bounds, in window coordinates — for scrolling a control into view. */
+    fun layoutBounds(key: String): Rect? = layouts[key]
+
+    /** True when the control is composed and has a real size right now. */
+    fun isPresent(key: String): Boolean = rects[key]?.let { it.width > 1f && it.height > 1f } == true
+
+    fun set(key: String, visible: Rect, layout: Rect) {
+        // Layout passes report the same rectangles again and again; only a
+        // real change should invalidate the overlay.
+        if (rects[key] != visible) rects[key] = visible
+        if (layouts[key] != layout) layouts[key] = layout
+    }
+
+    fun remove(key: String) {
+        rects.remove(key)
+        layouts.remove(key)
+    }
+}
+
+/**
+ * Progress of a running tutorial: which topics were queued (one per section,
+ * or «Full tour» = the basics followed by every tab), which step is showing,
+ * and the language the tutorial speaks — chosen separately from the app
+ * language and remembered across runs.
+ */
+class TutorialController(
+    languageOverride: AppLanguage?,
+    private val persistLanguage: (AppLanguage?) -> Unit = {},
+) {
+    val targets = TutorialTargets()
+
+    /** The language picked for the tutorial, or null = follow the app language. */
+    var languageOverride: AppLanguage? by mutableStateOf(languageOverride)
+        private set
+
+    var topics: List<TutorialTopic> by mutableStateOf(emptyList())
+        private set
+    var topicIndex: Int by mutableIntStateOf(0)
+        private set
+    var stepIndex: Int by mutableIntStateOf(0)
+        private set
+
+    /**
+     * Bumped on every [start] and whenever hands-on mode ends, so hosts re-run
+     * their preparation (bring the tab back, re-open the drawer, …) even when
+     * the topic and the step did not change.
+     */
+    var prepareRequest: Int by mutableIntStateOf(0)
+        private set
+
+    /**
+     * Hands-on mode («خودم امتحان می‌کنم»): the scrim and the card step aside
+     * and only a small floating bar remains, so the user can use whatever the
+     * step just explained — open a video, browse a manager page, type a
+     * search — and then come back to the same step with «Continue».
+     */
+    var handsOn: Boolean by mutableStateOf(false)
+        private set
+
+    /**
+     * Whether the current step was reached going forward. A step that skips
+     * itself because its condition is already met must keep moving in the
+     * same direction, or «Back» could never get past it.
+     */
+    var movingForward: Boolean by mutableStateOf(true)
+        private set
+
+    val isActive: Boolean get() = topics.isNotEmpty()
+    val currentTopic: TutorialTopic? get() = topics.getOrNull(topicIndex)
+    val currentSteps: List<TutorialStep> get() = currentTopic?.steps ?: emptyList()
+    val currentStep: TutorialStep? get() = currentSteps.getOrNull(stepIndex)
+    val currentStepId: String? get() = currentStep?.id
+    val isFirstStep: Boolean get() = topicIndex == 0 && stepIndex == 0
+    val isLastStep: Boolean get() = topicIndex >= topics.lastIndex && stepIndex >= currentSteps.lastIndex
+
+    fun languageFor(appLanguage: AppLanguage): AppLanguage = languageOverride ?: appLanguage
+
+    fun setLanguage(language: AppLanguage) {
+        languageOverride = language
+        persistLanguage(language)
+    }
+
+    fun start(topics: List<TutorialTopic>) {
+        if (topics.isEmpty()) return
+        this.topics = topics
+        topicIndex = 0
+        stepIndex = 0
+        handsOn = false
+        movingForward = true
+        prepareRequest++
+    }
+
+    /** Step aside: hide the scrim and the card, keep only the floating bar. */
+    fun enterHandsOn() {
+        handsOn = true
+    }
+
+    /** «Continue»: bring the card back and let the hosts re-prepare the step. */
+    fun leaveHandsOn() {
+        if (!handsOn) return
+        handsOn = false
+        prepareRequest++
+    }
+
+    fun next() {
+        handsOn = false
+        movingForward = true
+        when {
+            stepIndex < currentSteps.lastIndex -> stepIndex++
+            topicIndex < topics.lastIndex -> {
+                topicIndex++
+                stepIndex = 0
+            }
+            else -> finish()
+        }
+    }
+
+    fun back() {
+        handsOn = false
+        movingForward = false
+        when {
+            stepIndex > 0 -> stepIndex--
+            topicIndex > 0 -> {
+                topicIndex--
+                stepIndex = currentSteps.lastIndex.coerceAtLeast(0)
+            }
+        }
+    }
+
+    /**
+     * The window that hosts the current chapter was closed by the user (the
+     * Prompts dialog's ✕ / Close): move forward past every remaining step of
+     * that host, or finish when nothing else follows.
+     */
+    fun skipHost(host: TutorialHost) {
+        if (currentStep?.host != host) return
+        handsOn = false
+        movingForward = true
+        while (isActive && currentStep?.host == host) {
+            if (isLastStep) {
+                finish()
+                return
+            }
+            next()
+        }
+    }
+
+    fun finish() {
+        topics = emptyList()
+        topicIndex = 0
+        stepIndex = 0
+        handsOn = false
+    }
+}
+
+/** The app-wide controller; provided once at the root of the main screen. */
+val LocalTutorial = staticCompositionLocalOf { TutorialController(languageOverride = null) }
+
+private const val PREFS_NAME = "app_prefs"
+private const val PREF_TUTORIAL_LANGUAGE = "tutorial_language"
+
+/** One controller per main screen; the tutorial language is restored from (and saved to) app_prefs. */
+@Composable
+fun rememberTutorialController(): TutorialController {
+    val appContext = LocalContext.current.applicationContext
+    return remember(appContext) {
+        val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val saved = prefs.getString(PREF_TUTORIAL_LANGUAGE, null)
+        TutorialController(
+            languageOverride = saved?.let { AppLanguage.fromCode(it) },
+            persistLanguage = { language ->
+                val editor = prefs.edit()
+                if (language == null) editor.remove(PREF_TUTORIAL_LANGUAGE) else editor.putString(PREF_TUTORIAL_LANGUAGE, language.code)
+                editor.apply()
+            },
+        )
+    }
+}

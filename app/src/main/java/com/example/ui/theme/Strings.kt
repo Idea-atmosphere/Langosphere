@@ -832,6 +832,8 @@ class AppStrings(
 
     // ── Phase 2: main ──
     val appGuideMenu = res.getString(R.string.app_guide_menu)
+    /** Settings ▸ Interactive tutorial — the on-screen walkthrough (ui/tutorial). */
+    val interactiveTutorialMenu = res.getString(R.string.tutorial_menu_title)
 
     // ── Phase 2: prompt_modes ──
     fun promptModeName(mode: PromptMode): String = when (mode) {

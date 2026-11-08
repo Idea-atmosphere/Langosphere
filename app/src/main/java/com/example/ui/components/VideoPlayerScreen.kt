@@ -144,6 +144,7 @@ import com.example.ui.components.anime.inkShadow
 import com.example.ui.theme.AnimeColors
 import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
+import com.example.ui.tutorial.tutorialTarget
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -1038,6 +1039,8 @@ fun VideoPlayerScreen(
                     .background(Color.Black)
                     .then(if (toonTv) Modifier.inkBorder(3.dp, tvShape) else Modifier)
                     .onGloballyPositioned { containerWidth = it.size.width }
+                    // Interactive tutorial: «the player» step of each tab.
+                    .tutorialTarget(if (onlineStudio) "online.stage" else "video.stage")
             ) {
             if (toonTv) {
                 // The "REC" pill: pure set dressing that sells the TV frame.
@@ -1795,7 +1798,7 @@ fun VideoPlayerScreen(
                 // (and remembered), instead of a hardcoded 38/62 split.
                 SplitDragHandle(
                     active = isSplitDragging,
-                    modifier = Modifier.draggable(
+                    modifier = Modifier.tutorialTarget("video.splitHandle").draggable(
                         orientation = Orientation.Vertical,
                         state = rememberDraggableState { delta ->
                             prefs.videoWeight = prefs.videoWeight + delta / containerHeightPx
@@ -1819,6 +1822,7 @@ fun VideoPlayerScreen(
                     .weight(if (onlineStudio) 1f else 1f - prefs.videoWeight)
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.background)
+                    .tutorialTarget(if (onlineStudio) "online.transcript" else "video.transcript")
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     val jsonList = jsonPackage?.subtitles
@@ -1834,7 +1838,7 @@ fun VideoPlayerScreen(
                             actions = onlineDrawerActions,
                             strings = strings,
                             jsonAttached = jsonPackage != null,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
+                            modifier = Modifier.padding(top = 4.dp, bottom = 10.dp).tutorialTarget("online.drawer")
                         )
                     }
 
@@ -2080,6 +2084,7 @@ fun VideoPlayerScreen(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 16.dp)
+                        .tutorialTarget(if (onlineStudio) "online.toolCluster" else "video.toolCluster")
                 )
             } // shared below-video pane: Online drawer above the cue cards
         }

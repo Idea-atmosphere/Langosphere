@@ -170,6 +170,8 @@ import com.example.ui.components.VideoPlayerScreen
 import com.example.ui.components.formatTime
 import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.AppStrings
+import com.example.ui.tutorial.LocalTutorial
+import com.example.ui.tutorial.tutorialTarget
 import java.util.Locale
 
 /**
@@ -237,6 +239,19 @@ fun OnlineVideoScreen(
 
     // Back closes the player first, then leaves a channel / search back to the feed.
     val browse by viewModel.browse.collectAsState()
+
+    // Interactive tutorial: the hub steps («online.search» … «online.watchCache»)
+    // point at the browse pane, so an open clip is closed when one of them
+    // starts; the player steps leave an open clip alone (and are explained
+    // without a spotlight when none is open).
+    val tutorial = LocalTutorial.current
+    LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
+        val stepId = tutorial.currentStepId ?: return@LaunchedEffect
+        val hubStep = stepId == "online.search" || stepId == "online.hubTabs" ||
+            stepId == "online.channelTray" || stepId == "online.instances" || stepId == "online.watchCache"
+        if (hubStep && playerOpen && !isFullScreen) viewModel.closeVideo()
+    }
+
     BackHandler(enabled = playerOpen || browse !is OnlineVideoViewModel.Browse.Feed) {
         when {
             isFullScreen -> onFullScreenToggle(false)
@@ -402,14 +417,21 @@ private fun OnlineBrowsePane(viewModel: OnlineVideoViewModel, strings: AppString
                     SoftIconButton(
                         icon = Icons.Filled.Storage,
                         contentDescription = strings.onlineWatchCacheCd,
-                        onClick = { showWatchCache = true }
+                        onClick = { showWatchCache = true },
+                        modifier = Modifier.tutorialTarget("online.watchCache")
                     )
                     Spacer(Modifier.width(6.dp))
-                    SoftIconButton(icon = Icons.Filled.Dns, contentDescription = strings.onlineInstancesTitle, onClick = { showInstances = true })
+                    SoftIconButton(
+                        icon = Icons.Filled.Dns,
+                        contentDescription = strings.onlineInstancesTitle,
+                        onClick = { showInstances = true },
+                        modifier = Modifier.tutorialTarget("online.instances")
+                    )
                 }
             }
         )
 
+        Box(modifier = Modifier.fillMaxWidth().tutorialTarget("online.search")) {
         HubSearchBar(
             query = query,
             hint = strings.onlineHubSearchHint,
@@ -430,13 +452,16 @@ private fun OnlineBrowsePane(viewModel: OnlineVideoViewModel, strings: AppString
                 }
             }
         )
+        }
 
+        Box(modifier = Modifier.fillMaxWidth().tutorialTarget("online.hubTabs")) {
         HubTabs(
             selected = hubTab,
             strings = strings,
             savedCount = saved.size,
             onSelect = { viewModel.selectHubTab(it) }
         )
+        }
         } // end of the mirrored top chrome
 
         // Tabs slide in from the side they sit on (mirrored in RTL).
@@ -448,7 +473,7 @@ private fun OnlineBrowsePane(viewModel: OnlineVideoViewModel, strings: AppString
                 (fadeIn(tween(220)) + slideInHorizontally(tween(260)) { w -> if (forward) w / 10 else -w / 10 }) togetherWith
                     fadeOut(tween(140))
             },
-            modifier = Modifier.weight(1f).fillMaxWidth(),
+            modifier = Modifier.weight(1f).fillMaxWidth().tutorialTarget("online.videoGrid"),
             label = "hubTab"
         ) { tab ->
             when (tab) {
@@ -471,6 +496,7 @@ private fun OnlineBrowsePane(viewModel: OnlineVideoViewModel, strings: AppString
                                 CompositionLocalProvider(
                                     LocalLayoutDirection provides if (appLanguage == AppLanguage.FA) LayoutDirection.Rtl else LayoutDirection.Ltr
                                 ) {
+                                    Box(modifier = Modifier.fillMaxWidth().tutorialTarget("online.channelTray")) {
                                     ChannelTray(
                                         channels = channels,
                                         selectedId = (browse as? OnlineVideoViewModel.Browse.Channel)?.channel?.id,
@@ -481,6 +507,7 @@ private fun OnlineBrowsePane(viewModel: OnlineVideoViewModel, strings: AppString
                                         onAll = { query = ""; viewModel.loadFeed() },
                                         onChannel = { query = ""; viewModel.openChannel(it) }
                                     )
+                                    }
                                 }
                             }
                             item(span = { GridItemSpan(maxLineSpan) }, key = "__context") {
