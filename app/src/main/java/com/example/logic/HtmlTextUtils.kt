@@ -7,7 +7,7 @@ import org.jsoup.Jsoup
  *
  * Used anywhere a dictionary entry's raw HTML needs to become a clean,
  * properly separated string: the offline dictionary's stored `def` field
- * (built at import time by DictionaryParser/BinaryMdictParser/SqliteDictParser),
+ * (built at import time by DictionaryParser/SqliteDictParser),
  * live MDX lookups and the Leitner box definition (AppViewModel), and the Anki
  * export / AI "learn from dictionary" memory notes.
  *

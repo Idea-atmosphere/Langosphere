@@ -13,10 +13,10 @@ import com.example.logic.SentenceCardDraft
 import com.example.logic.AnkiExporter
 import com.example.logic.DictionaryDatabaseHelper
 import com.example.logic.DictionaryParser
-import com.example.logic.BinaryMdictParser
 import com.example.logic.HtmlTextUtils
 import com.example.logic.LeitnerBoxManager
-import com.example.logic.MdictReader
+import com.example.mdict.MdictLibrary
+import com.example.mdict.audio.MdictSoundPlayer
 import com.example.logic.PdfTextExtractor
 import com.example.logic.SqliteDictParser
 import com.example.logic.SubtitleJsonParser
@@ -64,6 +64,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         /** Persisted copy of the imported JSON subtitle-learning file (filesDir). */
         const val JSON_SUBTITLE_FILE = "saved_sub_json.json"
+        /** Sub-directory of filesDir that holds the imported .mdx/.mdd files. */
+        const val MDICT_DIR = "dicts"
+        /** Set once the SQLite copies made by the pre-MDict-reader importer have been dropped. */
+        private const val PREF_MDICT_DB_PURGED = "mdict_db_copies_purged"
         /** Per-clip JSON lesson packages of the Online tab: online_json/<videoId>.json. */
         const val ONLINE_JSON_DIR = "online_json"
 
@@ -140,13 +144,19 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun removeDictionary(name: String, type: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val context = getApplication<Application>()
-            when (type) { "mdd" -> context.cacheDir.listFiles()?.forEach { f -> if (f.name != "AD.css") f.delete() }; "mdx", "txt", "db" -> dbHelper.clearAllEntries() }
+            when (type) {
+                "mdx", "mdd" -> {
+                    // Only that file goes; the other dictionaries stay open.
+                    mdictLibrary.fileFor(name).delete()
+                    mdictLibrary.reload()
+                }
+                "txt", "db" -> dbHelper.clearAllEntries()
+            }
             val current = _importedDictFiles.value.toMutableList()
             current.removeAll { it.name.equals(name, ignoreCase = true) }
             _importedDictFiles.value = current
             saveImportedDictFiles()
-            _isDictionaryLoaded.value = dbHelper.hasEntries()
-            sharedPrefs.edit().putBoolean("is_dict_loaded", dbHelper.hasEntries()).apply()
+            refreshDictionaryLoaded()
         }
     }
 
@@ -154,7 +164,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             val context = getApplication<Application>()
             dbHelper.clearAllEntries()
-            context.cacheDir.listFiles()?.forEach { f -> if (f.name != "AD.css") f.delete() }
+            mdictLibrary.close()
+            mdictLibrary.files().forEach { it.delete() }
             _isDictionaryLoaded.value = false
             _importedDictFiles.value = emptyList()
             sharedPrefs.edit().putBoolean("is_dict_loaded", false).putString("imported_dict_files", "").apply()
@@ -200,13 +211,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val activePersianContext: StateFlow<String?> = _activePersianContext
     private val _dictionaryResults = MutableStateFlow<List<DictionaryEntry>?>(null)
     val dictionaryResults: StateFlow<List<DictionaryEntry>?> = _dictionaryResults
-    private var mdxFilePath: String? = null
-    private var mdictReader: MdictReader? = null
-    // Display name of the currently loaded .mdx file, tagged onto entries
-    // built live from mdictReader (see lookupWord) so they also carry a
-    // `source` (DictionaryEntry.source) usable by the dictionary popup's
-    // per-file filter buttons, same as DB-backed .txt/.mdd/.db imports.
-    private var mdxSourceName: String = ""
+    // MDX/MDD dictionaries live as plain files in filesDir/dicts/ (original
+    // names, so an MDX pairs with its MDDs by basename) and are read live by
+    // the MDict parser (com.example.mdict): nothing is copied into SQLite.
+    // Hits are tagged with the imported file name as `source`
+    // (DictionaryEntry.source) so the popup's per-file filter chips work the
+    // same as for DB-backed .txt/.db imports.
+    private val mdictLibrary = MdictLibrary(File(application.filesDir, MDICT_DIR))
+    private val mdictSoundPlayer = MdictSoundPlayer(application.cacheDir)
+    /** Message for the dictionary popup's sound button (file missing / cannot play). */
+    private val _dictSoundMessage = MutableStateFlow<String?>(null)
+    val dictSoundMessage: StateFlow<String?> = _dictSoundMessage
 
     // Leitner box (spaced-repetition flashcards saved from the dictionary popup).
     private val _leitnerCards = MutableStateFlow<List<LeitnerCard>>(emptyList())
@@ -520,7 +535,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val context = getApplication<Application>()
                 val words = mutableSetOf<String>()
                 words.addAll(dbHelper.getAllWords())
-                if (mdictReader != null && mdictReader!!.isInitialized) { words.addAll(mdictReader!!.getAllKeysSorted().map { it.word }) }
+                words.addAll(mdictLibrary.headwords())
                 if (words.isEmpty()) { _learnResult.value = strings().dictNotLoadedForLearning; return@launch }
                 val total = words.size; var count = 0
                 for ((index, word) in words.withIndex()) {
@@ -528,7 +543,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     var def = ""
                     val entries = dbHelper.getEntriesForWord(word)
                     if (entries.isNotEmpty()) def = entries[0].def.take(200)
-                    else if (mdictReader != null && mdictReader!!.isInitialized) { try { val infos = mdictReader!!.locateAll(word); if (infos.isNotEmpty()) { var html = mdictReader!!.readOneMdx(infos[0]); if (html.startsWith("@@@LINK=")) { val target = html.removePrefix("@@@LINK=").replace(Regex("[\\n\\r\\x00]"), "").trim(); if (target.isNotEmpty()) { val li = mdictReader!!.locateAll(target); if (li.isNotEmpty()) html = mdictReader!!.readOneMdx(li[0]) } }; def = HtmlTextUtils.htmlToReadableText(html).take(200) } } catch (e: Exception) {} }
+                    else { try { val hit = mdictLibrary.lookup(word).firstOrNull(); if (hit != null) def = HtmlTextUtils.htmlToReadableText(hit.html).take(200) } catch (e: Exception) {} }
                     if (def.isNotBlank()) { val notes = AiMemoryManager.loadDictNotes(context); if (notes.none { it.word.equals(word, ignoreCase = true) }) { AiMemoryManager.addDictNote(context, word, def); count++ } }
                 }
                 _learnResult.value = strings().learnedWordsCount(count, total)
@@ -542,15 +557,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshManagedFiles() {
         viewModelScope.launch(Dispatchers.IO) {
             val context = getApplication<Application>(); val filesDir = context.filesDir; val files = mutableListOf<ManagedFileInfo>()
-            listOf("saved_sub_en.srt", "saved_sub_fa.srt", "saved_sub_json.json", "saved_reader_text.txt", "current_dict.mdx", "current_dict.mdd").forEach { name -> val f = File(filesDir, name); if (f.exists()) files.add(ManagedFileInfo(name, f.length(), f.lastModified())) }
+            listOf("saved_sub_en.srt", "saved_sub_fa.srt", "saved_sub_json.json", "saved_reader_text.txt").forEach { name -> val f = File(filesDir, name); if (f.exists()) files.add(ManagedFileInfo(name, f.length(), f.lastModified())) }
+            mdictLibrary.files().forEach { f -> files.add(ManagedFileInfo("$MDICT_DIR/${f.name}", f.length(), f.lastModified())) }
             val aiMemoryDir = File(filesDir, "ai_memory")
             if (aiMemoryDir.exists() && aiMemoryDir.isDirectory) aiMemoryDir.listFiles()?.forEach { f -> if (f.isFile) files.add(ManagedFileInfo("ai_memory/${f.name}", f.length(), f.lastModified())) }
             _managedFiles.value = files
         }
     }
-    fun deleteManagedFile(fileName: String) { viewModelScope.launch(Dispatchers.IO) { val f = File(getApplication<Application>().filesDir, fileName); if (f.exists()) f.delete(); refreshManagedFiles() } }
+    fun deleteManagedFile(fileName: String) { viewModelScope.launch(Dispatchers.IO) { val f = File(getApplication<Application>().filesDir, fileName); if (f.exists()) f.delete(); if (fileName.startsWith("$MDICT_DIR/")) { mdictLibrary.reload(); refreshDictionaryLoaded() }; refreshManagedFiles() } }
     fun exportToDownloads(fileName: String) { viewModelScope.launch(Dispatchers.IO) { try { val context = getApplication<Application>(); val sf = File(context.filesDir, fileName); if (!sf.exists()) { _exportResult.value = strings().fileNotFoundError; return@launch }; val dn = fileName.substringAfterLast("/"); val path = saveToDownloads(context, dn, sf); _exportResult.value = strings().savedAtPath(path) } catch (e: Exception) { _exportResult.value = strings().errorWithMessage(e.message) } } }
-    fun exportAllToDownloads() { viewModelScope.launch(Dispatchers.IO) { try { val context = getApplication<Application>(); val filesDir = context.filesDir; val names = mutableListOf<String>(); listOf("saved_sub_en.srt", "saved_sub_fa.srt", "saved_sub_json.json", "saved_reader_text.txt", "current_dict.mdx", "current_dict.mdd").forEach { n -> val f = File(filesDir, n); if (f.exists()) names.add(n) }; val amDir = File(filesDir, "ai_memory"); if (amDir.exists() && amDir.isDirectory) amDir.listFiles()?.forEach { f -> if (f.isFile) names.add("ai_memory/${f.name}") }; if (names.isEmpty()) { _exportResult.value = strings().noFilesToExport; return@launch }; var ok = 0; val savedNames = mutableListOf<String>(); for (n in names) { try { val sf = File(filesDir, n); val dn = n.substringAfterLast("/"); saveToDownloads(context, dn, sf); ok++; savedNames.add(dn) } catch (e: Exception) {} }; _exportResult.value = strings().exportedFilesSummary(ok, names.size, savedNames.joinToString(", ")) } catch (e: Exception) { _exportResult.value = strings().errorWithMessage(e.message) } } }
+    fun exportAllToDownloads() { viewModelScope.launch(Dispatchers.IO) { try { val context = getApplication<Application>(); val filesDir = context.filesDir; val names = mutableListOf<String>(); listOf("saved_sub_en.srt", "saved_sub_fa.srt", "saved_sub_json.json", "saved_reader_text.txt").forEach { n -> val f = File(filesDir, n); if (f.exists()) names.add(n) }; mdictLibrary.files().forEach { f -> names.add("$MDICT_DIR/${f.name}") }; val amDir = File(filesDir, "ai_memory"); if (amDir.exists() && amDir.isDirectory) amDir.listFiles()?.forEach { f -> if (f.isFile) names.add("ai_memory/${f.name}") }; if (names.isEmpty()) { _exportResult.value = strings().noFilesToExport; return@launch }; var ok = 0; val savedNames = mutableListOf<String>(); for (n in names) { try { val sf = File(filesDir, n); val dn = n.substringAfterLast("/"); saveToDownloads(context, dn, sf); ok++; savedNames.add(dn) } catch (e: Exception) {} }; _exportResult.value = strings().exportedFilesSummary(ok, names.size, savedNames.joinToString(", ")) } catch (e: Exception) { _exportResult.value = strings().errorWithMessage(e.message) } } }
     fun exportSrtToDownloads() { viewModelScope.launch(Dispatchers.IO) { try { val context = getApplication<Application>(); val faList = _subFaList.value; if (faList.isEmpty()) { _saveMessage.value = strings().noFaSubtitleExists; return@launch }; val srtFile = saveSubFaSrt() ?: throw Exception(strings().srtCreateError); val displayName = if (_subFaFileName.value.isNotEmpty()) _subFaFileName.value else "subtitle_fa.srt"; val path = saveToDownloads(context, displayName, srtFile); _saveMessage.value = strings().savedAtPath(path) } catch (e: Exception) { _saveMessage.value = strings().errorWithMessage(e.message) } } }
     private fun saveToDownloads(context: Context, displayName: String, srcFile: File): String { return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) { val resolver = context.contentResolver; val values = android.content.ContentValues().apply { put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, displayName); put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream"); put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS) }; val uri = resolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: throw Exception(strings().downloadsCreateError); resolver.openOutputStream(uri)?.use { out -> srcFile.inputStream().use { inp -> inp.copyTo(out) } } ?: throw Exception(strings().fileWriteError); "Downloads/$displayName" } else { val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS); if (!downloadsDir.exists()) downloadsDir.mkdirs(); val destFile = File(downloadsDir, displayName); srcFile.copyTo(destFile, overwrite = true); destFile.absolutePath } }
     fun clearExportResult() { _exportResult.value = null }
@@ -697,8 +713,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             var hasEntries = dbHelper.hasEntries()
             if (!hasEntries) { try { context.assets.open("default_dict.txt").use { s -> com.example.logic.DictionaryParser.parseAndSaveToDb(s, dbHelper, true) }; hasEntries = dbHelper.hasEntries() } catch (e: Exception) { e.printStackTrace() } }
             _isDictionaryLoaded.value = hasEntries
-            val mdxFile = File(context.filesDir, "current_dict.mdx")
-            if (mdxFile.exists()) { try { android.util.Log.d("AppViewModel", "Restoring MdictReader: ${mdxFile.absolutePath}, size=${mdxFile.length()}"); val reader = MdictReader(mdxFile.absolutePath); reader.open(); reader.initDict(maxKeys = 0); mdictReader = reader; mdxFilePath = mdxFile.absolutePath; mdxSourceName = _importedDictFiles.value.firstOrNull { it.type == "mdx" }?.name ?: ""; android.util.Log.d("AppViewModel", "MdictReader restored OK, numEntries=${reader.numEntries}") } catch (e: Exception) { android.util.Log.e("AppViewModel", "Failed to restore MdictReader: ${e.message}") } } else { android.util.Log.w("AppViewModel", "No current_dict.mdx found") }
+            migrateLegacyMdictFiles(context)
+            try {
+                mdictLibrary.reload()
+                android.util.Log.d("AppViewModel", "MDict library: ${mdictLibrary.dictionaries.size} dictionaries, ${mdictLibrary.errors.size} unreadable files")
+                purgeLegacyMdictDbCopies()
+            } catch (e: Exception) { android.util.Log.e("AppViewModel", "Failed to open MDict library: ${e.message}") }
+            refreshDictionaryLoaded()
         }
     }
 
@@ -710,16 +731,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val originalDisplayName = getUriDisplayName(context, uri)
                 val displayName = originalDisplayName.lowercase()
                 val isSqliteDb = displayName.endsWith(".db") || displayName.endsWith(".sqlite") || displayName.endsWith(".sqlite3")
-                if (displayName.endsWith(".mdx")) {
-                    val destFile = java.io.File(context.filesDir, "current_dict.mdx")
-                    context.contentResolver.openInputStream(uri)?.use { input -> java.io.FileOutputStream(destFile).use { output -> input.copyTo(output) } }
-                    val maxWords = sharedPrefs.getInt("max_words", 0)
-                    BinaryMdictParser.parseMdx(destFile.absolutePath, dbHelper, clearFirst, maxWords, originalDisplayName) { p -> _importCount.value = p }
-                    mdictReader?.close(); val reader = MdictReader(destFile.absolutePath); reader.open(); reader.initDict(maxKeys = 0); mdictReader = reader; mdxFilePath = destFile.absolutePath; mdxSourceName = originalDisplayName
-                } else if (displayName.endsWith(".mdd")) {
-                    val destFile = java.io.File(context.filesDir, "current_dict.mdd")
-                    context.contentResolver.openInputStream(uri)?.use { input -> java.io.FileOutputStream(destFile).use { output -> input.copyTo(output) } }
-                    BinaryMdictParser.parseMdd(destFile.absolutePath, dbHelper, clearFirst, originalDisplayName) { p -> _importCount.value = p }
+                if (displayName.endsWith(".mdx") || displayName.endsWith(".mdd")) {
+                    // MDict files are kept as-is (no SQLite import): the parser
+                    // reads entries lazily straight from the file, so a
+                    // multi-hundred-MB dictionary imports in the time it takes
+                    // to copy it. The file keeps its original name so an MDX
+                    // and its MDD(s) pair up by basename.
+                    importMdictFile(context, uri, originalDisplayName)
                 } else if (isSqliteDb) {
                     // SQLiteDatabase needs a real file path (not a content:// stream), so
                     // copy the picked .db/.sqlite/.sqlite3 file into cacheDir first, import
@@ -737,13 +755,114 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     context.contentResolver.openInputStream(uri)?.use { s -> DictionaryParser.parseAndSaveToDb(s, dbHelper, clearFirst, originalDisplayName) { p -> _importCount.value = p } }
                 }
-                val isLoaded = dbHelper.hasEntries(); _isDictionaryLoaded.value = isLoaded; sharedPrefs.edit().putBoolean("is_dict_loaded", isLoaded).apply()
-                addDictFile(originalDisplayName, when { displayName.endsWith(".mdx") -> "mdx"; displayName.endsWith(".mdd") -> "mdd"; isSqliteDb -> "db"; else -> "txt" })
+                refreshDictionaryLoaded()
+                val isMdict = displayName.endsWith(".mdx") || displayName.endsWith(".mdd")
+                // MDict files are listed under the exact on-disk name so the
+                // popup's filter chips, removal and the file manager all agree.
+                val listedName = if (isMdict) MdictLibrary.sanitizeFileName(originalDisplayName) else originalDisplayName
+                addDictFile(listedName, when { displayName.endsWith(".mdx") -> "mdx"; displayName.endsWith(".mdd") -> "mdd"; isSqliteDb -> "db"; else -> "txt" })
             } catch (e: Exception) { e.printStackTrace(); _importError.value = strings().apiErrorMessage(e) } finally { _isImportingDict.value = false }
         }
     }
 
     fun clearImportError() { _importError.value = null }
+
+    /**
+     * Copies a picked .mdx/.mdd into the MDict directory and reopens the
+     * library. A file the parser cannot open is deleted again and the
+     * typed [com.example.mdict.MdictException] is rethrown, so the import
+     * dialog shows a localized reason instead of a half-imported dictionary.
+     */
+    private fun importMdictFile(context: Context, uri: Uri, displayName: String) {
+        val target = mdictLibrary.fileFor(displayName)
+        target.parentFile?.mkdirs()
+        val tmp = File(target.parentFile, target.name + ".part")
+        try {
+            val input = context.contentResolver.openInputStream(uri) ?: throw java.io.FileNotFoundException(displayName)
+            input.use { src -> java.io.FileOutputStream(tmp).use { out -> src.copyTo(out) } }
+            if (target.exists()) target.delete()
+            if (!tmp.renameTo(target)) { tmp.copyTo(target, overwrite = true); tmp.delete() }
+        } finally { tmp.delete() }
+        mdictLibrary.reload()
+        val error = mdictLibrary.errors[target.name]
+        if (error != null) {
+            target.delete()
+            mdictLibrary.reload()
+            throw error
+        }
+        // The progress dialog counts "words": report the headword count of the
+        // dictionary that was just opened (0 for a resource-only .mdd).
+        _importCount.value = mdictLibrary.dictionaries.firstOrNull { it.fileName == target.name }?.numEntries ?: 0
+    }
+
+    /**
+     * Versions before the MDict reader rewrite kept a single
+     * filesDir/current_dict.mdx (+ .mdd). Move them into the dictionary
+     * directory under the name the user imported them as, so they keep
+     * working (and keep pairing) after the update.
+     */
+    private fun migrateLegacyMdictFiles(context: Context) {
+        for (type in listOf("mdx", "mdd")) {
+            val legacy = File(context.filesDir, "current_dict.$type")
+            if (!legacy.exists()) continue
+            val importedName = _importedDictFiles.value.firstOrNull { it.type == type }?.name
+                ?.takeIf { it.endsWith(".$type", ignoreCase = true) }
+                ?: "current_dict.$type"
+            val target = mdictLibrary.fileFor(importedName)
+            try {
+                target.parentFile?.mkdirs()
+                if (target.exists() || !legacy.renameTo(target)) {
+                    if (!target.exists()) legacy.copyTo(target, overwrite = true)
+                    legacy.delete()
+                }
+                android.util.Log.d("AppViewModel", "Migrated legacy $type dictionary to ${target.name}")
+            } catch (e: Exception) { android.util.Log.e("AppViewModel", "Legacy $type migration failed: ${e.message}") }
+        }
+    }
+
+    /**
+     * One-time cleanup. Before the MDict reader rewrite, importing an .mdx
+     * also copied every entry into SQLite (and an .mdd its key names). Those
+     * rows would now show up next to the live hits as duplicates, so they are
+     * dropped once the dictionary file itself is open again.
+     */
+    private fun purgeLegacyMdictDbCopies() {
+        if (sharedPrefs.getBoolean(PREF_MDICT_DB_PURGED, false)) return
+        var allDone = true
+        for (f in _importedDictFiles.value) {
+            when (f.type) {
+                "mdd" -> dbHelper.deleteEntriesBySource(f.name)
+                "mdx" -> {
+                    val open = mdictLibrary.dictionaries.any { it.fileName.equals(MdictLibrary.sanitizeFileName(f.name), ignoreCase = true) }
+                    if (open) dbHelper.deleteEntriesBySource(f.name) else allDone = false
+                }
+            }
+        }
+        if (allDone) sharedPrefs.edit().putBoolean(PREF_MDICT_DB_PURGED, true).apply()
+    }
+
+    /** "Offline dictionary active" = SQLite entries OR at least one open MDX. */
+    private fun refreshDictionaryLoaded() {
+        val loaded = dbHelper.hasEntries() || !mdictLibrary.isEmpty
+        _isDictionaryLoaded.value = loaded
+        sharedPrefs.edit().putBoolean("is_dict_loaded", loaded).apply()
+    }
+
+    /** Resource bytes (image/CSS/audio) an entry in the dictionary popup references, or null. */
+    fun dictResource(path: String): ByteArray? = try { mdictLibrary.resource(path) } catch (e: Exception) { null }
+
+    /** Plays a pronunciation link tapped in the dictionary popup. */
+    fun playDictSound(path: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = try { mdictSoundPlayer.play(path) { dictResource(it) } } catch (e: Exception) { MdictSoundPlayer.Result.FAILED }
+            when (result) {
+                MdictSoundPlayer.Result.PLAYING -> Unit
+                MdictSoundPlayer.Result.NOT_FOUND -> _dictSoundMessage.value = strings().dictSoundNotFound
+                MdictSoundPlayer.Result.FAILED -> _dictSoundMessage.value = strings().dictSoundPlayFailed
+            }
+        }
+    }
+    fun clearDictSoundMessage() { _dictSoundMessage.value = null }
 
     /**
      * Saves the SAF document handle as well as its display name. The extracted
@@ -1359,38 +1478,28 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _activeJsonWord.value = findJsonWord(cleanWord, englishContext)
         viewModelScope.launch(Dispatchers.IO) {
             _isActiveWordInLeitner.value = leitnerHelper.containsWord(cleanWord)
-            val reader = mdictReader
-            if (reader != null) {
-                try {
-                    val infos = reader.locateAll(cleanWord)
-                    if (infos.isNotEmpty()) {
-                        val entries = mutableListOf<DictionaryEntry>()
-                        for (info in infos) {
-                            var html = reader.readOneMdx(info)
-                            if (html.startsWith("@@@LINK=")) {
-                                val target = html.removePrefix("@@@LINK=").replace(Regex("[\\n\\r\\x00]"), "").trim()
-                                if (target.isNotEmpty()) {
-                                    val li = reader.locateAll(target)
-                                    for (l in li) {
-                                        html = reader.readOneMdx(l)
-                                        val (exOrig, exTrans) = HtmlTextUtils.extractHtmlExamples(html)
-                                        entries.add(DictionaryEntry(originalWord = cleanWord, html = html, phonetic = "", pos = "", def = HtmlTextUtils.htmlToReadableText(html), source = mdxSourceName, exampleOriginal = exOrig, exampleTranslation = exTrans))
-                                    }
-                                }
-                            } else {
-                                val (exOrig, exTrans) = HtmlTextUtils.extractHtmlExamples(html)
-                                entries.add(DictionaryEntry(originalWord = cleanWord, html = html, phonetic = "", pos = "", def = HtmlTextUtils.htmlToReadableText(html), source = mdxSourceName, exampleOriginal = exOrig, exampleTranslation = exTrans))
-                            }
-                        }
-                        if (entries.isNotEmpty()) { _dictionaryResults.value = entries; return@launch }
+            try {
+                val hits = mdictLibrary.lookup(word.trim())
+                if (hits.isNotEmpty()) {
+                    val entries = hits.map { hit ->
+                        val (exOrig, exTrans) = HtmlTextUtils.extractHtmlExamples(hit.html)
+                        DictionaryEntry(originalWord = cleanWord, html = hit.html, phonetic = "", pos = "", def = HtmlTextUtils.htmlToReadableText(hit.html), source = hit.fileName, exampleOriginal = exOrig, exampleTranslation = exTrans)
                     }
-                } catch (e: Exception) { android.util.Log.w("AppViewModel", "MdictReader lookup failed: ${e.message}") }
-            }
+                    // Entries imported into SQLite (.txt/.db) still show next to
+                    // the live MDX hits, so mixed libraries keep working; a
+                    // stale SQLite copy of an open MDX (pre-rewrite import) is
+                    // skipped so the same entry is not listed twice.
+                    val liveSources = hits.map { it.fileName }.toSet()
+                    val dbEntries = dbHelper.getEntriesForWord(cleanWord).filter { db -> liveSources.none { it.equals(db.source, ignoreCase = true) } }
+                    _dictionaryResults.value = entries + dbEntries
+                    return@launch
+                }
+            } catch (e: Exception) { android.util.Log.w("AppViewModel", "MDict lookup failed: ${e.message}") }
             _dictionaryResults.value = dbHelper.getEntriesForWord(cleanWord)
         }
     }
 
-    override fun onCleared() { super.onCleared(); mdictReader?.close(); mdictReader = null; translateJob?.cancel(); learnSubsJob?.cancel(); learnDictJob?.cancel() }
+    override fun onCleared() { super.onCleared(); mdictLibrary.close(); mdictSoundPlayer.release(); translateJob?.cancel(); learnSubsJob?.cancel(); learnDictJob?.cancel() }
     fun clearActiveWord() { _activeWord.value = null; _dictionaryResults.value = null; _activeEnglishContext.value = null; _activePersianContext.value = null; _isActiveWordInLeitner.value = false; _activeJsonWord.value = null }
 
     fun refreshLeitnerCards() {

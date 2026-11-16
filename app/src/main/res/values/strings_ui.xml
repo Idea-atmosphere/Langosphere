@@ -723,6 +723,14 @@
     <string name="ai_empty_response">Empty response from server</string>
     <string name="ai_note_saved">Note/rule saved.</string>
     <string name="sqlite_no_word_table">No recognizable word/definition table found in this database file</string>
+    <!-- MDict (.mdx/.mdd) reader -->
+    <string name="mdict_error_corrupt">This file is damaged or is not a valid MDX/MDD dictionary</string>
+    <string name="mdict_error_locked">This dictionary is encrypted with a passcode and cannot be opened</string>
+    <string name="mdict_error_unsupported">This dictionary uses a compression or encryption method that is not supported yet (e.g. LZO)</string>
+    <string name="mdict_error_closed">The dictionary file was closed; please reopen the app</string>
+    <string name="dict_sound_not_found">Audio file not found in the dictionary resources</string>
+    <string name="dict_sound_play_failed">Could not play the audio</string>
+    <string name="dict_image_viewer_cd">Dictionary image, tap to close</string>
     <string name="memory_summary">AI memory:\n Custom prompts: %1$s\n Corrections: %2$s\n Rules &amp; notes: %3$s\n Glossary: %4$s\n Dictionary notes: %5$s\n Cached translations: %6$s</string>
     <!-- Phase 2: chat -->
     <string name="chat_new_title">New chat</string>

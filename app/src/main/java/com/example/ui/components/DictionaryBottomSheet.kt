@@ -1,6 +1,15 @@
 package com.example.ui.components
 
+import android.graphics.BitmapFactory
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import com.example.mdict.MdictEntryHtml
+import java.io.ByteArrayInputStream
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -87,9 +96,16 @@ fun DictionaryBottomSheet(
     // JSON learning data for the searched word (when a JSON learning file
     // exists). "The dictionary system follows the JSON learning data": this
     // card is rendered FIRST, above the normal dictionary results.
-    jsonWord: JsonWord? = null
+    jsonWord: JsonWord? = null,
+    // MDict (.mdx/.mdd) reader hooks: images/CSS/audio referenced by an entry
+    // are served from the imported MDD files, and sound links play through
+    // the app (Speex via the bundled decoder, the rest via MediaPlayer).
+    resourceProvider: (String) -> ByteArray? = { null },
+    onPlaySound: (String) -> Unit = {}
 ) {
     val configuration = LocalConfiguration.current
+    // Full-screen viewer for an image tapped inside an entry (bytes from the MDD).
+    var viewerImage by remember { mutableStateOf<ByteArray?>(null) }
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val isDark = isSystemInDarkTheme()
     val context = LocalContext.current
@@ -209,7 +225,15 @@ fun DictionaryBottomSheet(
                         when {
                             results == null -> LookupInProgressCard()
                             filteredResults.isNullOrEmpty() -> NoResultsCard(strings)
-                            else -> WebViewPart(results = filteredResults, isDark = isDark, modifier = Modifier.weight(1f))
+                            else -> WebViewPart(
+                                results = filteredResults,
+                                isDark = isDark,
+                                modifier = Modifier.weight(1f),
+                                resourceProvider = resourceProvider,
+                                onNavigate = onSearchQueryChange,
+                                onSound = onPlaySound,
+                                onImage = { path -> resourceProvider(path)?.let { viewerImage = it } }
+                            )
                         }
                     }
                 }
@@ -259,7 +283,11 @@ fun DictionaryBottomSheet(
                             WebViewPart(
                                 results = filteredResults,
                                 isDark = isDark,
-                                modifier = Modifier.fillMaxWidth().fillParentMaxHeight(0.6f)
+                                modifier = Modifier.fillMaxWidth().fillParentMaxHeight(0.6f),
+                                resourceProvider = resourceProvider,
+                                onNavigate = onSearchQueryChange,
+                                onSound = onPlaySound,
+                                onImage = { path -> resourceProvider(path)?.let { viewerImage = it } }
                             )
                         }
                     }
@@ -281,6 +309,49 @@ fun DictionaryBottomSheet(
             }
         }
     }
+        }
+    }
+
+    viewerImage?.let { bytes ->
+        DictionaryImageViewer(bytes = bytes, contentDescription = strings.dictImageViewerCd) { viewerImage = null }
+    }
+}
+
+/**
+ * Full-screen viewer for an image tapped inside a dictionary entry (the
+ * bytes come straight from the MDD, nothing touches the network). Tap
+ * anywhere to close. Undecodable bytes just close the viewer again.
+ */
+@Composable
+private fun DictionaryImageViewer(bytes: ByteArray, contentDescription: String, onDismiss: () -> Unit) {
+    val bitmap = remember(bytes) {
+        try {
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+        } catch (e: Throwable) {
+            null
+        }
+    }
+    if (bitmap == null) {
+        LaunchedEffect(bytes) { onDismiss() }
+        return
+    }
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.92f))
+                .clickable(onClick = onDismiss),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize().padding(12.dp)
+            )
         }
     }
 }
@@ -911,7 +982,19 @@ private fun Color.toCssRgba(alpha: Float): String {
 }
 
 @Composable
-fun WebViewPart(results: List<DictionaryEntry>, isDark: Boolean, modifier: Modifier = Modifier) {
+fun WebViewPart(
+    results: List<DictionaryEntry>,
+    isDark: Boolean,
+    modifier: Modifier = Modifier,
+    /** Bytes of an MDD resource (image/CSS/audio) for a resource path, or null. */
+    resourceProvider: (String) -> ByteArray? = { null },
+    /** A plain-word link (entry://word) was tapped: look that word up. */
+    onNavigate: (String) -> Unit = {},
+    /** A sound:// link (or an audio-file link) was tapped. */
+    onSound: (String) -> Unit = {},
+    /** A standalone image was tapped (path of the MDD resource). */
+    onImage: (String) -> Unit = {}
+) {
     // The definition renderer used to hardcode a sepia/teal palette that had
     // nothing to do with the app's theme. Every color below is now derived
     // from the live Material color scheme, so the dictionary matches the rest
@@ -939,13 +1022,35 @@ fun WebViewPart(results: List<DictionaryEntry>, isDark: Boolean, modifier: Modif
     // made long entries impossible to read.
     val lastLoadedHtml = remember { arrayOfNulls<String>(1) }
 
+    // The WebViewClient is created once in `factory`; read the callbacks
+    // through rememberUpdatedState so a tap always reaches the latest lambdas
+    // (the navigate callback captures the current subtitle context).
+    val currentResourceProvider by rememberUpdatedState(resourceProvider)
+    val currentOnNavigate by rememberUpdatedState(onNavigate)
+    val currentOnSound by rememberUpdatedState(onSound)
+    val currentOnImage by rememberUpdatedState(onImage)
+
     AndroidView(
         modifier = modifier.fillMaxWidth(),
         factory = { context ->
             WebView(context).apply {
                 settings.javaScriptEnabled = true
                 settings.defaultTextEncodingName = "utf-8"
+                // Locked down: entries come from files on the device and must
+                // stay there. No file/content access, and every http(s)
+                // request is answered with an empty body in
+                // shouldInterceptRequest below, so a dictionary's HTML can
+                // never reach the network (tracking pixels included).
+                settings.allowFileAccess = false
+                settings.allowContentAccess = false
+                settings.domStorageEnabled = false
                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                webViewClient = DictionaryWebViewClient(
+                    resourceProvider = { currentResourceProvider(it) },
+                    onNavigate = { currentOnNavigate(it) },
+                    onSound = { currentOnSound(it) },
+                    onImage = { currentOnImage(it) }
+                )
                 var lastTouchY = 0f
                 setOnTouchListener { view, event ->
                     // Only claim the gesture for the WebView while it can
@@ -985,7 +1090,10 @@ fun WebViewPart(results: List<DictionaryEntry>, isDark: Boolean, modifier: Modif
         },
         update = { webView ->
             val entriesHtml = results.joinToString("\n") { entry ->
-                """<div class="entry-group">${entry.html}</div>"""
+                // Relative resource links → https://mdict.local/… and word
+                // links → entry://… so the WebViewClient can serve them from
+                // the MDD files or look the word up.
+                """<div class="entry-group">${MdictEntryHtml.rewriteEntryLinks(entry.html)}</div>"""
             }
             val htmlContent = """
                 <!DOCTYPE html>
@@ -1110,8 +1218,73 @@ fun WebViewPart(results: List<DictionaryEntry>, isDark: Boolean, modifier: Modif
             """.trimIndent()
             if (lastLoadedHtml[0] != htmlContent) {
                 lastLoadedHtml[0] = htmlContent
-                webView.loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)
+                // A fake-host base URL: rewritten resource links and CSS
+                // url(...) references inside MDD stylesheets all resolve to
+                // https://mdict.local/... and are served by
+                // DictionaryWebViewClient (same-origin, no mixed content).
+                webView.loadDataWithBaseURL(MdictEntryHtml.BASE_URL, htmlContent, "text/html", "utf-8", null)
             }
         }
     )
+}
+
+/**
+ * Routes everything the dictionary WebView asks for:
+ *  - `https://mdict.local/path` (rewritten resource links, CSS url(...)
+ *    references) → bytes from the MDD files (images, stylesheets, fonts)
+ *    via [resourceProvider]; a missing resource gets an empty response so
+ *    the fake host is never resolved on the network;
+ *  - `entry://word` → [onNavigate]; `sound://path` and audio-file links →
+ *    [onSound]; `image://path` → [onImage];
+ *  - any other http/https URL → blocked (empty response / swallowed tap).
+ */
+private class DictionaryWebViewClient(
+    private val resourceProvider: (String) -> ByteArray?,
+    private val onNavigate: (String) -> Unit,
+    private val onSound: (String) -> Unit,
+    private val onImage: (String) -> Unit
+) : WebViewClient() {
+
+    // minSdk is 24, so only the WebResourceRequest overloads are ever called.
+    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+        return handleLink(request.url.toString())
+    }
+
+    private fun handleLink(url: String): Boolean {
+        val resourcePath = MdictEntryHtml.resourcePathOf(url)
+        return when {
+            url.startsWith("entry://") -> { onNavigate(MdictEntryHtml.decodeUrlPart(url.removePrefix("entry://"))); true }
+            url.startsWith("sound://") -> { onSound(MdictEntryHtml.decodeUrlPart(url.removePrefix("sound://"))); true }
+            url.startsWith("image://") -> { onImage(MdictEntryHtml.decodeUrlPart(url.removePrefix("image://"))); true }
+            // <a href="word.mp3"> in an entry: play it instead of loading it as a page.
+            resourcePath != null && MdictEntryHtml.isAudioPath(resourcePath) -> { onSound(resourcePath); true }
+            resourcePath != null -> true // A non-audio resource as a page: ignore the tap.
+            url.startsWith("http://") || url.startsWith("https://") -> true // Never leaves the device.
+            url.startsWith("about:") || url.startsWith("data:") -> false
+            else -> true
+        }
+    }
+
+    override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+        return intercept(request.url.toString())
+    }
+
+    private fun intercept(url: String): WebResourceResponse? {
+        val path = MdictEntryHtml.resourcePathOf(url)
+        if (path != null) {
+            val bytes = try {
+                resourceProvider(path)
+            } catch (e: Exception) {
+                null
+            }
+            if (bytes != null) {
+                return WebResourceResponse(MdictEntryHtml.mimeFor(path), null, ByteArrayInputStream(bytes))
+            }
+        }
+        if (url.startsWith("http://") || url.startsWith("https://")) {
+            // Blocked: not even sub-resources may load from the network.
+            return WebResourceResponse("text/plain", "UTF-8", ByteArrayInputStream(ByteArray(0)))
+        }
+        return null
+    }
 }

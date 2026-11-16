@@ -8,7 +8,8 @@ import com.example.model.DictionaryEntry
 /**
  * Imports a plain SQLite (.db/.sqlite/.sqlite3) dictionary file into the
  * app's own dictionary_entries table (see DictionaryDatabaseHelper), the
- * same shared table used by imported .txt and .mdx/.mdd dictionaries.
+ * same shared table used by imported .txt dictionaries (.mdx/.mdd files are
+ * read live by com.example.mdict instead).
  *
  * Many offline dictionary apps (StarDict-style exports, GoldenDict, etc.)
  * ship a single SQLite file with one table containing a "word"-like column
@@ -124,7 +125,7 @@ object SqliteDictParser {
      * entry (see DictionaryEntry.source) so the dictionary popup can later
      * offer "only show results from this file" filter buttons when multiple
      * dictionaries are imported.
-     * @param maxWords Maximum number of words to import (0 = unlimited), mirrors BinaryMdictParser's maxKeys.
+     * @param maxWords Maximum number of words to import (0 = unlimited).
      */
     fun parseSqliteDb(
         filePath: String,

@@ -126,6 +126,13 @@ class DictionaryDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DAT
         db.execSQL("DELETE FROM $TABLE_NAME")
     }
 
+    /** Removes every entry imported from [source] (an imported file's display name). Returns the row count. */
+    fun deleteEntriesBySource(source: String): Int {
+        if (source.isBlank()) return 0
+        val db = writableDatabase
+        return db.delete(TABLE_NAME, "$COLUMN_SOURCE = ?", arrayOf(source))
+    }
+
     fun insertEntriesInBatch(entries: List<DictionaryEntry>) {
         if (entries.isEmpty()) return
         val db = writableDatabase

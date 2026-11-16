@@ -723,6 +723,14 @@
     <string name="ai_empty_response">پاسخ خالی از سرور</string>
     <string name="ai_note_saved">یادداشت/قانون ذخیره شد.</string>
     <string name="sqlite_no_word_table">هیچ جدول واژه/تعریف قابل شناسایی در این فایل دیتابیس پیدا نشد</string>
+    <!-- MDict (.mdx/.mdd) reader -->
+    <string name="mdict_error_corrupt">این فایل خراب است یا دیکشنری MDX/MDD معتبری نیست</string>
+    <string name="mdict_error_locked">این دیکشنری با رمز قفل شده و قابل باز کردن نیست</string>
+    <string name="mdict_error_unsupported">این دیکشنری از روش فشرده‌سازی یا رمزنگاری‌ای استفاده می‌کند که هنوز پشتیبانی نمی‌شود (مثلاً LZO)</string>
+    <string name="mdict_error_closed">فایل دیکشنری بسته شده است؛ لطفاً برنامه را دوباره باز کنید</string>
+    <string name="dict_sound_not_found">فایل صوتی در منابع دیکشنری پیدا نشد</string>
+    <string name="dict_sound_play_failed">پخش صدا ممکن نشد</string>
+    <string name="dict_image_viewer_cd">تصویر دیکشنری، برای بستن لمس کنید</string>
     <string name="memory_summary">حافظه هوش مصنوعی:\n پرامپت‌های سفارشی: %1$s\n اصلاحات: %2$s\n قوانین و یادداشت‌ها: %3$s\n واژه‌نامه: %4$s\n یادداشت‌های دیکشنری: %5$s\n ترجمه‌های ذخیره‌شده (کش): %6$s</string>
     <!-- Phase 2: chat -->
     <string name="chat_new_title">چت جدید</string>
