@@ -6,6 +6,7 @@ import com.example.logic.AiMemoryManager
 import com.example.logic.AiPromptTemplates.PromptMode
 import com.example.logic.AiService
 import com.example.logic.SqliteDictParser
+import com.example.mdict.MdictException
 
 /**
  * App-wide UI language support. [AppLanguage] is persisted and exposed by
@@ -365,6 +366,17 @@ class AppStrings(
     fun matchedTranslationLabel(text: String) = res.getString(R.string.matched_translation_label, text)
     val autoDetectWarning = res.getString(R.string.auto_detect_warning)
     val noResultsFound = res.getString(R.string.no_results_found)
+    // MDict (.mdx/.mdd) reader: sound links and the full-screen image viewer.
+    val dictSoundNotFound = res.getString(R.string.dict_sound_not_found)
+    val dictSoundPlayFailed = res.getString(R.string.dict_sound_play_failed)
+    val dictImageViewerCd = res.getString(R.string.dict_image_viewer_cd)
+    /** Reason an .mdx/.mdd file could not be opened (shown by the import error dialog). */
+    fun mdictErrorDetail(e: MdictException): String = when (e.kind) {
+        MdictException.Kind.CORRUPT -> res.getString(R.string.mdict_error_corrupt)
+        MdictException.Kind.LOCKED -> res.getString(R.string.mdict_error_locked)
+        MdictException.Kind.UNSUPPORTED -> res.getString(R.string.mdict_error_unsupported)
+        MdictException.Kind.CLOSED -> res.getString(R.string.mdict_error_closed)
+    }
 
     // ── Theme settings section ──
     val themeSectionMenu = res.getString(R.string.theme_section_menu)
@@ -1080,6 +1092,7 @@ class AppStrings(
         is AiService.ApiServerException -> aiServerError(e.code, e.detail)
         is AiService.EmptyServerResponseException -> aiEmptyResponse
         is SqliteDictParser.NoWordTableException -> sqliteNoWordTable
+        is MdictException -> mdictErrorDetail(e)
         else -> e?.message
     }
 

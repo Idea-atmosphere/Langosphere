@@ -364,6 +364,7 @@ private fun MainScreenContent(
     val singleTranslateError by viewModel.singleTranslateError.collectAsState()
     val isLearning by viewModel.isLearning.collectAsState()
     val learnResult by viewModel.learnResult.collectAsState()
+    val dictSoundMessage by viewModel.dictSoundMessage.collectAsState()
     val learnProgress by viewModel.learnProgress.collectAsState()
     val saveMessage by viewModel.saveMessage.collectAsState()
     val leitnerMessage by viewModel.leitnerMessage.collectAsState()
@@ -442,6 +443,14 @@ private fun MainScreenContent(
         leitnerMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
             viewModel.clearLeitnerMessage()
+        }
+    }
+
+    // Dictionary popup sound links (MDict): "audio not found" / "cannot play".
+    LaunchedEffect(dictSoundMessage) {
+        dictSoundMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearDictSoundMessage()
         }
     }
 
@@ -1241,7 +1250,11 @@ private fun MainScreenContent(
                 // JSON learning data follows the dictionary system: when the
                 // dictionary opens for a word that also exists in the JSON
                 // learning file, the JSON word data is shown on top.
-                jsonWord = activeJsonWord
+                jsonWord = activeJsonWord,
+                // MDict resources (images/CSS/audio from the imported .mdd
+                // files) and pronunciation links.
+                resourceProvider = { viewModel.dictResource(it) },
+                onPlaySound = { viewModel.playDictSound(it) }
             )
         }
 

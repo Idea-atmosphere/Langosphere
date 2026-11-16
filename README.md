@@ -16,7 +16,7 @@ This app is suitable for people who know a little language and want to learn alo
 * **PDF File Support:** You can open and read your desired PDF file directly from inside the app.
 * **Video and Music Player:** By clicking the player tab at the top of the page, you can import your favorite video or song.
 * **Synchronized Subtitles:** Selecting English subtitles and synchronized Persian subtitles; English and Persian texts are displayed simultaneously in boxes, and by **clicking on any word**, its meanings from the selected dictionary will be displayed.
-* **Dictionary Support:** Support for MDict dictionary files (currently tested on the **Aryanpour Dictionary**) and `.db` database files—which I asked the AI to make something for, and if I get a database file, I will improve it accordingly so the app can read the file better.
+* **Dictionary Support:** A built-in **MDict reader** for `.mdx` dictionaries and their `.mdd` resource packs (MDX v1.2 / v2.0 / v3, zlib, encrypted key sections): several dictionaries can be imported side by side, an MDX pairs with its same-name MDDs automatically (a shared `Sound.mdd` works too), entry images, stylesheets and fonts are served from the MDD, **pronunciation links play inside the app** — including Speex `.spx` audio, which Android cannot play natively — and tapping a cross-reference opens that entry. Nothing is copied into a database: entries are read lazily from the file, so even very large dictionaries import in the time it takes to copy them. Plain `.txt` and SQLite `.db` dictionaries are supported as well.
 * **Leitner Box and AnkiDroid:** Ability to add new words to the Leitner box and export directly to the **AnkiDroid** app.
 * **Any Language Pair:** Settings ▸ **Prompts** has two free-text fields: the language you are learning, and the language you want to be taught in.
 * **Quiz from JSON (BETA):** the tab is now **Better Learning Tools** with two tidy options: the Leitner box, and a quiz built from any imported AI learning file. The quiz is offline, asks about the file's words, sentences and grammar points, and pushes every word you miss into the Leitner box with one tap.
@@ -40,7 +40,7 @@ Implemented, partially completed, and pending features that have not been added 
 | Custom learning and teaching languages | ✅ Added |
 | Offline quiz from imported JSON lessons | ✅ Added (beta) |
 | Five app designs, colors, fonts and tab layout | ✅ Added |
-| Reading dictionary files (MDict and .db) | ⚠️ In progress (Partial) |
+| Reading dictionary files (MDict `.mdx`/`.mdd` and .db) | ✅ Added |
 | Smart assistant | ⚠️ In progress (Partial) |
 | Offline OCR | ❌ Not added yet |
 | Offline translator | ❌ Not added yet |
@@ -114,7 +114,8 @@ To stay updated on the latest updates, report issues, or suggest your ideas, you
 
 ## Acknowledgments and Thanks
 
-* Special thanks to **mumu-lhl** and the [Ciyue](https://github.com/mumu-lhl/Ciyue) project, without which reading the `Aryanpour Dictionary.mdx` file would have been much harder.
+* Special thanks to **mumu-lhl** and the [Ciyue](https://github.com/mumu-lhl/Ciyue) project, whose MDict reader powered the first versions of the dictionary feature. The current reader (`app/src/main/java/com/example/mdict/`) is a Kotlin port of the reference `readmdict.py` logic from [mdict-utils](https://github.com/liuyug/mdict-utils).
+* Speex pronunciation audio is decoded by the vendored [JSpeex](https://jspeex.sourceforge.net/) sources (`app/src/main/java/org/xiph/speex/`, © Wimba S.A. / Xiph.org Foundation, redistributed under the Xiph.org variant of the BSD license — the license text is kept in every file header).
 * Thanks to **0xdolan** for the [AryanpourDictionary](https://github.com/0xdolan/AryanpourDictionary) project.
 
 ---

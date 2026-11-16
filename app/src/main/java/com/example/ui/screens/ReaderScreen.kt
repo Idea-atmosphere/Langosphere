@@ -732,7 +732,7 @@ fun ReaderScreen(viewModel: AppViewModel) {
                                 Icon(
                                     imageVector = when (file.type) {
                                         "mdx" -> Icons.Default.CheckCircle
-                                        "mdd" -> Icons.Default.Warning
+                                        "mdd" -> Icons.Default.CheckCircle
                                         "db" -> Icons.Default.Storage
                                         else -> Icons.Default.Info
                                     },
