@@ -35,6 +35,7 @@ import com.example.model.JsonWord
 import com.example.model.LeitnerCard
 import com.example.model.SubtitleEntry
 import com.example.model.SubtitleLearningState
+import com.example.zonos.ZonosTtsController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -101,10 +102,28 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun setAppLanguage(language: AppLanguage) {
         _appLanguage.value = language
         sharedPrefs.edit().putString("app_language", language.code).apply()
+        if (zonosTtsInitialized) zonosTts.setStudioDefaultLang(language.code)
     }
 
     /** Builds an [AppStrings] snapshot for the current UI language, used for status/toast messages emitted from ViewModel logic (not composables). */
     private fun strings() = AppStrings(_appLanguage.value, getApplication())
+
+    /**
+     * On-device TTS (Zonos3-Mini): one controller for the whole process —
+     * hidden engine WebView, the Voice Studio page and the CORE model pack
+     * in Download/Langosphere/models/. Lazy so that app start never builds
+     * a WebView; MainScreen attaches it to the composition. The language
+     * the engine speaks follows the learning pair's source language unless
+     * the learner picked one in Learning tools ▸ Text to speech.
+     */
+    private val zonosTtsLazy = lazy {
+        ZonosTtsController(getApplication(), viewModelScope).also { controller ->
+            controller.pairSourceLanguage = { LanguagePairState.source }
+            controller.setStudioDefaultLang(_appLanguage.value.code)
+        }
+    }
+    val zonosTts: ZonosTtsController by zonosTtsLazy
+    private val zonosTtsInitialized: Boolean get() = zonosTtsLazy.isInitialized()
 
     private val _isDictionaryLoaded = MutableStateFlow(false)
     val isDictionaryLoaded: StateFlow<Boolean> = _isDictionaryLoaded
@@ -1499,7 +1518,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    override fun onCleared() { super.onCleared(); mdictLibrary.close(); mdictSoundPlayer.release(); translateJob?.cancel(); learnSubsJob?.cancel(); learnDictJob?.cancel() }
+    override fun onCleared() { super.onCleared(); mdictLibrary.close(); mdictSoundPlayer.release(); translateJob?.cancel(); learnSubsJob?.cancel(); learnDictJob?.cancel(); if (zonosTtsInitialized) zonosTts.release() }
     fun clearActiveWord() { _activeWord.value = null; _dictionaryResults.value = null; _activeEnglishContext.value = null; _activePersianContext.value = null; _isActiveWordInLeitner.value = false; _activeJsonWord.value = null }
 
     fun refreshLeitnerCards() {

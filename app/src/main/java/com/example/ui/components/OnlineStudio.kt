@@ -22,9 +22,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -33,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +60,7 @@ import com.example.logic.autoTextDirection
 import com.example.ui.theme.AppStrings
 import com.example.ui.theme.LanguageWeightState
 import com.example.ui.theme.appCorner
+import com.example.zonos.ui.LocalZonosTts
 
 /**
  * Building blocks of the Online tab's redesigned hub and learning player.
@@ -209,6 +213,18 @@ fun CueCard(
                             )
                         }
                     }
+                    // On-device TTS (Zonos): reads ONLY the original-language
+                    // line of this cue, never the translation. Same 30dp circle
+                    // as the transport actions; hidden when no controller is
+                    // provided (previews). One cue speaks at a time.
+                    if (englishText.isNotBlank()) {
+                        CueZonosButton(
+                            key = focusKey ?: "cue-${englishText.hashCode()}",
+                            text = englishText,
+                            contentDescription = strings.ttsSpeakLine,
+                            stopDescription = strings.ttsStop,
+                        )
+                    }
                     // The three per-cue transport actions stay circular and
                     // exactly 30dp, including their hit target. They are shared
                     // by local, online and JSON cue lists through this card.
@@ -312,6 +328,37 @@ fun CueCard(
                     }
                 }
             }
+        }
+    }
+}
+
+/** The Zonos read-aloud button of a cue: a spinner + stop glyph while this cue is being generated/played. */
+@Composable
+private fun CueZonosButton(
+    key: String,
+    text: String,
+    contentDescription: String,
+    stopDescription: String,
+) {
+    val tts = LocalZonosTts.current ?: return
+    val scheme = MaterialTheme.colorScheme
+    val playingKey by tts.playingKey.collectAsState()
+    val isThis = playingKey == key
+    val tint = if (isThis) scheme.primary else scheme.onSurfaceVariant
+    Box(
+        modifier = Modifier
+            .size(30.dp)
+            .clip(CircleShape)
+            .background(tint.copy(alpha = if (isThis) 0.24f else 0.12f))
+            .clickable { if (isThis) tts.stop() else tts.speak(key, text) }
+            .semantics { this.contentDescription = if (isThis) stopDescription else contentDescription },
+        contentAlignment = Alignment.Center
+    ) {
+        if (isThis) {
+            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = tint)
+            Icon(Icons.Default.Stop, contentDescription = null, tint = tint, modifier = Modifier.size(10.dp))
+        } else {
+            Icon(Icons.Default.RecordVoiceOver, contentDescription = null, tint = tint, modifier = Modifier.size(17.dp))
         }
     }
 }

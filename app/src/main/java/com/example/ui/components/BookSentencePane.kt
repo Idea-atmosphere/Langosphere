@@ -45,6 +45,7 @@ import com.example.logic.LessonDisplay
 import com.example.model.LeitnerCard
 import com.example.logic.ReaderComfortState
 import com.example.logic.StudyModeState
+import com.example.zonos.ui.ZonosSpeakButton
 import com.example.logic.autoTextDirection
 import com.example.model.BookSentence
 import com.example.model.JsonWord
@@ -247,6 +248,16 @@ private fun EyeFriendlySentenceRow(
                 tint = MaterialTheme.colorScheme.tertiary,
                 contentDescription = studyLabels.speak,
                 size = 16,
+            )
+            // On-device voice (Zonos): this sentence only, one at a time; in
+            // focus mode the tapped sentence also becomes the focused one.
+            ZonosSpeakButton(
+                key = focusKey,
+                text = sentence.english,
+                tint = MaterialTheme.colorScheme.tertiary,
+                size = 16,
+                contentDescription = studyLabels.speak,
+                onSpeak = { if (StudyModeState.focusMode) StudyModeState.focus(focusKey) },
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
