@@ -61,3 +61,12 @@
 -keepclassmembers class com.example.ui.components.YouTubeWebPlayer$Bridge {
     @android.webkit.JavascriptInterface <methods>;
 }
+
+# ---- On-device TTS (Zonos3-Mini web engine + Voice Studio) ----
+# Both WebView pages call window.ZonoNative.onEvent(...) by name.
+-keepclassmembers class com.example.zonos.ZonoEngine$JsBridge {
+    @android.webkit.JavascriptInterface <methods>;
+}
+-keepclassmembers class com.example.zonos.StudioEngine$StudioBridge {
+    @android.webkit.JavascriptInterface <methods>;
+}

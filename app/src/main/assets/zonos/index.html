@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Langosphere TTS Engine</title>
+<style>
+  html,body{margin:0;padding:0;background:#111;color:#ddd;font:14px/1.5 system-ui,sans-serif}
+  #log{padding:12px;white-space:pre-wrap;word-break:break-word}
+  .ok{color:#8f8}.err{color:#f88}
+</style>
+</head>
+<body>
+<div id="log">Langosphere TTS engine ready — no model loaded yet (model packs are separate).</div>
+<script type="module" src="./zono.js"></script>
+<script>
+  // Tiny on-page status line (helps manual testing in Chrome); the app uses ZonoNative events.
+  const log = document.getElementById('log');
+  const orig = console.log.bind(console);
+  console.log = (...a) => { orig(...a); const s = a.join(' '); if (s.startsWith('[zono]')) log.textContent = s; };
+</script>
+</body>
+</html>

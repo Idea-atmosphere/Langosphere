@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Zyphra Voice Cloning</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-40 -70 304 304'%3E%3Crect x='-40' y='-70' width='304' height='304' rx='60' fill='%230a0a0a'/%3E%3Cpath d='M52 12L48 0L112 29L176 0L172.5 12L132 31.5C119.834 38.4119 115.001 47.0057 112 58C109.023 46.9907 103.919 38.5163 92 31.5L52 12Z M28 54L24 42L112 82L200 42L196 54L132 84.5C120.163 91.4503 114.998 99.9976 112 111C108.997 100.003 103.724 91.4982 92 84.5L28 54Z M0 84L112 135L224 84L220 96L132 137.5C121 144 115.007 153.012 112 164C109 153 103 143 92 137.5L4 96L0 84Z' fill='%23f5f3ee'/%3E%3C/svg%3E" />
+    <script src="./theme-boot.js""></script>
+    <script type="module" crossorigin src="./assets/lite-BB6Axgik.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/web-engine-CkH2el7i.js">
+    <link rel="modulepreload" crossorigin href="./assets/latin-500-D-HkBiV5.js">
+    <link rel="modulepreload" crossorigin href="./assets/chrome-Bl5j_BUT.js">
+    <link rel="stylesheet" crossorigin href="./assets/web-engine-xKv10YAh.css">
+    <link rel="stylesheet" crossorigin href="./assets/latin-500-DKfSw4PI.css">
+    <link rel="stylesheet" crossorigin href="./assets/lite-CZhvTW8Z.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a id="brand" class="brand" href="./index.html" aria-label="Zyphra Voice">
+        <span class="brand-sep" aria-hidden="true"></span>
+        <span class="brand-product">Voice Cloning</span>
+      </a>
+      <div class="topbar-right">
+        <button type="button" id="backend" class="pill" aria-expanded="false" aria-controls="backend-note" hidden><span class="pill-dot"></span><span class="pill-text"></span></button>
+        <a id="studio-link" class="btn ghost sm" href="./studio.html" title="The full studio: design voices, direct scripts, edit recordings. Voices cloned here stay on this page.">Full studio</a>
+        <button type="button" id="theme" class="icon-btn" aria-label="Theme"></button>
+      </div>
+    </header>
+
+    <main class="lite">
+      <header class="page-head lite-head">
+        <span class="eyebrow">Lite</span>
+        <h1>Voice cloning</h1>
+        <p class="muted">Pick, upload or record a voice, then type what it should say. Voices cloned here stay on this page; the full studio has its own.</p>
+      </header>
+
+      <section id="consent" class="panel consent" hidden aria-labelledby="consent-title">
+        <h3 id="consent-title">No server answered</h3>
+        <p>Run the voice engine in this browser? Download ≈ 1.9 GB once; cached in this browser.</p>
+        <div class="row gap-s">
+          <button type="button" id="consent-yes" class="btn primary">Run in this browser</button>
+          <button type="button" id="consent-retry" class="btn">Retry the server</button>
+        </div>
+      </section>
+
+      <p id="backend-note" class="notice" hidden></p>
+      <p id="notice" class="notice" role="status" hidden></p>
+      <div id="download" class="notice download" role="progressbar" aria-valuemin="0" aria-valuemax="100" hidden>
+        <div class="dl">
+          <div class="dl-head"><span class="dl-label"></span><span class="dl-pct"></span></div>
+          <div class="dl-track"><div class="dl-fill"></div></div>
+          <span class="dl-detail"></span>
+        </div>
+      </div>
+
+      <section class="panel" aria-labelledby="voice-heading">
+        <div class="panel-head">
+          <h3 id="voice-heading"><span class="step">1</span>Voice</h3>
+          <fieldset class="mode">
+            <legend class="sr-only">Voice source</legend>
+            <input type="radio" name="source" id="source-default" value="default" checked />
+            <label class="mode-btn" for="source-default">Library</label>
+            <input type="radio" name="source" id="source-clip" value="clip" />
+            <label class="mode-btn" for="source-clip">Your clip</label>
+            <input type="radio" name="source" id="source-embedding" value="embedding" />
+            <label class="mode-btn" for="source-embedding">Voice file</label>
+          </fieldset>
+        </div>
+
+        <div id="panel-default" class="source">
+          <label class="field" for="voice-select">Voice</label>
+          <select id="voice-select" class="input"></select>
+        </div>
+
+        <div id="panel-clip" class="source" hidden>
+          <span class="field">Audio clip <span class="hint-inline">5–30 s of clean speech</span></span>
+          <div class="row gap-s">
+            <button type="button" id="clip-pick" class="btn" data-icon="upload">Upload</button>
+            <button type="button" id="record" class="btn btn-rec" aria-pressed="false" data-icon="mic">Record</button>
+            <span id="record-level" class="rec-level rec-level-inline" aria-hidden="true" hidden><span></span></span>
+            <button type="button" id="clip-play" class="btn" data-icon="play" hidden>Play</button>
+            <span id="clip-state" class="hint-inline" aria-live="polite"></span>
+            <input type="file" id="clip-file" accept="audio/*" hidden />
+          </div>
+          <label class="field" for="clip-label">Name</label>
+          <div class="row gap-s nowrap">
+            <input type="text" id="clip-label" class="input" autocomplete="off" placeholder="My voice" />
+            <button type="button" id="clip-upload" class="btn" disabled title="Generate clones the clip by itself; this keeps the voice for later too">Clone voice</button>
+          </div>
+        </div>
+
+        <div id="panel-embedding" class="source" hidden>
+          <span class="field">Voice file <span class="hint-inline">.npy or .npz, up to 2 MB</span></span>
+          <div class="row gap-s">
+            <button type="button" id="embedding-pick" class="btn" data-icon="upload">Choose file</button>
+            <span id="embedding-state" class="hint-inline" aria-live="polite"></span>
+            <input type="file" id="embedding-file" accept=".npy,.npz" hidden />
+          </div>
+          <label class="field" for="embedding-label">Name</label>
+          <div class="row gap-s nowrap">
+            <input type="text" id="embedding-label" class="input" autocomplete="off" placeholder="My voice" />
+            <button type="button" id="embedding-upload" class="btn primary" disabled>Open a voice file</button>
+          </div>
+        </div>
+
+        <p id="voice-error" class="error-box" role="alert" hidden></p>
+
+        <div id="voice" class="chosen" hidden>
+          <div class="chosen-name">
+            <span class="eyebrow">Selected</span>
+            <strong id="voice-label"></strong>
+            <span id="voice-meta" class="hint-inline"></span>
+          </div>
+          <div class="row gap-s">
+            <button type="button" id="preview" class="btn sm" data-icon="play">Play preview</button>
+            <button type="button" id="download-embedding" class="btn ghost sm" data-icon="download">Voice file (.npy)</button>
+          </div>
+        </div>
+      </section>
+      <section class="panel" aria-labelledby="speak-heading">
+        <div class="panel-head">
+          <h3 id="speak-heading"><span class="step">2</span>Speak</h3>
+          <fieldset class="mode">
+            <legend class="sr-only">Input</legend>
+            <input type="radio" name="input" id="input-text" value="text" checked />
+            <label class="mode-btn" for="input-text">Text</label>
+            <input type="radio" name="input" id="input-script" value="script" />
+            <label class="mode-btn" for="input-script">Script</label>
+          </fieldset>
+        </div>
+        <form id="generate-form">
+          <div id="panel-text">
+            <label class="field" for="text">Text <span class="hint-inline">⌘↵ / Ctrl+Enter generates</span></label>
+            <textarea id="text" class="input" rows="4" required>Hello! This is my cloned voice.</textarea>
+          </div>
+          <div id="panel-script" hidden>
+            <label class="field" id="script-label">Script <span class="hint-inline">Studio’s controls as text · Tab completes · ⌘↵ / Ctrl+Enter generates</span></label>
+            <div id="script-editor" class="script-editor">
+              <div id="script" class="input script-input" contenteditable="plaintext-only" role="textbox" aria-multiline="true" aria-labelledby="script-label" aria-describedby="script-issues" spellcheck="false" autocapitalize="off" autocorrect="off" translate="no" data-placeholder="# Lines speak with the voice of step 1.&#10;@voice Bright {pitch 1, bright 2}&#10;Hello! This is my cloned voice.&#10;Bright {happy 3}: And this is [a designed one]{projection 1.5}."></div>
+              <div id="script-complete" class="script-complete" hidden>
+                <ul id="script-complete-list" role="listbox" aria-label="Suggestions"></ul>
+                <p class="sc-info"></p>
+                <p class="sc-keys">Tab inserts · ↑ ↓ choose · Esc closes</p>
+              </div>
+            </div>
+            <ul id="script-issues" class="script-issues" aria-live="polite" hidden></ul>
+            <details class="pro script-help">
+              <summary>Syntax</summary>
+              <pre>Lines     Hello there.                    the voice of step 1
+          Ann: Hello there.               a @voice, or a library voice by name
+          Ann {happy 3}: Hello there.     delivery for the whole line
+          {calm 2}: Hello there.
+Words     I [really]{emphasis 4} mean it.
+Voices    @voice Ann = &lt;library voice&gt; {preset BBC newsreader, age 1, accent irish 1.2, mode reference}
+          @voice Me {deep 2}              designed from the voice of step 1
+Script    @language en_gb   @mode reference   @seed 42   @laci off|stream|whole
+          @decoder &lt;id&gt;   @gap 0.5   @baseline chatty 1, pace -0.5
+Other     # comment     \ first: the line is read as text
+Pronunciations (S@vQn) work as in Studio.
+Language, Seed and LACI above are defaults: @language, @seed and @laci override them.</pre>
+              <p id="script-vocab" class="hint-inline"></p>
+            </details>
+          </div>
+          <div class="grid">
+            <div>
+              <label class="field" for="language">Language</label>
+              <select id="language" class="input"></select>
+            </div>
+            <details class="pro">
+              <summary>Advanced</summary>
+              <label class="field" for="seed">Seed <span class="hint-inline">a fixed seed repeats a take's randomness</span></label>
+              <input type="number" id="seed" class="input" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="random" />
+              <div id="laci-field" hidden>
+                <label class="field" for="laci">LACI <span class="hint-inline">regenerates skipped words and cut-off endings</span></label>
+                <select id="laci" class="input"></select>
+                <span id="laci-note" class="hint-inline" hidden></span>
+              </div>
+            </details>
+          </div>
+          <div class="row gap-s actions">
+            <button type="submit" id="generate" class="btn primary">Generate</button>
+            <button type="button" id="stop" class="btn" data-icon="stop" hidden>Stop generating</button>
+            <span id="generate-status" class="hint-inline" role="status" aria-live="polite"></span>
+            <span id="generate-why" class="hint-inline" hidden></span>
+          </div>
+        </form>
+        <p id="generate-error" class="error-box" role="alert" hidden></p>
+        <div id="result" class="result" hidden>
+          <div id="wave" class="wave is-seekable" role="slider" tabindex="0" aria-label="Generated speech: Space plays or stops, ← / → seek 1 s" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" title="Click to play from here · Space play/stop · ← → seek">
+            <canvas></canvas>
+            <div class="wave-head" hidden></div>
+          </div>
+          <div id="transport" class="row gap-s">
+            <button type="button" id="play" class="icon-btn" aria-label="Play" title="Play"></button>
+            <span id="result-meta" class="meta"></span>
+            <button type="button" id="seed-use" class="link" hidden title="Put this seed in Advanced → Seed, for the same randomness again">reuse seed</button>
+            <a id="result-download" class="btn sm" download data-icon="download">Download WAV</a>
+          </div>
+          <ol id="takes" class="takes" aria-label="Earlier takes" hidden></ol>
+        </div>
+      </section>
+
+    </main>
+  </body>
+</html>

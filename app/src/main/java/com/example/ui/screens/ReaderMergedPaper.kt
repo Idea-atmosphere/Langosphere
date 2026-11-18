@@ -53,6 +53,7 @@ import com.example.ui.components.SentenceLessonNote
 import com.example.ui.components.SentenceStudyLabels
 import com.example.ui.components.SentenceTermText
 import com.example.ui.components.SpeakerButton
+import com.example.zonos.ui.ZonosSpeakButton
 import com.example.ui.components.anime.inkBorder
 import com.example.ui.components.anime.inkShadow
 import com.example.ui.components.fadingEdges
@@ -616,6 +617,16 @@ private fun MergedSentenceBlock(
                 tint = ink.copy(alpha = 0.7f),
                 contentDescription = studyLabels.speak,
                 size = 16,
+            )
+            // On-device voice (Zonos): reads this sentence only — the next one
+            // plays from its own box — and keeps the focus on it.
+            ZonosSpeakButton(
+                key = focusKey,
+                text = sentence.english,
+                tint = ink.copy(alpha = 0.7f),
+                size = 16,
+                contentDescription = studyLabels.speak,
+                onSpeak = { if (StudyModeState.focusMode) StudyModeState.focus(focusKey) },
             )
         }
         if (showOriginal && sentence.english.isNotBlank()) {

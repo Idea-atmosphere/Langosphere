@@ -117,6 +117,9 @@ import com.example.ui.theme.Typography as AppTypography
 import com.example.ui.theme.forAppLanguage
 import com.example.ui.theme.withFontFamily
 import com.example.ui.tutorial.LocalTutorial
+import com.example.zonos.ui.LocalZonosTts
+import com.example.zonos.ui.ZonosEngineHost
+import com.example.zonos.ui.ZonosNoticeEffect
 import com.example.ui.tutorial.TutorialHost
 import com.example.ui.tutorial.TutorialOverlay
 import com.example.ui.tutorial.TutorialPickerDialog
@@ -165,17 +168,29 @@ fun MainScreen(
     // controller for the whole screen, so every tab can register the
     // controls it wants explained and the overlay can point at them.
     val tutorial = rememberTutorialController()
+    // On-device TTS (Zonos): one controller for every surface that can read
+    // aloud — the cue cards, the book reader and Learning tools ▸ TTS. Its
+    // hidden engine WebView is hosted here (1 dp, invisible) so it lives in
+    // the window, and its notices surface as toasts in the app language.
+    val zonosTts = viewModel.zonosTts
     CompositionLocalProvider(
         LocalLayoutDirection provides appLayoutDirection,
         LocalTutorial provides tutorial,
+        LocalZonosTts provides zonosTts,
     ) {
         MaterialTheme(typography = typography) {
-            MainScreenContent(
-                viewModel = viewModel,
-                appLanguage = appLanguage,
-                onThemeToggle = onThemeToggle,
-                currentThemeMode = currentThemeMode
-            )
+            Box(modifier = Modifier.fillMaxSize()) {
+                ZonosEngineHost(tts = zonosTts, modifier = Modifier.align(Alignment.TopStart))
+                MainScreenContent(
+                    viewModel = viewModel,
+                    appLanguage = appLanguage,
+                    onThemeToggle = onThemeToggle,
+                    currentThemeMode = currentThemeMode
+                )
+            }
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val ttsStrings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
+            ZonosNoticeEffect(tts = zonosTts, strings = ttsStrings)
         }
     }
 }

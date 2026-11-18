@@ -70,6 +70,8 @@ import com.example.logic.autoTextDirection
 import com.example.model.LeitnerCard
 import com.example.ui.components.EmptyState
 import com.example.ui.components.JsonQuizBetaCard
+import com.example.zonos.ui.LocalZonosTts
+import com.example.zonos.ui.TtsSection
 import com.example.ui.components.GlassCard
 import com.example.ui.components.GradientButton
 import com.example.ui.components.PillTone
@@ -84,7 +86,9 @@ import com.example.ui.theme.AccentRed
 import com.example.logic.isPersianText
 import com.example.ui.theme.AppFontScope
 import com.example.ui.theme.AppFontState
+import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.AppStrings
+import com.example.ui.theme.LanguagePairState
 import com.example.ui.theme.LanguageWeightState
 import com.example.ui.theme.neoAccent
 import com.example.ui.components.anime.ToonButton
@@ -178,9 +182,10 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
             .fillMaxSize()
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
-        // ── The two tools of this tab, as buttons ──
+        // ── The three tools of this tab, as buttons ──
         // The active one is tinted with the brand colour; the JSON quiz wears
-        // its BETA label on the corner of the button itself.
+        // its BETA label on the corner of the button itself. The third tool
+        // is the on-device text to speech (model pack, voice, Studio).
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -199,6 +204,29 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
                 badge = strings.jsonQuizBetaBadge,
                 modifier = Modifier.weight(1f).tutorialTarget("leitner.toolQuiz"),
             )
+            LearningToolButton(
+                text = strings.toolTts,
+                selected = tool == LearningTool.TTS,
+                onClick = { tool = LearningTool.TTS },
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        if (tool == LearningTool.TTS) {
+            // On-device text to speech (Zonos3-Mini): the model pack, the
+            // voice / language / speed used by the subtitle cards and the
+            // book reader, and the full Voice Studio page. The controller is
+            // app-wide (AppViewModel.zonosTts), provided by MainScreen.
+            Spacer(modifier = Modifier.height(12.dp))
+            val tts = LocalZonosTts.current ?: viewModel.zonosTts
+            TtsSection(
+                tts = tts,
+                strings = strings,
+                isFa = appLanguage == AppLanguage.FA,
+                pairSourceLanguage = LanguagePairState.source,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+            )
+            return@Column
         }
 
         if (tool == LearningTool.JSON_QUIZ) {
@@ -467,8 +495,8 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
 
 }
 
-/** The two tools inside the "Better learning tools" tab. */
-private enum class LearningTool { LEITNER, JSON_QUIZ }
+/** The three tools inside the "Better learning tools" tab. */
+private enum class LearningTool { LEITNER, JSON_QUIZ, TTS }
 
 /** Persists the tool tab across Recents / activity recreation. */
 private val ToolSaver = Saver<LearningTool, String>(
