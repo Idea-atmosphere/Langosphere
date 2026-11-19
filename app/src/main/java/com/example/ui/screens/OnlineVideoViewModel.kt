@@ -1238,7 +1238,7 @@ class OnlineVideoViewModel(application: Application) : AndroidViewModel(applicat
      * subtitles, see [cachedTrack]) is read back from the watch folder —
      * no network — anything else is fetched as before.
      */
-    private fun fetchOrCached(videoId: String, track: OnlineCaptionTrack, fallbackLanguage: String): List<SubtitleEntry> {
+    private suspend fun fetchOrCached(videoId: String, track: OnlineCaptionTrack, fallbackLanguage: String): List<SubtitleEntry> {
         val slot = track.url.removePrefix("cached:").takeIf { it != track.url }
         if (slot != null) {
             return OnlineWatchCache.loadCaptions(app, videoId, slot)?.entries ?: emptyList()
