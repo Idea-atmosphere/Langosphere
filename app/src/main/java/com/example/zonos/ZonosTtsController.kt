@@ -6,9 +6,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -39,6 +41,10 @@ class ZonosTtsController(
         private const val KEY_VOICE = "tts_voice"
         private const val KEY_SPEED = "tts_speed"
         private const val KEY_LANGUAGE = "tts_language"
+        private const val KEY_LAST_LOAD_MS = "tts_last_load_ms"
+
+        /** How long [speak] waits for the engine page's functions after a (re)load. */
+        private const val PAGE_READY_TIMEOUT_MS = 20_000L
 
         /** [language] value meaning "follow the learning pair's source language". */
         const val LANGUAGE_AUTO = "auto"
@@ -126,6 +132,30 @@ class ZonosTtsController(
     private val _playingKey = MutableStateFlow<String?>(null)
     val playingKey: StateFlow<String?> = _playingKey.asStateFlow()
 
+    /** What the current [playingKey] is going through; drives the loading banner. */
+    enum class SpeechPhase { IDLE, LOADING_MODEL, GENERATING, PLAYING }
+
+    private val _speechPhase = MutableStateFlow(SpeechPhase.IDLE)
+    val speechPhase: StateFlow<SpeechPhase> = _speechPhase.asStateFlow()
+
+    /** True while the current [playingKey] is a cached take being played again (see [replay]). */
+    private val _replaying = MutableStateFlow(false)
+    val replaying: StateFlow<Boolean> = _replaying.asStateFlow()
+
+    /** Model-load progress (percent / ETA) while the engine loads the model; null otherwise. */
+    private val _loadProgress = MutableStateFlow<LoadProgress?>(null)
+    val loadProgress: StateFlow<LoadProgress?> = _loadProgress.asStateFlow()
+
+    /**
+     * Keys whose generated take is still cached in the engine page, i.e.
+     * [replay] can play them again instantly. Empty after every page reload.
+     */
+    val takes: StateFlow<Set<String>> get() = engine.takes
+    fun hasTake(key: String): Boolean = key in engine.takes.value
+
+    private var loadEstimator = LoadEstimator(lastLoadMs())
+    private var loadTicker: Job? = null
+
     /** Which design the last generate used (for the TTS section's status line). */
     private val _designSource = MutableStateFlow<DesignSource>(DesignSource.Default)
     val designSource: StateFlow<DesignSource> = _designSource.asStateFlow()
@@ -161,6 +191,9 @@ class ZonosTtsController(
         scope.launch {
             withContext(Dispatchers.IO) { refreshPacks() }
             engine.load()
+        }
+        scope.launch {
+            engine.state.collect { st -> trackLoad(st) }
         }
         scope.launch {
             engine.state.collect { st ->
@@ -336,8 +369,18 @@ class ZonosTtsController(
      * a new call stops the previous one. [key] identifies the sentence
      * for [playingKey] (e.g. "cue-12" or "sentence-7"). Returns false
      * (with a notice) when the model pack or the engine is not ready.
+     * The generated take is cached under [key] for [replay].
      */
-    fun speak(key: String, text: String): Boolean {
+    fun speak(key: String, text: String): Boolean = startPlayback(key, text, replayFirst = false)
+
+    /**
+     * Play the take generated earlier for [key] again, without generating
+     * (same voice, same reading). Falls back to a fresh generation when
+     * the engine page no longer has it. Returns false like [speak].
+     */
+    fun replay(key: String, text: String): Boolean = startPlayback(key, text, replayFirst = true)
+
+    private fun startPlayback(key: String, text: String, replayFirst: Boolean): Boolean {
         val clean = text.trim()
         if (clean.isEmpty()) return false
         if (!coreInstalled) {
@@ -355,13 +398,51 @@ class ZonosTtsController(
         }
         stop()
         _playingKey.value = key
+        _replaying.value = replayFirst && hasTake(key)
+        if (engine.state.value.status == EngineStatus.READY) {
+            _speechPhase.value = SpeechPhase.GENERATING
+        } else {
+            // The model loads on this first playback: count the wait from the
+            // tap, so the banner's elapsed time / history ETA start now.
+            _speechPhase.value = SpeechPhase.LOADING_MODEL
+            if (!loadEstimator.running) {
+                val now = System.currentTimeMillis()
+                loadEstimator = LoadEstimator(lastLoadMs())
+                loadEstimator.start(now)
+                _loadProgress.value = loadEstimator.snapshot(now)
+                startLoadTicker()
+            }
+        }
         val voice = _selectedVoice.value
         val language = effectiveLanguage()
+        val index = key.hashCode() and 0x7fffffff
         playJob = scope.launch {
-            refreshStudioDesigns()
-            val opts = optsJson(voice, language)
-            val result = engine.generate(key.hashCode() and 0x7fffffff, voice, clean, opts)
-            if (_playingKey.value == key) _playingKey.value = null
+            val result: Result<String> = run {
+                // Right after a page (re)load the module may still be evaluating:
+                // wait for __zonoGenerate instead of failing the first tap.
+                val pageReady = awaitPageFunctions()
+                if (!pageReady) {
+                    val st = engine.state.value
+                    val detail = st.error?.takeIf { st.status == EngineStatus.ERROR || st.status == EngineStatus.MISSING }
+                    return@run Result.failure(IllegalStateException(detail ?: "engine page not ready"))
+                }
+                if (replayFirst && hasTake(key)) {
+                    val r = engine.replay(index, key)
+                    if (r.isSuccess && r.getOrNull() != "MISS") return@run r
+                    if (r.isFailure && r.exceptionOrNull()?.message == "stopped") return@run r
+                    // The page lost the take: generate it afresh.
+                    _replaying.value = false
+                    _speechPhase.value = if (engine.state.value.status == EngineStatus.READY) SpeechPhase.GENERATING else SpeechPhase.LOADING_MODEL
+                }
+                refreshStudioDesigns()
+                val opts = optsJson(voice, language)
+                engine.generate(index, voice, clean, opts, takeKey = key)
+            }
+            if (_playingKey.value == key) {
+                _playingKey.value = null
+                _speechPhase.value = SpeechPhase.IDLE
+                _replaying.value = false
+            }
             if (result.isFailure) {
                 val msg = result.exceptionOrNull()?.message ?: "unknown error"
                 if (msg != "stopped") {
@@ -373,14 +454,88 @@ class ZonosTtsController(
         return true
     }
 
+    /** True when the engine page exposes its functions (or already runs the model). */
+    private suspend fun awaitPageFunctions(): Boolean {
+        val ready = withTimeoutOrNull(PAGE_READY_TIMEOUT_MS) {
+            engine.state.first { st ->
+                st.functionsReady || st.status == EngineStatus.READY || st.status == EngineStatus.IDLE ||
+                    st.status == EngineStatus.ERROR || st.status == EngineStatus.MISSING || st.status == EngineStatus.NO_MODEL
+            }
+        } ?: return false
+        return ready.status != EngineStatus.ERROR && ready.status != EngineStatus.MISSING && ready.status != EngineStatus.NO_MODEL
+    }
+
     fun stop() {
         playJob?.cancel()
         playJob = null
         engine.stop()
         _playingKey.value = null
+        _speechPhase.value = SpeechPhase.IDLE
+        _replaying.value = false
     }
 
     fun isPlaying(key: String): Boolean = _playingKey.value == key
+
+    // ------------------------------------------------------- load tracking
+
+    private fun lastLoadMs(): Long? = prefs.getLong(KEY_LAST_LOAD_MS, 0L).takeIf { it > 0L }
+
+    /**
+     * Follows the engine through a model load: starts the estimator on the
+     * first progress report (or when a playback is waiting on a LOADING
+     * engine), ticks the ETA every second, remembers the total duration
+     * once READY, and keeps [speechPhase] honest for the banner.
+     */
+    private fun trackLoad(st: EngineState) {
+        val now = System.currentTimeMillis()
+        val modelLoading = st.status == EngineStatus.LOADING && st.total > 0L
+        when {
+            modelLoading -> {
+                if (!loadEstimator.running) loadEstimator = LoadEstimator(lastLoadMs())
+                loadEstimator.sample(st.loaded, st.total, st.phase, now)
+                _loadProgress.value = loadEstimator.snapshot(now)
+                startLoadTicker()
+            }
+            st.status == EngineStatus.READY -> {
+                if (loadEstimator.running) {
+                    val took = loadEstimator.elapsed(now)
+                    if (took > 1000L) prefs.edit().putLong(KEY_LAST_LOAD_MS, took).apply()
+                }
+                loadEstimator.reset()
+                _loadProgress.value = null
+                stopLoadTicker()
+            }
+            st.status == EngineStatus.ERROR || st.status == EngineStatus.MISSING || st.status == EngineStatus.NO_MODEL -> {
+                loadEstimator.reset()
+                _loadProgress.value = null
+                stopLoadTicker()
+            }
+        }
+        // Phase of the sentence in flight.
+        if (_playingKey.value != null) {
+            val index = _playingKey.value?.let { it.hashCode() and 0x7fffffff }
+            _speechPhase.value = when {
+                st.playingIndex != null && st.playingIndex == index -> SpeechPhase.PLAYING
+                st.status == EngineStatus.READY -> SpeechPhase.GENERATING
+                else -> SpeechPhase.LOADING_MODEL
+            }
+        }
+    }
+
+    private fun startLoadTicker() {
+        if (loadTicker?.isActive == true) return
+        loadTicker = scope.launch {
+            while (loadEstimator.running) {
+                delay(1000)
+                if (loadEstimator.running) _loadProgress.value = loadEstimator.snapshot(System.currentTimeMillis())
+            }
+        }
+    }
+
+    private fun stopLoadTicker() {
+        loadTicker?.cancel()
+        loadTicker = null
+    }
 
     // -------------------------------------------------------------- packs
 
@@ -572,6 +727,7 @@ class ZonosTtsController(
     fun release() {
         stop()
         cancelDownload()
+        stopLoadTicker()
         engine.release()
         studio.release()
     }

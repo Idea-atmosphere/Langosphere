@@ -41,6 +41,7 @@ import kotlin.coroutines.resume
  *     {"type":"ready"} | {"type":"progress","loaded","total","phase"}
  *     | {"type":"playing","index"} | {"type":"done","index"}
  *     | {"type":"error","message"} | {"type":"voices","count"}
+ *     | {"type":"takes","keys":[...]} (cached generated takes, see [takes])
  *     | {"type":"no-model","missing":[...]} | {"type":"models-ok"}
  *
  * Ported from the ZonoLingua reader engine; the export and diagnostics
@@ -96,6 +97,14 @@ get.onerror=function(){db.close();post(null);};
 
     private val _state = MutableStateFlow(EngineState())
     val state: StateFlow<EngineState> = _state
+
+    /**
+     * Keys of the generated takes the page still holds (zono.js keeps the
+     * last few WAVs so a sentence can be heard again without generating).
+     * Empty after every page (re)load.
+     */
+    private val _takes = MutableStateFlow<Set<String>>(emptySet())
+    val takes: StateFlow<Set<String>> = _takes
 
     /** index -> continuation waiting for that sentence's "done" event. */
     private val pending = ConcurrentHashMap<Int, (Result<String>) -> Unit>()
@@ -153,6 +162,7 @@ get.onerror=function(){db.close();post(null);};
         stop()
         destroyAttached()
         _state.value = EngineState()
+        _takes.value = emptySet()
     }
 
     private fun destroyAttached() {
@@ -263,6 +273,7 @@ get.onerror=function(){db.close();post(null);};
         loadSeq++
         val prev = _state.value
         _state.value = EngineState(status = EngineStatus.LOADING, webViewVersion = prev.webViewVersion)
+        _takes.value = emptySet()
         lastUrl = ENGINE_URL
         attachedWv?.loadUrl(ENGINE_URL)
     }
@@ -293,9 +304,13 @@ get.onerror=function(){db.close();post(null);};
                     val worker = o.optString("worker", "undefined")
                     val gpu = o.optBoolean("gpu", false)
                     val cur = _state.value
-                    var next = cur.copy(gpuSupported = gpu)
+                    var next = cur.copy(gpuSupported = gpu, functionsReady = cur.functionsReady || gen == "function")
                     if (!gpu && cur.status != EngineStatus.READY) {
                         next = next.copy(status = EngineStatus.ERROR, error = "no_webgpu")
+                    } else if (gen == "function" && cur.status == EngineStatus.LOADING && cur.total == 0L) {
+                        // Page up, functions there, model load not started: the
+                        // model is loaded on the first playback (see IDLE).
+                        next = next.copy(status = EngineStatus.IDLE)
                     } else if (delayed && gen != "function" && cur.status != EngineStatus.READY) {
                         val console = cur.lastConsoleError ?: "none"
                         next = next.copy(
@@ -375,8 +390,34 @@ get.onerror=function(){db.close();post(null);};
         }
     }
 
-    /** Generate + play one sentence; completes when its "done" event arrives. */
-    suspend fun generate(index: Int, voiceId: String, text: String, optsJson: String): Result<String> {
+    /**
+     * Generate + play one sentence; completes when its "done" event arrives.
+     * With a [takeKey] the page keeps the generated WAV so [replay] can
+     * play the same take again without generating.
+     */
+    suspend fun generate(index: Int, voiceId: String, text: String, optsJson: String, takeKey: String? = null): Result<String> {
+        val call = buildString {
+            append("window.__zonoGenerate(")
+            append(index).append(",")
+            append(JSONObject.quote(voiceId)).append(",")
+            append(JSONObject.quote(text)).append(",")
+            append(JSONObject.quote(optsJson)).append(",")
+            append(if (takeKey != null) JSONObject.quote(takeKey) else "null")
+            append(")")
+        }
+        return runPlayback(index, call)
+    }
+
+    /**
+     * Play the cached take of [takeKey] again (no generation). Resolves
+     * "OK" after playback, or "MISS" when the page no longer has it — the
+     * caller then generates afresh.
+     */
+    suspend fun replay(index: Int, takeKey: String): Result<String> =
+        runPlayback(index, "window.__zonoReplay(" + index + "," + JSONObject.quote(takeKey) + ")")
+
+    /** Run one page playback promise and wait for its genDone / genError event. */
+    private suspend fun runPlayback(index: Int, promiseCall: String): Result<String> {
         if (_state.value.status == EngineStatus.MISSING) {
             return Result.failure(IllegalStateException("engine missing"))
         }
@@ -389,12 +430,7 @@ get.onerror=function(){db.close();post(null);};
             cont.invokeOnCancellation { pending.remove(index) }
             val js = buildString {
                 append("(function(){try{")
-                append("var p=window.__zonoGenerate(")
-                append(index).append(",")
-                append(JSONObject.quote(voiceId)).append(",")
-                append(JSONObject.quote(text)).append(",")
-                append(JSONObject.quote(optsJson))
-                append(");")
+                append("var p=").append(promiseCall).append(";")
                 append("if(p&&p.then){p.then(function(r){window.ZonoNative.onEvent(JSON.stringify({type:'genDone',index:")
                 append(index).append(",result:String(r)}))}).catch(function(e){window.ZonoNative.onEvent(JSON.stringify({type:'genError',index:")
                 append(index).append(",message:String(e&&e.message?e.message:e)}))});}")
@@ -408,6 +444,7 @@ get.onerror=function(){db.close();post(null);};
     fun stop() {
         pending.values.forEach { it(Result.failure(IllegalStateException("stopped"))) }
         pending.clear()
+        if (_state.value.playingIndex != null) _state.value = _state.value.copy(playingIndex = null)
         val view = attachedWv ?: return
         view.post { view.evaluateJavascript("try{window.__zonoStop()}catch(e){}", null) }
     }
@@ -438,20 +475,29 @@ get.onerror=function(){db.close();post(null);};
                             total = o.optLong("total"),
                             phase = o.optString("phase")
                         )
-                        "playing" -> { /* the controller tracks via generate() */ }
+                        "playing" -> _state.value = _state.value.copy(playingIndex = o.optInt("index", -1))
                         "done" -> {
                             val idx = o.optInt("index", -1)
+                            if (_state.value.playingIndex == idx) _state.value = _state.value.copy(playingIndex = null)
                             pending.remove(idx)?.invoke(Result.success("OK"))
                         }
                         "genDone" -> {
                             val idx = o.optInt("index", -1)
+                            if (_state.value.playingIndex == idx) _state.value = _state.value.copy(playingIndex = null)
                             pending.remove(idx)?.invoke(Result.success(o.optString("result", "OK")))
                         }
                         "genError" -> {
                             val idx = o.optInt("index", -1)
+                            if (_state.value.playingIndex == idx) _state.value = _state.value.copy(playingIndex = null)
                             pending.remove(idx)?.invoke(
                                 Result.failure(IllegalStateException(o.optString("message", "generation failed")))
                             )
+                        }
+                        "takes" -> {
+                            val arr = o.optJSONArray("keys")
+                            val keys = LinkedHashSet<String>()
+                            if (arr != null) for (i in 0 until arr.length()) arr.optString(i)?.takeIf { it.isNotEmpty() }?.let(keys::add)
+                            _takes.value = keys
                         }
                         "error" -> {
                             val msg = o.optString("message")

@@ -112,6 +112,9 @@ class SentenceStudyLabels(private val fa: Boolean) {
 
     // ── the controls the reader and the player share (see StudyKit) ──
     val speak = if (fa) "خواندن با صدای بلند (نگه داشتن: آهسته)" else "Read aloud (hold: slow)"
+    /** The on-device (Zonos) voice: generate-and-play, and play the generated take again. */
+    val zonosSpeak = if (fa) "تولید صدا و پخش (Zonos)" else "Generate and play (Zonos)"
+    val zonosReplay = if (fa) "پخش دوبارهٔ صدای تولیدشده" else "Play the generated audio again"
     val sentenceToLeitner = if (fa) "+ لایتنر جمله" else "+ Sentence to Leitner"
     val sentenceSaved = if (fa) "در لایتنر" else "In Leitner"
     val peekHint = if (fa) "برای دیدن ترجمه نگه دار" else "Hold to reveal the translation"

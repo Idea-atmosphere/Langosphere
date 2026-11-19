@@ -120,6 +120,7 @@ import com.example.ui.tutorial.LocalTutorial
 import com.example.zonos.ui.LocalZonosTts
 import com.example.zonos.ui.ZonosEngineHost
 import com.example.zonos.ui.ZonosNoticeEffect
+import com.example.zonos.ui.ZonosSpeechBanner
 import com.example.ui.tutorial.TutorialHost
 import com.example.ui.tutorial.TutorialOverlay
 import com.example.ui.tutorial.TutorialPickerDialog
@@ -179,6 +180,8 @@ fun MainScreen(
         LocalZonosTts provides zonosTts,
     ) {
         MaterialTheme(typography = typography) {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val ttsStrings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
             Box(modifier = Modifier.fillMaxSize()) {
                 ZonosEngineHost(tts = zonosTts, modifier = Modifier.align(Alignment.TopStart))
                 MainScreenContent(
@@ -187,9 +190,14 @@ fun MainScreen(
                     onThemeToggle = onThemeToggle,
                     currentThemeMode = currentThemeMode
                 )
+                // "Loading the voice model… 42% · about 1:20 left" while a
+                // tapped sentence waits for the engine; over every tab.
+                ZonosSpeechBanner(
+                    tts = zonosTts,
+                    strings = ttsStrings,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
             }
-            val context = androidx.compose.ui.platform.LocalContext.current
-            val ttsStrings = remember(appLanguage, context) { AppStrings(appLanguage, context) }
             ZonosNoticeEffect(tts = zonosTts, strings = ttsStrings)
         }
     }

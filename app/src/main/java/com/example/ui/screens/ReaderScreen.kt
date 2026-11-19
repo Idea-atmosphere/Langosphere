@@ -16,6 +16,7 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -82,6 +83,8 @@ import com.example.ui.components.GlassCard
 import com.example.ui.components.GradientButton
 import com.example.ui.components.PillTone
 import com.example.ui.components.SentenceStudyLabels
+import com.example.zonos.ui.LocalZonosTts
+import com.example.zonos.ui.ZonosLineButtons
 import com.example.ui.components.SoftIconButton
 import com.example.ui.components.StatusPill
 import com.example.ui.components.brandBrush
@@ -1417,16 +1420,30 @@ private fun ReaderPaper(
                 }
             }
         } else {
-            val items = remember(bodyText, epubBlocks) {
+            // On-device voice (Zonos): once its model pack is installed the
+            // page is read sentence by sentence — every sentence becomes its
+            // own line with «generate and play» / «play again» beside it, the
+            // same shape as the merged (PDF + translation) view. Without the
+            // pack the paragraphs stay exactly as they were.
+            val zonosTts = LocalZonosTts.current
+            val zonosCore = zonosTts?.coreStatus?.collectAsState()?.value
+            val sentenceVoice = zonosTts != null && zonosCore?.installed == true
+            val studyLabels = remember(labels) { SentenceStudyLabels(labels.isFa) }
+            val items = remember(bodyText, epubBlocks, sentenceVoice) {
+                fun lines(text: String): List<ReaderItem> =
+                    if (!sentenceVoice) listOf(ReaderItem.Para(text))
+                    else com.example.logic.SentenceSegmenter.sentences(text)
+                        .ifEmpty { listOf(text) }
+                        .map { ReaderItem.SentenceLine(it) }
                 if (epubBlocks != null) {
-                    epubBlocks.map { block ->
+                    epubBlocks.flatMap { block ->
                         when (block) {
-                            is EpubParser.Block.Text -> ReaderItem.Para(block.text)
-                            is EpubParser.Block.Image -> ReaderItem.Picture(block.entry)
+                            is EpubParser.Block.Text -> lines(block.text)
+                            is EpubParser.Block.Image -> listOf(ReaderItem.Picture(block.entry))
                         }
                     }
                 } else {
-                    splitParagraphs(bodyText).map { ReaderItem.Para(it) }
+                    splitParagraphs(bodyText).flatMap { lines(it) }
                 }
             }
 
@@ -1436,7 +1453,7 @@ private fun ReaderPaper(
                 contentPadding = PaddingValues(horizontal = margin, vertical = 18.dp),
                 verticalArrangement = Arrangement.spacedBy(paragraphGap),
             ) {
-                items(items = items) { item ->
+                itemsIndexed(items = items) { index, item ->
                     when (item) {
                         is ReaderItem.Para -> BookText(
                             text = item.text,
@@ -1453,21 +1470,30 @@ private fun ReaderPaper(
                             onNote = { /* note handled inside BookText via ReaderHighlightState */ },
                             onRemoveHighlight = onRemoveHighlight,
                         )
-                        is ReaderItem.SentenceLine -> BookText(
-                            text = item.text,
-                            style = textStyle,
-                            modifier = Modifier.fillMaxWidth(),
-                            highlights = highlights,
-                            learningWords = learningWords,
-                            knownWords = knownWords,
-                            accentColor = accent,
-                            location = location,
-                            onWordClick = onWordTap,
-                            onSurfaceClick = onSurfaceTap,
-                            onHighlight = { phrase, color -> ReaderHighlightState.addHighlight(context, phrase, color, location) },
-                            onNote = { },
-                            onRemoveHighlight = onRemoveHighlight,
-                        )
+                        is ReaderItem.SentenceLine -> Row(verticalAlignment = Alignment.Top) {
+                            BookText(
+                                text = item.text,
+                                style = textStyle,
+                                modifier = Modifier.weight(1f),
+                                highlights = highlights,
+                                learningWords = learningWords,
+                                knownWords = knownWords,
+                                accentColor = accent,
+                                location = location,
+                                onWordClick = onWordTap,
+                                onSurfaceClick = onSurfaceTap,
+                                onHighlight = { phrase, color -> ReaderHighlightState.addHighlight(context, phrase, color, location) },
+                                onNote = { },
+                                onRemoveHighlight = onRemoveHighlight,
+                            )
+                            ZonosLineButtons(
+                                key = "pl-$location-$index-${item.text.hashCode()}",
+                                text = item.text,
+                                labels = studyLabels,
+                                tint = ink.copy(alpha = 0.6f),
+                                size = 15,
+                            )
+                        }
                         is ReaderItem.Picture -> {
                             // EPUB illustrations, decoded on demand. The picture is
                             // scaled to the column width and keeps its aspect ratio.
