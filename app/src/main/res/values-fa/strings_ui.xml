@@ -1100,5 +1100,16 @@
     <string name="tts_notice_locate_failed">استفاده از پوشه ممکن نشد: %1$s</string>
     <string name="tts_notice_export_saved">ذخیره شد: %1$s</string>
     <string name="tts_notice_export_failed">ذخیرهٔ خروجی ناموفق بود: %1$s</string>
+    <string name="tts_engine_status_idle">موتور: آماده — مدل با اولین پخش بارگذاری می‌شود</string>
+    <string name="tts_replay_take">پخش دوبارهٔ صدای تولیدشده</string>
+    <string name="tts_loading_title">در حال بارگذاری مدل گفتار…</string>
+    <string name="tts_loading_first_time">اولین پخش در این اجرا: مدل %1$s از حافظهٔ گوشی خوانده و در پردازندهٔ گرافیکی بارگذاری می‌شود. پخش‌های بعدی بلافاصله شروع می‌شوند.</string>
+    <string name="tts_loading_percent">٪%1$d · حدود %2$s مانده</string>
+    <string name="tts_loading_percent_only">٪%1$d · در حال اندازه‌گیری سرعت…</string>
+    <string name="tts_loading_about">حدود %1$s مانده (دفعهٔ قبل %2$s طول کشید)</string>
+    <string name="tts_loading_preparing">در حال آماده‌سازی… %1$s گذشته</string>
+    <string name="tts_loading_finalizing">فایل‌ها خوانده شد؛ آماده‌سازی نهایی روی پردازندهٔ گرافیکی… %1$s گذشته</string>
+    <string name="tts_generating">در حال تولید صدا… %1$s</string>
+    <string name="tts_system_unavailable">موتور گفتار سیستم روی این گوشی در دسترس نیست (Google Text-to-speech نصب نیست یا صدای انگلیسی ندارد). از دکمهٔ صدای Zonos کنارش استفاده کنید.</string>
 
 </resources>

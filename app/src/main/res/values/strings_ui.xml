@@ -1100,5 +1100,16 @@
     <string name="tts_notice_locate_failed">Could not use that folder: %1$s</string>
     <string name="tts_notice_export_saved">Saved: %1$s</string>
     <string name="tts_notice_export_failed">Saving the export failed: %1$s</string>
+    <string name="tts_engine_status_idle">Engine: ready — the model loads on the first playback</string>
+    <string name="tts_replay_take">Play the generated audio again</string>
+    <string name="tts_loading_title">Loading the voice model…</string>
+    <string name="tts_loading_first_time">First playback of this session: the %1$s model is read from storage into the GPU. Later playbacks start right away.</string>
+    <string name="tts_loading_percent">%1$d%% · about %2$s left</string>
+    <string name="tts_loading_percent_only">%1$d%% · measuring speed…</string>
+    <string name="tts_loading_about">about %1$s left (last time it took %2$s)</string>
+    <string name="tts_loading_preparing">Preparing… %1$s elapsed</string>
+    <string name="tts_loading_finalizing">Files read; finalizing on the GPU… %1$s elapsed</string>
+    <string name="tts_generating">Generating speech… %1$s</string>
+    <string name="tts_system_unavailable">The system speech engine is not available on this phone (Google Text-to-speech is missing or has no English voice). Use the Zonos voice button next to it.</string>
 
 </resources>

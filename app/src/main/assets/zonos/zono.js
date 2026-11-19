@@ -14,13 +14,17 @@
 // Default base is the Hugging Face web/ folder (fallback only; never auto-fetched).
 //
 // JS API (driven from Kotlin, see com.example.zonos.ZonoEngine):
-//   window.__zonoGenerate(index, voiceId, text, optsJson) -> Promise<'OK'>
+//   window.__zonoGenerate(index, voiceId, text, optsJson, takeKey?) -> Promise<'OK'>
+//     (takeKey: when given, the generated WAV is kept in a small in-page cache
+//      so __zonoReplay can play the SAME take again without re-generating)
+//   window.__zonoReplay(index, takeKey) -> Promise<'OK' | 'MISS'>
 //   window.__zonoStop() -> void
 //   window.__zonoExport(index, voiceId, text, optsJson) -> Promise<'OK'> (blob download)
 //   window.__zonoSetModelsBase(url) -> void
 //   window.__zonoCheckModels() -> Promise<{installed: string[], missing: string[]}>
 //   window.__zonoInit() -> Promise<void> (explicit init; generate/export init lazily too)
 //   window.ZonoNative.onEvent(jsonString) events: ready/progress/playing/done/error/voices
+//     + {"type":"takes","keys":[...]}  (the cached-take keys, after every cache change)
 //     + {"type":"no-model","missing":["backbone","zac", ...]}  (CORE or any pack absent)
 //     + {"type":"models-ok","installed":["backbone","zac", ...]}
 // Extra (additive): window.__zonoControls() -> Promise<object|null> (/v2/controls doc),
@@ -231,7 +235,65 @@ function getAudio() {
   return audioEl;
 }
 
-window.__zonoGenerate = function (index, voiceId, text, optsJson) {
+/**
+ * Generated takes, by caller key (e.g. "cue-12"). Generation on a phone takes
+ * seconds per sentence, so a learner who wants to hear a line again gets the
+ * same take back instantly. Bounded by count and bytes; oldest first.
+ */
+const TAKE_MAX_COUNT = 24;
+const TAKE_MAX_BYTES = 32 * 1024 * 1024;
+const takes = new Map(); // takeKey -> Blob (insertion order = age)
+let takeBytes = 0;
+
+function emitTakes() {
+  emit({ type: 'takes', keys: Array.from(takes.keys()) });
+}
+
+function rememberTake(takeKey, blob) {
+  if (!takeKey) return;
+  const old = takes.get(takeKey);
+  if (old) { takes.delete(takeKey); takeBytes -= old.size; }
+  takes.set(takeKey, blob);
+  takeBytes += blob.size;
+  while (takes.size > TAKE_MAX_COUNT || (takeBytes > TAKE_MAX_BYTES && takes.size > 1)) {
+    const oldestKey = takes.keys().next().value;
+    const oldest = takes.get(oldestKey);
+    takes.delete(oldestKey);
+    takeBytes -= oldest ? oldest.size : 0;
+  }
+  emitTakes();
+}
+
+/** Play one WAV blob through the shared <audio>; resolves 'OK' on 'ended'. */
+function playBlob(index, blob, ctrl) {
+  const url = URL.createObjectURL(blob);
+  const audio = getAudio();
+  emit({ type: 'playing', index });
+  return new Promise((resolve, reject) => {
+    const cur = { ctrl, audio, url, reject, index };
+    current = cur;
+    const cleanup = () => {
+      audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onErr);
+      if (current === cur) current = null;
+      URL.revokeObjectURL(url);
+    };
+    const onEnded = () => { cleanup(); emit({ type: 'done', index }); resolve('OK'); };
+    const onErr = () => {
+      cleanup();
+      const m = (audio.error && audio.error.message) || 'audio playback failed';
+      emit({ type: 'error', message: m });
+      reject(new Error(m));
+    };
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onErr);
+    audio.src = url;
+    const p = audio.play();
+    if (p && p.catch) p.catch(e => { cleanup(); reject(e); });
+  });
+}
+
+window.__zonoGenerate = function (index, voiceId, text, optsJson, takeKey) {
   return (async () => {
     stopCurrent('replaced');
     await initEngine(); // lazy: first call loads the engine from the installed packs
@@ -244,31 +306,18 @@ window.__zonoGenerate = function (index, voiceId, text, optsJson) {
     }
     const buf = await res.arrayBuffer();
     const blob = new Blob([buf], { type: 'audio/wav' });
-    const url = URL.createObjectURL(blob);
-    const audio = getAudio();
-    emit({ type: 'playing', index });
-    return await new Promise((resolve, reject) => {
-      const cur = { ctrl, audio, url, reject, index };
-      current = cur;
-      const cleanup = () => {
-        audio.removeEventListener('ended', onEnded);
-        audio.removeEventListener('error', onErr);
-        if (current === cur) current = null;
-        URL.revokeObjectURL(url);
-      };
-      const onEnded = () => { cleanup(); emit({ type: 'done', index }); resolve('OK'); };
-      const onErr = () => {
-        cleanup();
-        const m = (audio.error && audio.error.message) || 'audio playback failed';
-        emit({ type: 'error', message: m });
-        reject(new Error(m));
-      };
-      audio.addEventListener('ended', onEnded);
-      audio.addEventListener('error', onErr);
-      audio.src = url;
-      const p = audio.play();
-      if (p && p.catch) p.catch(e => { cleanup(); reject(e); });
-    });
+    rememberTake(takeKey, blob);
+    return await playBlob(index, blob, ctrl);
+  })();
+};
+
+/** Play a cached take again (no generation). 'MISS' when it is gone (evicted / page reloaded). */
+window.__zonoReplay = function (index, takeKey) {
+  return (async () => {
+    stopCurrent('replaced');
+    const blob = takes.get(takeKey);
+    if (!blob) { emitTakes(); return 'MISS'; }
+    return await playBlob(index, blob, new AbortController());
   })();
 };
 

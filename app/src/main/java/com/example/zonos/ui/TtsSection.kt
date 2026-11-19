@@ -242,6 +242,7 @@ fun TtsSection(
             }
             Spacer(Modifier.height(10.dp))
             // Engine status (the hidden player that reads for the cards / book).
+            val loadProgress by tts.loadProgress.collectAsState()
             val statusText = when (engineState.status) {
                 EngineStatus.NOT_LOADED -> strings.ttsEngineStatusNotLoaded
                 EngineStatus.LOADING -> strings.ttsEngineStatusLoading(
@@ -251,6 +252,7 @@ fun TtsSection(
                         engineState.phase
                     }
                 )
+                EngineStatus.IDLE -> strings.ttsEngineStatusIdle
                 EngineStatus.READY -> strings.ttsEngineStatusReady
                 EngineStatus.ERROR, EngineStatus.MISSING -> strings.ttsEngineStatusError
                 EngineStatus.NO_MODEL -> strings.ttsEngineStatusNoModel
@@ -260,6 +262,23 @@ fun TtsSection(
                 style = MaterialTheme.typography.labelSmall,
                 color = if (engineState.status == EngineStatus.ERROR) scheme.error else scheme.onSurface.copy(alpha = 0.7f),
             )
+            // Model load in progress: the same percent / ETA line as the banner.
+            val lp = loadProgress
+            if (engineState.status == EngineStatus.LOADING && lp != null) {
+                Spacer(Modifier.height(4.dp))
+                val fraction = lp.fraction
+                if (fraction != null) {
+                    LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+                } else {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = loadProgressLine(lp, strings),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = scheme.onSurface.copy(alpha = 0.7f),
+                )
+            }
             val detail = when {
                 engineState.error == "no_webgpu" -> strings.ttsEngineNoWebgpu
                 engineState.status == EngineStatus.ERROR -> engineState.error ?: engineState.lastPageError

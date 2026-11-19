@@ -45,6 +45,7 @@ import com.example.logic.LessonDisplay
 import com.example.model.LeitnerCard
 import com.example.logic.ReaderComfortState
 import com.example.logic.StudyModeState
+import com.example.zonos.ui.ZonosReplayButton
 import com.example.zonos.ui.ZonosSpeakButton
 import com.example.logic.autoTextDirection
 import com.example.model.BookSentence
@@ -256,7 +257,15 @@ private fun EyeFriendlySentenceRow(
                 text = sentence.english,
                 tint = MaterialTheme.colorScheme.tertiary,
                 size = 16,
-                contentDescription = studyLabels.speak,
+                contentDescription = studyLabels.zonosSpeak,
+                onSpeak = { if (StudyModeState.focusMode) StudyModeState.focus(focusKey) },
+            )
+            ZonosReplayButton(
+                key = focusKey,
+                text = sentence.english,
+                tint = MaterialTheme.colorScheme.tertiary,
+                size = 16,
+                contentDescription = studyLabels.zonosReplay,
                 onSpeak = { if (StudyModeState.focusMode) StudyModeState.focus(focusKey) },
             )
         }
