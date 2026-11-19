@@ -22,12 +22,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -185,30 +183,6 @@ fun CueCard(
                         fontFamily = FontFamily.Monospace
                     )
                 }
-                // On-device TTS (Zonos), on the opposite side from the
-                // translation / transport actions: «generate and play» reads
-                // ONLY the original-language line of this cue, and once a take
-                // exists «play again» repeats it instantly. Same 30dp circles
-                // as the transport actions; hidden when no controller is
-                // provided (previews). One cue speaks at a time.
-                if (englishText.isNotBlank()) {
-                    if (timeLabel != null) Spacer(Modifier.width(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        val zonosKey = focusKey ?: "cue-${englishText.hashCode()}"
-                        CueZonosButton(
-                            key = zonosKey,
-                            text = englishText,
-                            contentDescription = strings.ttsSpeakLine,
-                            stopDescription = strings.ttsStop,
-                        )
-                        CueZonosReplayButton(
-                            key = zonosKey,
-                            text = englishText,
-                            contentDescription = strings.ttsReplayTake,
-                            stopDescription = strings.ttsStop,
-                        )
-                    }
-                }
                 Spacer(Modifier.weight(1f))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (studyLabels != null) {
@@ -237,6 +211,20 @@ fun CueCard(
                                 onClick = onTranslate
                             )
                         }
+                    }
+                    // On-device TTS (Zonos): opens the player popup for this
+                    // cue — it reads ONLY the original-language line (the
+                    // translation is shown in the popup, never spoken) and
+                    // offers generate-again, play-again, ±5 s and speed. Same
+                    // 30dp circle as the transport actions; hidden when no
+                    // controller is provided (previews). One cue speaks at a time.
+                    if (englishText.isNotBlank()) {
+                        CueZonosButton(
+                            key = focusKey ?: "cue-${englishText.hashCode()}",
+                            text = englishText,
+                            translation = translationText,
+                            contentDescription = strings.ttsSpeakLine,
+                        )
                     }
                     // The three per-cue transport actions stay circular and
                     // exactly 30dp, including their hit target. They are shared
@@ -345,71 +333,37 @@ fun CueCard(
     }
 }
 
-/** The Zonos read-aloud button of a cue: a spinner + stop glyph while this cue is being generated/played. */
+/**
+ * The Zonos button of a cue: opens the player popup (and starts the line).
+ * A spinner marks the cue that is loading / generating / playing; tapping
+ * it again just brings the popup back (stop lives there).
+ */
 @Composable
 private fun CueZonosButton(
     key: String,
     text: String,
+    translation: String?,
     contentDescription: String,
-    stopDescription: String,
 ) {
     val tts = LocalZonosTts.current ?: return
     val scheme = MaterialTheme.colorScheme
     val playingKey by tts.playingKey.collectAsState()
-    val replaying by tts.replaying.collectAsState()
-    val isThis = playingKey == key && !replaying
+    val isThis = playingKey == key
     val tint = if (isThis) scheme.primary else scheme.tertiary
     Box(
         modifier = Modifier
             .size(30.dp)
             .clip(CircleShape)
             .background(tint.copy(alpha = if (isThis) 0.24f else 0.12f))
-            .clickable { if (isThis) tts.stop() else tts.speak(key, text) }
-            .semantics { this.contentDescription = if (isThis) stopDescription else contentDescription },
+            .clickable { tts.openPlayer(key, text, translation) }
+            .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center
     ) {
         if (isThis) {
             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = tint)
-            Icon(Icons.Default.Stop, contentDescription = null, tint = tint, modifier = Modifier.size(10.dp))
+            Icon(Icons.Default.RecordVoiceOver, contentDescription = null, tint = tint, modifier = Modifier.size(11.dp))
         } else {
             Icon(Icons.Default.RecordVoiceOver, contentDescription = null, tint = tint, modifier = Modifier.size(17.dp))
-        }
-    }
-}
-
-/**
- * «Play again» for a cue whose Zonos take is still cached: plays the same
- * generated audio instantly (no new generation). Absent until a take exists.
- */
-@Composable
-private fun CueZonosReplayButton(
-    key: String,
-    text: String,
-    contentDescription: String,
-    stopDescription: String,
-) {
-    val tts = LocalZonosTts.current ?: return
-    val takes by tts.takes.collectAsState()
-    if (key !in takes) return
-    val scheme = MaterialTheme.colorScheme
-    val playingKey by tts.playingKey.collectAsState()
-    val replaying by tts.replaying.collectAsState()
-    val isThis = playingKey == key && replaying
-    val tint = if (isThis) scheme.primary else scheme.tertiary
-    Box(
-        modifier = Modifier
-            .size(30.dp)
-            .clip(CircleShape)
-            .background(tint.copy(alpha = if (isThis) 0.24f else 0.12f))
-            .clickable { if (isThis) tts.stop() else tts.replay(key, text) }
-            .semantics { this.contentDescription = if (isThis) stopDescription else contentDescription },
-        contentAlignment = Alignment.Center
-    ) {
-        if (isThis) {
-            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = tint)
-            Icon(Icons.Default.Stop, contentDescription = null, tint = tint, modifier = Modifier.size(10.dp))
-        } else {
-            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = tint, modifier = Modifier.size(19.dp))
         }
     }
 }

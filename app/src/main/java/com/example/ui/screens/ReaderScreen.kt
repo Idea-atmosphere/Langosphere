@@ -84,7 +84,7 @@ import com.example.ui.components.GradientButton
 import com.example.ui.components.PillTone
 import com.example.ui.components.SentenceStudyLabels
 import com.example.zonos.ui.LocalZonosTts
-import com.example.zonos.ui.ZonosLineButtons
+import com.example.zonos.ui.ZonosSpeakButton
 import com.example.ui.components.SoftIconButton
 import com.example.ui.components.StatusPill
 import com.example.ui.components.brandBrush
@@ -1486,12 +1486,12 @@ private fun ReaderPaper(
                                 onNote = { },
                                 onRemoveHighlight = onRemoveHighlight,
                             )
-                            ZonosLineButtons(
+                            ZonosSpeakButton(
                                 key = "pl-$location-$index-${item.text.hashCode()}",
                                 text = item.text,
-                                labels = studyLabels,
                                 tint = ink.copy(alpha = 0.6f),
                                 size = 15,
+                                contentDescription = studyLabels.zonosSpeak,
                             )
                         }
                         is ReaderItem.Picture -> {

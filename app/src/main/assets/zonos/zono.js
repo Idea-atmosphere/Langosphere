@@ -18,6 +18,9 @@
 //     (takeKey: when given, the generated WAV is kept in a small in-page cache
 //      so __zonoReplay can play the SAME take again without re-generating)
 //   window.__zonoReplay(index, takeKey) -> Promise<'OK' | 'MISS'>
+//   window.__zonoPause() / __zonoResume() / __zonoSeek(seconds) / __zonoSetRate(rate)
+//     transport for the take that is playing; the page reports
+//     {"type":"time","index","position","duration","paused","rate"} on every timeupdate
 //   window.__zonoStop() -> void
 //   window.__zonoExport(index, voiceId, text, optsJson) -> Promise<'OK'> (blob download)
 //   window.__zonoSetModelsBase(url) -> void
@@ -219,6 +222,10 @@ function stopCurrent(reason) {
   if (!current) return;
   const c = current;
   current = null;
+  // Detach the take's listeners first: the pause below must not report a
+  // stale "paused" time event, and the shared <audio> must not keep the
+  // old take's 'ended' / 'timeupdate' handlers for the next take.
+  if (c.cleanup) { try { c.cleanup(); } catch {} }
   try { c.ctrl.abort(); } catch {}
   if (c.audio) { try { c.audio.pause(); } catch {} }
   if (c.url) { try { URL.revokeObjectURL(c.url); } catch {} }
@@ -264,21 +271,39 @@ function rememberTake(takeKey, blob) {
   emitTakes();
 }
 
+/** Playback speed of the <audio> (pitch preserved by the browser); kept across takes. */
+let playbackRate = 1.0;
+
+function timeEvent(index, audio) {
+  const d = audio.duration;
+  return {
+    type: 'time', index,
+    position: audio.currentTime || 0,
+    duration: (typeof d === 'number' && isFinite(d)) ? d : 0,
+    paused: !!audio.paused,
+    rate: audio.playbackRate || playbackRate,
+  };
+}
+
 /** Play one WAV blob through the shared <audio>; resolves 'OK' on 'ended'. */
 function playBlob(index, blob, ctrl) {
   const url = URL.createObjectURL(blob);
   const audio = getAudio();
   emit({ type: 'playing', index });
   return new Promise((resolve, reject) => {
-    const cur = { ctrl, audio, url, reject, index };
+    const cur = { ctrl, audio, url, reject, index, cleanup: null };
     current = cur;
+    const onTime = () => emit(timeEvent(index, audio));
+    const TIME_EVENTS = ['timeupdate', 'play', 'pause', 'seeked', 'durationchange', 'ratechange', 'loadedmetadata'];
     const cleanup = () => {
       audio.removeEventListener('ended', onEnded);
       audio.removeEventListener('error', onErr);
+      for (const t of TIME_EVENTS) audio.removeEventListener(t, onTime);
       if (current === cur) current = null;
       URL.revokeObjectURL(url);
     };
-    const onEnded = () => { cleanup(); emit({ type: 'done', index }); resolve('OK'); };
+    cur.cleanup = cleanup;
+    const onEnded = () => { onTime(); cleanup(); emit({ type: 'done', index }); resolve('OK'); };
     const onErr = () => {
       cleanup();
       const m = (audio.error && audio.error.message) || 'audio playback failed';
@@ -287,11 +312,41 @@ function playBlob(index, blob, ctrl) {
     };
     audio.addEventListener('ended', onEnded);
     audio.addEventListener('error', onErr);
+    for (const t of TIME_EVENTS) audio.addEventListener(t, onTime);
+    try { audio.preservesPitch = true; } catch {}
+    audio.defaultPlaybackRate = playbackRate;
     audio.src = url;
+    audio.playbackRate = playbackRate;
     const p = audio.play();
     if (p && p.catch) p.catch(e => { cleanup(); reject(e); });
   });
 }
+
+// Transport for the take that is playing (no-ops when nothing plays).
+window.__zonoPause = function () {
+  if (current && current.audio) { try { current.audio.pause(); } catch {} }
+};
+window.__zonoResume = function () {
+  if (current && current.audio) {
+    const p = current.audio.play();
+    if (p && p.catch) p.catch(() => {});
+  }
+};
+window.__zonoSeek = function (seconds) {
+  if (!current || !current.audio) return;
+  const a = current.audio;
+  const d = (typeof a.duration === 'number' && isFinite(a.duration)) ? a.duration : Infinity;
+  const t = Math.max(0, Math.min(Number(seconds) || 0, d > 0.05 ? d - 0.05 : 0));
+  try { a.currentTime = t; } catch {}
+  emit(timeEvent(current.index, a));
+};
+window.__zonoSetRate = function (rate) {
+  const r = Number(rate);
+  playbackRate = isFinite(r) ? Math.max(0.5, Math.min(2.0, r)) : 1.0;
+  if (current && current.audio) {
+    try { current.audio.playbackRate = playbackRate; } catch {}
+  }
+};
 
 window.__zonoGenerate = function (index, voiceId, text, optsJson, takeKey) {
   return (async () => {

@@ -39,3 +39,16 @@ data class EngineState(
 
 /** Default voice of the engine (always present in voices.json). */
 const val DEFAULT_VOICE_ID = "default_940eaff39a929da0"
+
+/**
+ * Transport state of the take that is playing in the engine page (from
+ * its <audio> element): position / duration in milliseconds, whether it is
+ * paused, and the playback rate in effect. Null when nothing is loaded.
+ */
+data class Playback(
+    val index: Int,
+    val positionMs: Long,
+    val durationMs: Long,
+    val paused: Boolean,
+    val rate: Float,
+)

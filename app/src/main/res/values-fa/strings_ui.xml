@@ -1101,7 +1101,6 @@
     <string name="tts_notice_export_saved">ذخیره شد: %1$s</string>
     <string name="tts_notice_export_failed">ذخیرهٔ خروجی ناموفق بود: %1$s</string>
     <string name="tts_engine_status_idle">موتور: آماده — مدل با اولین پخش بارگذاری می‌شود</string>
-    <string name="tts_replay_take">پخش دوبارهٔ صدای تولیدشده</string>
     <string name="tts_loading_title">در حال بارگذاری مدل گفتار…</string>
     <string name="tts_loading_first_time">اولین پخش در این اجرا: مدل %1$s از حافظهٔ گوشی خوانده و در پردازندهٔ گرافیکی بارگذاری می‌شود. پخش‌های بعدی بلافاصله شروع می‌شوند.</string>
     <string name="tts_loading_percent">٪%1$d · حدود %2$s مانده</string>
@@ -1111,5 +1110,16 @@
     <string name="tts_loading_finalizing">فایل‌ها خوانده شد؛ آماده‌سازی نهایی روی پردازندهٔ گرافیکی… %1$s گذشته</string>
     <string name="tts_generating">در حال تولید صدا… %1$s</string>
     <string name="tts_system_unavailable">موتور گفتار سیستم روی این گوشی در دسترس نیست (Google Text-to-speech نصب نیست یا صدای انگلیسی ندارد). از دکمهٔ صدای Zonos کنارش استفاده کنید.</string>
+    <string name="tts_player_title">صدای Zonos</string>
+    <string name="tts_player_regenerate">تولید دوباره</string>
+    <string name="tts_player_restart">از اول</string>
+    <string name="tts_player_play">پخش</string>
+    <string name="tts_player_pause">مکث</string>
+    <string name="tts_player_back">۵ ثانیه عقب</string>
+    <string name="tts_player_forward">۵ ثانیه جلو</string>
+    <string name="tts_player_rate">سرعت پخش: %1$s×</string>
+    <string name="tts_player_rate_hint">فوراً اعمال می‌شود و زیر و بمی صدا ثابت می‌ماند. تمپوی خودِ صدا برای تولیدهای بعدی در ابزارهای یادگیری ▸ تبدیل متن به گفتار تنظیم می‌شود.</string>
+    <string name="tts_player_finished">تمام شد — دوباره پخش کنید یا یک خوانش تازه بسازید.</string>
+    <string name="tts_player_not_generated">هنوز صدایی تولید نشده.</string>
 
 </resources>

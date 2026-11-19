@@ -42,6 +42,12 @@ class ZonosTtsController(
         private const val KEY_SPEED = "tts_speed"
         private const val KEY_LANGUAGE = "tts_language"
         private const val KEY_LAST_LOAD_MS = "tts_last_load_ms"
+        private const val KEY_PLAYBACK_RATE = "tts_playback_rate"
+
+        const val RATE_MIN = 0.5f
+        const val RATE_MAX = 2.0f
+        /** Step of the player's skip buttons. */
+        const val SKIP_MS = 5_000L
 
         /** How long [speak] waits for the engine page's functions after a (re)load. */
         private const val PAGE_READY_TIMEOUT_MS = 20_000L
@@ -155,6 +161,82 @@ class ZonosTtsController(
 
     private var loadEstimator = LoadEstimator(lastLoadMs())
     private var loadTicker: Job? = null
+
+    // ------------------------------------------------------------- player
+
+    /** What the player popup shows: the sentence (and its translation, if any) behind [key]. */
+    data class PlayerRequest(val key: String, val text: String, val translation: String?)
+
+    private val _player = MutableStateFlow<PlayerRequest?>(null)
+    /** Non-null while the player popup is open. */
+    val player: StateFlow<PlayerRequest?> = _player.asStateFlow()
+
+    /** Transport state of the playing take (position / duration / paused). */
+    val playback: StateFlow<Playback?> get() = engine.playback
+
+    private val _playbackRate = MutableStateFlow(prefs.getFloat(KEY_PLAYBACK_RATE, 1.0f).coerceIn(RATE_MIN, RATE_MAX))
+    /** Playback speed of the takes (0.5–2.0, pitch preserved); persisted. */
+    val playbackRate: StateFlow<Float> = _playbackRate.asStateFlow()
+
+    /**
+     * Open the player popup for [key] and start it: the cached take when
+     * there is one, otherwise a fresh generation (which loads the model
+     * first on the first playback of a session). A tap on the sentence
+     * that is already playing just brings the popup back.
+     */
+    fun openPlayer(key: String, text: String, translation: String?) {
+        val clean = text.trim()
+        if (clean.isEmpty()) return
+        _player.value = PlayerRequest(key, clean, translation?.trim()?.takeIf { it.isNotEmpty() })
+        if (_playingKey.value != key) {
+            if (hasTake(key)) replay(key, clean) else speak(key, clean)
+        }
+    }
+
+    /**
+     * Hide the popup. A take that is playing finishes on its own and a
+     * loading model keeps loading (the banner shows its progress); only a
+     * paused take is stopped, so the sentence's button drops its spinner.
+     */
+    fun closePlayer() {
+        _player.value = null
+        if (engine.playback.value?.paused == true) stop()
+    }
+
+    /** A new take for the popup's sentence (a different reading of the same text). */
+    fun regenerate() {
+        val req = _player.value ?: return
+        speak(req.key, req.text)
+    }
+
+    /** Play the popup's sentence from the start: rewind the playing take, else replay the cached one. */
+    fun restart() {
+        val req = _player.value ?: return
+        val pb = engine.playback.value
+        if (_playingKey.value == req.key && pb != null) {
+            engine.seekTo(0L)
+            engine.resume()
+        } else {
+            replay(req.key, req.text)
+        }
+    }
+
+    fun pause() = engine.pause()
+    fun resume() = engine.resume()
+    fun seekTo(positionMs: Long) = engine.seekTo(positionMs)
+
+    fun seekBy(deltaMs: Long) {
+        val pb = engine.playback.value ?: return
+        val target = (pb.positionMs + deltaMs).coerceIn(0L, if (pb.durationMs > 0) pb.durationMs else Long.MAX_VALUE)
+        engine.seekTo(target)
+    }
+
+    fun setPlaybackRate(rate: Float) {
+        val r = rate.coerceIn(RATE_MIN, RATE_MAX)
+        _playbackRate.value = r
+        prefs.edit().putFloat(KEY_PLAYBACK_RATE, r).apply()
+        engine.setRate(r)
+    }
 
     /** Which design the last generate used (for the TTS section's status line). */
     private val _designSource = MutableStateFlow<DesignSource>(DesignSource.Default)
@@ -421,6 +503,7 @@ class ZonosTtsController(
                 // Right after a page (re)load the module may still be evaluating:
                 // wait for __zonoGenerate instead of failing the first tap.
                 val pageReady = awaitPageFunctions()
+                if (pageReady) engine.setRate(_playbackRate.value)
                 if (!pageReady) {
                     val st = engine.state.value
                     val detail = st.error?.takeIf { st.status == EngineStatus.ERROR || st.status == EngineStatus.MISSING }
@@ -725,6 +808,7 @@ class ZonosTtsController(
 
     /** Release both WebViews (process-level teardown). */
     fun release() {
+        _player.value = null
         stop()
         cancelDownload()
         stopLoadTicker()

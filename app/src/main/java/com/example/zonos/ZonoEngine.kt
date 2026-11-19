@@ -42,6 +42,7 @@ import kotlin.coroutines.resume
  *     | {"type":"playing","index"} | {"type":"done","index"}
  *     | {"type":"error","message"} | {"type":"voices","count"}
  *     | {"type":"takes","keys":[...]} (cached generated takes, see [takes])
+ *     | {"type":"time","index","position","duration","paused","rate"} (see [playback])
  *     | {"type":"no-model","missing":[...]} | {"type":"models-ok"}
  *
  * Ported from the ZonoLingua reader engine; the export and diagnostics
@@ -106,6 +107,10 @@ get.onerror=function(){db.close();post(null);};
     private val _takes = MutableStateFlow<Set<String>>(emptySet())
     val takes: StateFlow<Set<String>> = _takes
 
+    /** Transport state of the playing take (position / duration / paused); null when idle. */
+    private val _playback = MutableStateFlow<Playback?>(null)
+    val playback: StateFlow<Playback?> = _playback
+
     /** index -> continuation waiting for that sentence's "done" event. */
     private val pending = ConcurrentHashMap<Int, (Result<String>) -> Unit>()
 
@@ -163,6 +168,7 @@ get.onerror=function(){db.close();post(null);};
         destroyAttached()
         _state.value = EngineState()
         _takes.value = emptySet()
+        _playback.value = null
     }
 
     private fun destroyAttached() {
@@ -274,6 +280,7 @@ get.onerror=function(){db.close();post(null);};
         val prev = _state.value
         _state.value = EngineState(status = EngineStatus.LOADING, webViewVersion = prev.webViewVersion)
         _takes.value = emptySet()
+        _playback.value = null
         lastUrl = ENGINE_URL
         attachedWv?.loadUrl(ENGINE_URL)
     }
@@ -445,9 +452,24 @@ get.onerror=function(){db.close();post(null);};
         pending.values.forEach { it(Result.failure(IllegalStateException("stopped"))) }
         pending.clear()
         if (_state.value.playingIndex != null) _state.value = _state.value.copy(playingIndex = null)
+        _playback.value = null
         val view = attachedWv ?: return
         view.post { view.evaluateJavascript("try{window.__zonoStop()}catch(e){}", null) }
     }
+
+    // ------------------------------------------------- transport (playing take)
+
+    private fun runJs(js: String) {
+        val view = attachedWv ?: return
+        view.post { view.evaluateJavascript("try{$js}catch(e){}", null) }
+    }
+
+    fun pause() = runJs("window.__zonoPause()")
+    fun resume() = runJs("window.__zonoResume()")
+    fun seekTo(positionMs: Long) = runJs("window.__zonoSeek(" + (positionMs.coerceAtLeast(0L) / 1000.0) + ")")
+
+    /** Playback speed 0.5–2.0 (pitch preserved); applies to the playing take and the next ones. */
+    fun setRate(rate: Float) = runJs("window.__zonoSetRate(" + rate.coerceIn(0.5f, 2.0f) + ")")
 
     inner class JsBridge {
         @JavascriptInterface
@@ -476,19 +498,32 @@ get.onerror=function(){db.close();post(null);};
                             phase = o.optString("phase")
                         )
                         "playing" -> _state.value = _state.value.copy(playingIndex = o.optInt("index", -1))
+                        "time" -> {
+                            val idx = o.optInt("index", -1)
+                            _playback.value = Playback(
+                                index = idx,
+                                positionMs = (o.optDouble("position", 0.0) * 1000).toLong().coerceAtLeast(0L),
+                                durationMs = (o.optDouble("duration", 0.0) * 1000).toLong().coerceAtLeast(0L),
+                                paused = o.optBoolean("paused", false),
+                                rate = o.optDouble("rate", 1.0).toFloat(),
+                            )
+                        }
                         "done" -> {
                             val idx = o.optInt("index", -1)
                             if (_state.value.playingIndex == idx) _state.value = _state.value.copy(playingIndex = null)
+                            if (_playback.value?.index == idx) _playback.value = null
                             pending.remove(idx)?.invoke(Result.success("OK"))
                         }
                         "genDone" -> {
                             val idx = o.optInt("index", -1)
                             if (_state.value.playingIndex == idx) _state.value = _state.value.copy(playingIndex = null)
+                            if (_playback.value?.index == idx) _playback.value = null
                             pending.remove(idx)?.invoke(Result.success(o.optString("result", "OK")))
                         }
                         "genError" -> {
                             val idx = o.optInt("index", -1)
                             if (_state.value.playingIndex == idx) _state.value = _state.value.copy(playingIndex = null)
+                            if (_playback.value?.index == idx) _playback.value = null
                             pending.remove(idx)?.invoke(
                                 Result.failure(IllegalStateException(o.optString("message", "generation failed")))
                             )
