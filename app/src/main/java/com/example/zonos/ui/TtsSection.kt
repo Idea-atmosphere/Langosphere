@@ -64,6 +64,7 @@ import com.example.zonos.DesignSource
 import com.example.zonos.EngineStatus
 import com.example.zonos.ModelsLocation
 import com.example.zonos.ZonoLanguages
+import com.example.zonos.ZonoVoiceTags
 import com.example.zonos.ZonosTtsController
 import java.util.Locale
 
@@ -355,10 +356,25 @@ fun TtsSection(
                         } else {
                             null
                         }
+                        // Name on top, accent / style and gender underneath
+                        // («Cillian» / «Irish · male»), so the right voice is
+                        // easy to pick without listening to each one.
+                        val caption = ZonoVoiceTags.caption(v, isFa)
                         FilterChip(
                             selected = chosen,
                             onClick = { tts.selectVoice(v.id) },
-                            label = { Text(v.name) },
+                            label = {
+                                Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                    Text(v.name)
+                                    if (caption != null) {
+                                        Text(
+                                            text = caption,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = scheme.onSurface.copy(alpha = 0.7f),
+                                        )
+                                    }
+                                }
+                            },
                             leadingIcon = chipIcon,
                         )
                     }

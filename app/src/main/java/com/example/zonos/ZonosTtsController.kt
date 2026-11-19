@@ -351,7 +351,9 @@ class ZonosTtsController(
                     ZonoVoice(
                         id = o.optString("id"),
                         name = o.optString("name", o.optString("id")),
-                        language = o.optString("language", "English")
+                        language = o.optString("language", "English"),
+                        tag = o.optString("tag", ""),
+                        gender = o.optString("gender", ""),
                     )
                 }.filter { it.id.isNotEmpty() }
                 if (list.isNotEmpty()) {

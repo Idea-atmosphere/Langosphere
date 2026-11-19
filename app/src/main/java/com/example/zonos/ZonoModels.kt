@@ -1,7 +1,64 @@
 package com.example.zonos
 
-/** One bundled voice of the engine (assets/zonos/voices.json). */
-data class ZonoVoice(val id: String, val name: String, val language: String)
+/**
+ * One bundled voice of the engine (assets/zonos/voices.json). [tag] is the
+ * voice's accent or style from Zyphra's own labels (`Cillian en Irish M 1`
+ * → `irish`; `Thaddeus en announcervoice M 1` → `announcer`), [gender] is
+ * `m` / `f`; both may be empty — the non-English voices carry only their
+ * language and gender. See [ZonoVoiceTags] for the labels shown to the learner.
+ */
+data class ZonoVoice(
+    val id: String,
+    val name: String,
+    val language: String,
+    val tag: String = "",
+    val gender: String = "",
+)
+
+/**
+ * The words shown next to a voice's name so the right one is easy to pick
+ * — «Cillian · Irish · male» / «Cillian · ایرلندی · مرد». Accents and
+ * styles come from the pack's voice labels; unknown tags are shown as-is.
+ */
+object ZonoVoiceTags {
+
+    private val tags: Map<String, Pair<String, String>> = mapOf(
+        // accents (English voices)
+        "irish" to ("Irish" to "ایرلندی"),
+        "british" to ("British" to "بریتانیایی"),
+        "american" to ("American" to "آمریکایی"),
+        "scottish" to ("Scottish" to "اسکاتلندی"),
+        "australian" to ("Australian" to "استرالیایی"),
+        "indian" to ("Indian" to "هندی"),
+        // styles
+        "energetic" to ("energetic" to "پرانرژی"),
+        "witch" to ("witch" to "جادوگر"),
+        "anime" to ("anime" to "انیمه"),
+        "announcer" to ("announcer" to "گوینده"),
+        "asmr" to ("ASMR" to "ASMR"),
+    )
+
+    /** The accent / style label of [tag] in the UI language, or null for an empty tag. */
+    fun tagLabel(tag: String, isFa: Boolean): String? {
+        val key = tag.trim().lowercase()
+        if (key.isEmpty()) return null
+        val pair = tags[key] ?: return tag.trim()
+        return if (isFa) pair.second else pair.first
+    }
+
+    /** «male» / «female» (or «مرد» / «زن»), null when the pack gives no gender. */
+    fun genderLabel(gender: String, isFa: Boolean): String? = when (gender.trim().lowercase()) {
+        "m", "male" -> if (isFa) "مرد" else "male"
+        "f", "female" -> if (isFa) "زن" else "female"
+        else -> null
+    }
+
+    /** The caption under the voice's name: accent/style and gender joined with « · », or null. */
+    fun caption(voice: ZonoVoice, isFa: Boolean): String? {
+        val parts = listOfNotNull(tagLabel(voice.tag, isFa), genderLabel(voice.gender, isFa))
+        return if (parts.isEmpty()) null else parts.joinToString(" · ")
+    }
+}
 
 /**
  * [IDLE]: the engine page is up and the model pack is present, but the
