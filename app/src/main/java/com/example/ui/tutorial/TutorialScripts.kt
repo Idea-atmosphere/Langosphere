@@ -3,6 +3,7 @@ package com.example.ui.tutorial
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DataObject
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.R
@@ -63,10 +64,19 @@ enum class TutorialTopic(
      * the full tour a second time. Its tab is Video so the slot that takes
      * the package is on the screen when the window closes.
      */
-    PROMPTS(AppTab.VIDEO, R.string.tutorial_topic_prompts, R.string.tutorial_topic_prompts_desc);
+    PROMPTS(AppTab.VIDEO, R.string.tutorial_topic_prompts, R.string.tutorial_topic_prompts_desc),
+
+    /**
+     * The text-to-speech tool on its own: the TTS button of the learning
+     * tools, the model pack, voices, language and speed, the Voice Studio
+     * and where the voice speaks. Also the tail of the Leitner chapter, so
+     * the full tour covers it once; listed in the picker like Prompts.
+     */
+    TTS(AppTab.LEITNER, R.string.tutorial_topic_tts, R.string.tutorial_topic_tts_desc);
 
     val icon: ImageVector get() = when (this) {
         PROMPTS -> Icons.Filled.DataObject
+        TTS -> Icons.Filled.RecordVoiceOver
         else -> tab?.icon() ?: Icons.Filled.TouchApp
     }
 
@@ -81,7 +91,7 @@ enum class TutorialTopic(
             listOf(BASICS) + tabOrder.map { forTab(it) }
 
         /** What the picker lists one by one: the tour's topics plus the stand-alone chapters. */
-        fun pickerList(tabOrder: List<AppTab>): List<TutorialTopic> = fullTour(tabOrder) + PROMPTS
+        fun pickerList(tabOrder: List<AppTab>): List<TutorialTopic> = fullTour(tabOrder) + PROMPTS + TTS
     }
 }
 
@@ -193,6 +203,25 @@ object TutorialScripts {
         step("agent.composer", R.string.tut_agent_7_title, R.string.tut_agent_7_body, action = R.string.tut_agent_7_action),
     )
 
+    /**
+     * Text to speech (Learning tools ▸ the third button). The first step
+     * points at the button on the tools menu and moves on by itself when
+     * the tool opens; the section steps scroll their card into view
+     * (TtsSection); the Studio step opens nothing by itself — the Studio
+     * needs the model pack — but follows the learner inside when they tap
+     * Open Studio. The last step is a plain card: where the voice speaks.
+     */
+    private val tts = listOf(
+        step("leitner.toolTts", R.string.tut_tts_1_title, R.string.tut_tts_1_body, action = R.string.tut_tts_1_action, advanceWhen = "tts.model"),
+        step("tts.model", R.string.tut_tts_2_title, R.string.tut_tts_2_body, action = R.string.tut_tts_2_action),
+        step("tts.manual", R.string.tut_tts_3_title, R.string.tut_tts_3_body),
+        step("tts.voice", R.string.tut_tts_4_title, R.string.tut_tts_4_body, action = R.string.tut_tts_4_action),
+        step("tts.language", R.string.tut_tts_5_title, R.string.tut_tts_5_body, action = R.string.tut_tts_5_action),
+        step("tts.studio", R.string.tut_tts_6_title, R.string.tut_tts_6_body, action = R.string.tut_tts_6_action, advanceWhen = "tts.studioPane"),
+        step("tts.studioPane", R.string.tut_tts_7_title, R.string.tut_tts_7_body, action = R.string.tut_tts_7_action),
+        step("tts.where", R.string.tut_tts_8_title, R.string.tut_tts_8_body, target = null),
+    )
+
     private val leitner = listOf(
         step("leitner.toolLeitner", R.string.tut_leitner_1_title, R.string.tut_leitner_1_body),
         step("leitner.toolQuiz", R.string.tut_leitner_2_title, R.string.tut_leitner_2_body, action = R.string.tut_leitner_2_action),
@@ -200,7 +229,7 @@ object TutorialScripts {
         step("leitner.export", R.string.tut_leitner_4_title, R.string.tut_leitner_4_body),
         step("leitner.pills", R.string.tut_leitner_5_title, R.string.tut_leitner_5_body, action = R.string.tut_leitner_5_action),
         step("leitner.deck", R.string.tut_leitner_6_title, R.string.tut_leitner_6_body, action = R.string.tut_leitner_6_action),
-    )
+    ) + tts
 
     fun stepsFor(topic: TutorialTopic): List<TutorialStep> = when (topic) {
         TutorialTopic.BASICS -> basics
@@ -210,5 +239,6 @@ object TutorialScripts {
         TutorialTopic.AGENT -> agent
         TutorialTopic.LEITNER -> leitner
         TutorialTopic.PROMPTS -> prompts
+        TutorialTopic.TTS -> tts
     }
 }

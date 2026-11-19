@@ -151,17 +151,21 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
     // had open.
     var tool by rememberSaveable(stateSaver = OpenToolSaver) { mutableStateOf<LearningTool?>(null) }
     BackHandler(enabled = tool != null) { tool = null }
-    // The tutorial's first two steps point at the menu buttons, the ones
-    // about the header, export, pills and deck exist only while the Leitner
-    // tool is open; so after the learner tried a tool (or wandered off
+    // The tutorial steps that point at the menu buttons need the menu, the
+    // ones about the header, export, pills and deck exist only while the
+    // Leitner tool is open, and the text-to-speech steps (`tts.*`) live in
+    // the TTS tool; so after the learner tried a tool (or wandered off
     // hands-on) put the right page on screen.
     val tutorial = LocalTutorial.current
     LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
-        when (tutorial.currentStepId) {
-            "leitner.toolLeitner", "leitner.toolQuiz" ->
+        val stepId = tutorial.currentStepId ?: return@LaunchedEffect
+        when {
+            stepId == "leitner.toolLeitner" || stepId == "leitner.toolQuiz" || stepId == "leitner.toolTts" ->
                 tool = null
-            "leitner.header", "leitner.export", "leitner.pills", "leitner.deck" ->
+            stepId == "leitner.header" || stepId == "leitner.export" || stepId == "leitner.pills" || stepId == "leitner.deck" ->
                 tool = LearningTool.LEITNER
+            stepId.startsWith("tts.") ->
+                tool = LearningTool.TTS
         }
     }
 
@@ -222,7 +226,7 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
                     icon = Icons.Filled.RecordVoiceOver,
                     onClick = { tool = LearningTool.TTS },
                     badge = strings.jsonQuizBetaBadge,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().tutorialTarget("leitner.toolTts"),
                 )
             }
             return@Column
