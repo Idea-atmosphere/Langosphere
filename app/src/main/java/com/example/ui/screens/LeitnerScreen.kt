@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -33,10 +34,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -138,16 +143,23 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
     var isRevealed by remember { mutableStateOf(false) }
 
     // This tab is a small toolbox ("Better learning tools"): the Leitner box
-    // itself, and the beta quiz built from the imported JSON package.
-    // Saveable: a trip to Recents (or the system reclaiming the activity)
-    // keeps the learner on the tool they had open.
-    var tool by rememberSaveable(stateSaver = ToolSaver) { mutableStateOf(LearningTool.LEITNER) }
-    // The tutorial steps about the header, export, pills and deck only exist
-    // while the Leitner tool is selected; after the learner tried the quiz
-    // tool (or wandered off hands-on) switch back so they are on screen.
+    // itself, the beta quiz built from the imported JSON package and the
+    // on-device text to speech. The tab opens on a menu of the three (null);
+    // a tapped tool fills the page and Back — the arrow at its top or the
+    // system gesture — returns to the menu. Saveable: a trip to Recents (or
+    // the system reclaiming the activity) keeps the learner on the tool they
+    // had open.
+    var tool by rememberSaveable(stateSaver = OpenToolSaver) { mutableStateOf<LearningTool?>(null) }
+    BackHandler(enabled = tool != null) { tool = null }
+    // The tutorial's first two steps point at the menu buttons, the ones
+    // about the header, export, pills and deck exist only while the Leitner
+    // tool is open; so after the learner tried a tool (or wandered off
+    // hands-on) put the right page on screen.
     val tutorial = LocalTutorial.current
     LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
         when (tutorial.currentStepId) {
+            "leitner.toolLeitner", "leitner.toolQuiz" ->
+                tool = null
             "leitner.header", "leitner.export", "leitner.pills", "leitner.deck" ->
                 tool = LearningTool.LEITNER
         }
@@ -182,42 +194,69 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
             .fillMaxSize()
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
-        // ── The three tools of this tab, as buttons ──
-        // The active one is tinted with the brand colour; the JSON quiz wears
-        // its BETA label on the corner of the button itself. The third tool
-        // is the on-device text to speech (model pack, voice, Studio).
+        // ── The menu: the three tools of this tab as big buttons ──
+        // Nothing else is on the page until one is tapped; the beta tools
+        // (the JSON quiz and the text to speech) wear their label on the
+        // corner of the button itself.
+        val openTool: LearningTool? = tool
+        if (openTool == null) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                LearningToolButton(
+                    text = strings.toolLeitnerBox,
+                    icon = Icons.Filled.Style,
+                    onClick = { tool = LearningTool.LEITNER },
+                    modifier = Modifier.fillMaxWidth().tutorialTarget("leitner.toolLeitner"),
+                )
+                LearningToolButton(
+                    text = strings.toolJsonQuiz,
+                    icon = Icons.Filled.DataObject,
+                    onClick = { tool = LearningTool.JSON_QUIZ },
+                    badge = strings.jsonQuizBetaBadge,
+                    modifier = Modifier.fillMaxWidth().tutorialTarget("leitner.toolQuiz"),
+                )
+                LearningToolButton(
+                    text = strings.toolTts,
+                    icon = Icons.Filled.RecordVoiceOver,
+                    onClick = { tool = LearningTool.TTS },
+                    badge = strings.jsonQuizBetaBadge,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            return@Column
+        }
+
+        // ── The open tool's top row: Back to the menu + the tool's name ──
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            LearningToolButton(
-                text = strings.toolLeitnerBox,
-                selected = tool == LearningTool.LEITNER,
-                onClick = { tool = LearningTool.LEITNER },
-                modifier = Modifier.weight(1f).tutorialTarget("leitner.toolLeitner"),
+            SoftIconButton(
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = strings.back,
+                onClick = { tool = null },
             )
-            LearningToolButton(
-                text = strings.toolJsonQuiz,
-                selected = tool == LearningTool.JSON_QUIZ,
-                onClick = { tool = LearningTool.JSON_QUIZ },
-                badge = strings.jsonQuizBetaBadge,
-                modifier = Modifier.weight(1f).tutorialTarget("leitner.toolQuiz"),
-            )
-            LearningToolButton(
-                text = strings.toolTts,
-                selected = tool == LearningTool.TTS,
-                onClick = { tool = LearningTool.TTS },
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = when (openTool) {
+                    LearningTool.LEITNER -> strings.toolLeitnerBox
+                    LearningTool.JSON_QUIZ -> strings.toolJsonQuiz
+                    LearningTool.TTS -> strings.toolTts
+                },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
             )
         }
 
-        if (tool == LearningTool.TTS) {
+        if (openTool == LearningTool.TTS) {
             // On-device text to speech (Zonos3-Mini): the model pack, the
             // voice / language / speed used by the subtitle cards and the
             // book reader, and the full Voice Studio page. The controller is
             // app-wide (AppViewModel.zonosTts), provided by MainScreen.
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             val tts = LocalZonosTts.current ?: viewModel.zonosTts
             TtsSection(
                 tts = tts,
@@ -229,8 +268,8 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
             return@Column
         }
 
-        if (tool == LearningTool.JSON_QUIZ) {
-            Spacer(modifier = Modifier.height(12.dp))
+        if (openTool == LearningTool.JSON_QUIZ) {
+            Spacer(modifier = Modifier.height(8.dp))
             // BETA: words, sentences and grammar points of the imported AI
             // learning JSON become a multiple-choice quiz. A file can be picked
             // or a raw AI answer pasted here — the "CHUNK 1-50" marker line,
@@ -246,7 +285,7 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
             return@Column
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // ── Header: progress ring + counts + export ──
         if (isAnimeDesign()) {
@@ -344,7 +383,7 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
                     )
                 }
                 Spacer(modifier = Modifier.width(14.dp))
-                // No title here: the tool picker above already names this tool,
+                // No title here: the back row above already names this tool,
                 // so the header card only reports the deck.
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -498,22 +537,22 @@ fun LeitnerScreen(viewModel: AppViewModel, onOpenQuiz: () -> Unit) {
 /** The three tools inside the "Better learning tools" tab. */
 private enum class LearningTool { LEITNER, JSON_QUIZ, TTS }
 
-/** Persists the tool tab across Recents / activity recreation. */
-private val ToolSaver = Saver<LearningTool, String>(
-    save = { it.name },
-    restore = { name -> LearningTool.entries.firstOrNull { it.name == name } ?: LearningTool.LEITNER }
+/** Persists the open tool across Recents / activity recreation ("" = the menu). */
+private val OpenToolSaver = Saver<LearningTool?, String>(
+    save = { it?.name ?: "" },
+    restore = { name -> LearningTool.entries.firstOrNull { it.name == name } }
 )
 
 /**
- * One of the tab's two tools, drawn as a button: the active tool is tinted
- * with the brand colour and its label turns bold, the other one sits on the
- * plain surface. [badge] hangs a small label on the button's top corner —
- * the JSON quiz carries "BETA" there.
+ * One of the tab's three tools as a big button on the tab's front page: the
+ * tool's icon and name on the brand-tinted glass, with a chevron towards
+ * the page it opens. [badge] hangs a small label on the button's top corner
+ * — the JSON quiz and the text to speech carry "BETA" there.
  */
 @Composable
 private fun LearningToolButton(
     text: String,
-    selected: Boolean,
+    icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     badge: String? = null,
@@ -522,19 +561,35 @@ private fun LearningToolButton(
     Box(modifier = modifier) {
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
-            tint = if (selected) scheme.primary else scheme.onSurface,
-            cornerRadius = 16.dp,
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 14.dp),
+            tint = scheme.primary,
+            cornerRadius = 18.dp,
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 22.dp),
             onClick = onClick,
         ) {
-            Text(
-                text = text,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                color = if (selected) scheme.primary else scheme.onSurface,
-                textAlign = TextAlign.Center,
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = scheme.primary,
+                    modifier = Modifier.size(28.dp),
+                )
+                Spacer(modifier = Modifier.width(14.dp))
+                Text(
+                    text = text,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = scheme.onSurface,
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = scheme.onSurface.copy(alpha = 0.55f),
+                )
+            }
         }
         if (badge != null) {
             StatusPill(
