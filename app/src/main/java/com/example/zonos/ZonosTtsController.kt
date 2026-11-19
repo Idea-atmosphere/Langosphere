@@ -341,6 +341,20 @@ class ZonosTtsController(
         studio.defaultLang = normalizeStudioLang(lang)
     }
 
+    private val _studioVisible = MutableStateFlow(false)
+
+    /**
+     * True while the Studio page (Learning tools ▸ TTS ▸ Open Studio) is on
+     * the screen. The main screen switches the swipe between tabs off for
+     * that time: the Studio is a web page that scrolls and drags in every
+     * direction, and a horizontal drag inside it must never flip the tab.
+     */
+    val studioVisible: StateFlow<Boolean> = _studioVisible.asStateFlow()
+
+    fun setStudioVisible(visible: Boolean) {
+        _studioVisible.value = visible
+    }
+
     private fun loadVoices() {
         scope.launch(Dispatchers.IO) {
             try {

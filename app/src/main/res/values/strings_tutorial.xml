@@ -35,8 +35,10 @@
     <string name="tutorial_topic_agent">AI tab</string>
     <string name="tutorial_topic_agent_desc">Connection settings, memory, chat sessions and what the assistant can do.</string>
     <string name="tutorial_topic_leitner">Leitner tab</string>
-    <string name="tutorial_topic_leitner_desc">The Leitner box, the JSON quiz, progress, export and reviewing cards.</string>
+    <string name="tutorial_topic_leitner_desc">The Leitner box, the JSON quiz, progress, export, reviewing cards — and the text-to-speech tool.</string>
     <string name="tutorial_topic_prompts">JSON lesson &amp; prompts</string>
+    <string name="tutorial_topic_tts">Text to speech</string>
+    <string name="tutorial_topic_tts_desc">The voice that runs on the phone (Zonos3-Mini): the model pack, voices, language and speed, the Voice Studio — and where the voice buttons are.</string>
     <string name="tutorial_topic_prompts_desc">The Prompts window part by part: level, modes, language pair, chunks, copying the prompt — and how the answer gets into the player.</string>
 
     <!-- Basics -->
@@ -202,4 +204,28 @@
     <string name="tut_leitner_6_title">Reviewing</string>
     <string name="tut_leitner_6_body">Swipe left or right between the cards; tap a card to flip it in 3D and reveal the meaning — the answer buttons appear once it is face-up. The dots show the box level, and long definitions scroll inside the card.</string>
     <string name="tut_leitner_6_action">Tap the card to flip it; swipe for the next one.</string>
+
+    <!-- Text to speech (Learning tools ▸ TTS) -->
+    <string name="tut_tts_1_title">Text to speech (beta)</string>
+    <string name="tut_tts_1_body">The third tool: a voice model that runs on the phone itself (Zonos3-Mini) and reads the original-language line of a subtitle card or a sentence of a book aloud — never the translation. After a one-time download of the model pack nothing goes online.</string>
+    <string name="tut_tts_1_action">Tap it to open the tool; the tour continues inside.</string>
+    <string name="tut_tts_2_title">Voice model (CORE pack)</string>
+    <string name="tut_tts_2_body">The voice needs a pack of about 940 MB, downloaded once into Download/Langosphere/models, where it stays. Do it on Wi-Fi — an interrupted download resumes where it stopped. Afterwards the card shows the installed size; Verify checks the files and Delete model frees the space. The line underneath reports the engine: the model is loaded on the first playback, not when the app starts, and it needs a WebView with WebGPU (a recent Android System WebView / Chrome).</string>
+    <string name="tut_tts_2_action">On Wi-Fi, tap Download model; the progress and the speed show here.</string>
+    <string name="tut_tts_3_title">Already have the files?</string>
+    <string name="tut_tts_3_body">No download is needed when the pack is already somewhere — on a computer, another phone or from a previous installation: copy its folders (backbone, zac, voices, laci, companions) into the models folder and tap Find folder, or import a zip or a folder from anywhere on the phone.</string>
+    <string name="tut_tts_4_title">Voices</string>
+    <string name="tut_tts_4_body">The bundled voices, grouped by language. Under each name: its accent or style and its gender — Irish · male, British · female, witch, anime, announcer, ASMR. The chosen voice reads every subtitle card and book sentence from then on, and a voice design you save for it in the Studio is applied automatically.</string>
+    <string name="tut_tts_4_action">Tap a voice to choose it.</string>
+    <string name="tut_tts_5_title">Language and speed</string>
+    <string name="tut_tts_5_body">Follow the learning pair reads in the source language of your pair; pick another language when a text is in a different one. The slider sets the reading speed (0.5–2×) — the same speed as in the player popup. Both apply to the next sentence you play.</string>
+    <string name="tut_tts_5_action">Try a different speed.</string>
+    <string name="tut_tts_6_title">Voice Studio</string>
+    <string name="tut_tts_6_body">Zyphra\'s full Studio page: Cast designs a voice, Direct reads any text with it, Edit fixes a take — and a voice can be cloned from a clip or a recording. Designs you save to Your voices are used when the app reads for you. It needs the model pack.</string>
+    <string name="tut_tts_6_action">Tap Open Studio to look around; ✕ or Back brings you back here.</string>
+    <string name="tut_tts_7_title">Inside the Studio</string>
+    <string name="tut_tts_7_body">The Studio fills the page and keeps its own state while the app runs, so closing and reopening it loses nothing. Swiping between tabs is off while it is open — scrolling and dragging inside the page never flips to another tab. ✕ or Back returns to the tool.</string>
+    <string name="tut_tts_7_action">Close it with ✕ or Back when you are done.</string>
+    <string name="tut_tts_8_title">Where the voice speaks</string>
+    <string name="tut_tts_8_body">Video and Online: the voice button (the talking head, next to the speaker) on every subtitle card reads that line. Reader: every sentence of a book has one. All of them open the player popup — the sentence with its translation, Generate again for a new reading, −5 s / +5 s, play / pause and the speed. Readings are kept, so a sentence you play again starts at once, and closing the popup does not interrupt a reading that is playing.</string>
 </resources>

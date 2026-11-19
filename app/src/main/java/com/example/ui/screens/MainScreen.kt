@@ -492,6 +492,10 @@ private fun MainScreenContent(
     // the full attention.
     val chromeVisible = (!isFullScreen || selectedTab !in playerPages) &&
         !focusMode && activeWord == null && learningSheet == null && !showQuizOverlay
+    // The Voice Studio (Learning tools ▸ TTS ▸ Open Studio) is a web page
+    // that scrolls and drags in every direction; while it is open a
+    // horizontal drag inside it must not swipe to another tab.
+    val studioOpen by viewModel.zonosTts.studioVisible.collectAsState()
 
     // Authentic Material 3 chrome for the Material designs (M3 / Material
     // You), per m3.material.io: a real TopAppBar (surface color, plain
@@ -932,8 +936,8 @@ private fun MainScreenContent(
                     .fillMaxSize(),
                 key = { it },
                 // Swiping must not fight with the player gestures, the fullscreen
-                // video or an open learning popup.
-                userScrollEnabled = chromeVisible,
+                // video, an open learning popup or the Voice Studio page.
+                userScrollEnabled = chromeVisible && !studioOpen,
             ) { page ->
                 CompositionLocalProvider(LocalLayoutDirection provides appLayoutDirection) {
                     // Depth transition. It lives inside a graphicsLayer *block* on

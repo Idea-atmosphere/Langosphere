@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -43,14 +44,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -60,6 +64,8 @@ import com.example.ui.components.PillTone
 import com.example.ui.components.SoftIconButton
 import com.example.ui.components.StatusPill
 import com.example.ui.theme.AppStrings
+import com.example.ui.tutorial.LocalTutorial
+import com.example.ui.tutorial.tutorialTarget
 import com.example.zonos.DesignSource
 import com.example.zonos.EngineStatus
 import com.example.zonos.ModelsLocation
@@ -67,6 +73,14 @@ import com.example.zonos.ZonoLanguages
 import com.example.zonos.ZonoVoiceTags
 import com.example.zonos.ZonosTtsController
 import java.util.Locale
+
+/**
+ * The tutorial steps whose card sits inside the section's scrolling column
+ * (the section scrolls it to the top; see the LaunchedEffect in [TtsSection]).
+ * `tts.studioPane` points at the Studio page instead and `leitner.toolTts`
+ * at the tools menu, so neither is listed.
+ */
+private val SCROLLED_TUTORIAL_TARGETS = setOf("tts.model", "tts.manual", "tts.voice", "tts.language", "tts.studio")
 
 /**
  * Learning tools ▸ Text to speech.
@@ -100,6 +114,27 @@ fun TtsSection(
 
     var studioOpen by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+
+    // The interactive tutorial: a section step (`tts.model` … `tts.studio`)
+    // needs the section on the screen — not the Studio — with its card
+    // scrolled into view; the Studio step (`tts.studioPane`) leaves whatever
+    // the learner opened as it is. Re-run when the learner comes back from a
+    // hands-on detour (prepareRequest).
+    val tutorial = LocalTutorial.current
+    val density = LocalDensity.current
+    LaunchedEffect(tutorial.currentStepId, tutorial.prepareRequest) {
+        val key = tutorial.currentStepId ?: return@LaunchedEffect
+        if (key !in SCROLLED_TUTORIAL_TARGETS) return@LaunchedEffect
+        studioOpen = false
+        // Two frames, so the section is laid out (it may just have replaced the Studio).
+        withFrameNanos { }
+        withFrameNanos { }
+        val target = tutorial.targets.layoutBounds(key) ?: return@LaunchedEffect
+        val viewport = tutorial.targets.layoutBounds("tts.viewport") ?: return@LaunchedEffect
+        val margin = with(density) { 12.dp.toPx() }
+        scrollState.animateScrollBy(target.top - viewport.top - margin)
+    }
 
     val locateLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
         if (uri != null) tts.locateTree(uri)
@@ -128,7 +163,8 @@ fun TtsSection(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .tutorialTarget("tts.viewport")
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
@@ -138,7 +174,7 @@ fun TtsSection(
         )
 
         // ── Model pack ──
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth().tutorialTarget("tts.model")) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = strings.ttsModelTitle,
@@ -295,7 +331,7 @@ fun TtsSection(
         }
 
         // ── Manual routes ──
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth().tutorialTarget("tts.manual")) {
             Text(
                 text = strings.ttsManualTitle,
                 style = MaterialTheme.typography.titleSmall,
@@ -327,7 +363,7 @@ fun TtsSection(
         }
 
         // ── Voice ──
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth().tutorialTarget("tts.voice")) {
             Text(
                 text = strings.ttsVoiceTitle,
                 style = MaterialTheme.typography.titleSmall,
@@ -393,7 +429,7 @@ fun TtsSection(
         }
 
         // ── Language + speed ──
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth().tutorialTarget("tts.language")) {
             Text(
                 text = strings.ttsLanguageTitle,
                 style = MaterialTheme.typography.titleSmall,
@@ -457,7 +493,7 @@ fun TtsSection(
         }
 
         // ── Studio ──
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth().tutorialTarget("tts.studio")) {
             Text(
                 text = strings.ttsStudioTitle,
                 style = MaterialTheme.typography.titleSmall,
@@ -532,7 +568,10 @@ private fun StudioPane(
             chooserLauncher.launch(intent)
         }
         tts.studio.load()
+        // While the page is up the tabs must not swipe (see studioVisible).
+        tts.setStudioVisible(true)
         onDispose {
+            tts.setStudioVisible(false)
             tts.studio.onFileChooser = null
             pendingChooser.value?.onReceiveValue(null)
             pendingChooser.value = null
@@ -541,7 +580,7 @@ private fun StudioPane(
     }
     Column(modifier = modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp).tutorialTarget("tts.studioPane"),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
