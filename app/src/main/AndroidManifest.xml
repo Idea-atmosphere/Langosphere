@@ -5,7 +5,10 @@
     <!-- INTERNET is the only permission. The in-app update check reads the
          latest GitHub release and hands the APK's download link to the
          browser; the app itself never downloads or installs packages, so
-         it does not request REQUEST_INSTALL_PACKAGES. -->
+         it does not request REQUEST_INSTALL_PACKAGES. No storage permission
+         either: the Online tab's saved videos live in the app's own folder
+         under Downloads (Download/Langosphere/online), which Android lets
+         the app create and use directly. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application

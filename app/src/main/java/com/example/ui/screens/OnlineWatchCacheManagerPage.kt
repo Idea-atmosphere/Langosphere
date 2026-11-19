@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -63,6 +64,11 @@ internal fun OnlineWatchCacheManagerPage(
     onToggleSave: (Boolean) -> Unit,
     defaultQualityHeight: Int,
     onPickDefaultQuality: (Int) -> Unit,
+    /** Where the saved videos live (null while it is being resolved). */
+    storage: OnlineWatchCache.Storage?,
+    /** The storage limit ([OnlineWatchCache.LIMIT_UNLIMITED] = never evict). */
+    limitBytes: Long,
+    onPickLimit: (Long) -> Unit,
     cachedVideos: List<OnlineWatchCache.CachedVideo>,
     /** Tapping a stored clip closes the manager and plays that video. */
     onOpenVideo: (OnlineWatchCache.CachedVideo) -> Unit,
@@ -134,6 +140,35 @@ internal fun OnlineWatchCacheManagerPage(
                         Spacer(Modifier.width(10.dp))
                         Switch(checked = saveEnabled, onCheckedChange = onToggleSave)
                     }
+                    // Where the files are: the app's folder in Downloads
+                    // (with .nomedia), or app-private storage on devices
+                    // that do not let the app use that folder.
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Folder,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = when {
+                                storage == null -> strings.onlineWatchCacheLocationResolving
+                                storage.isPublic -> strings.onlineWatchCacheLocationPublic(storage.displayPath)
+                                storage.foreign -> strings.onlineWatchCacheLocationForeign
+                                else -> strings.onlineWatchCacheLocationPrivate
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        strings.onlineWatchCacheOfflineHint,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
             }
 
@@ -175,6 +210,40 @@ internal fun OnlineWatchCacheManagerPage(
                                 selected = defaultQualityHeight == height,
                                 onClick = { onPickDefaultQuality(height) },
                                 label = { Text(label) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── The storage limit ──
+            item {
+                GlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 18.dp, contentPadding = PaddingValues(14.dp)) {
+                    Text(strings.onlineWatchCacheLimit, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        strings.onlineWatchCacheLimitDesc,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    val gb = 1024L * 1024 * 1024
+                    val limits = remember { listOf(gb, 4 * gb, 16 * gb, OnlineWatchCache.LIMIT_UNLIMITED) }
+                    Row(
+                        modifier = Modifier
+                            .nestedScroll(rememberConfinedSwipeConnection())
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        limits.forEach { bytes ->
+                            FilterChip(
+                                selected = limitBytes == bytes,
+                                onClick = { onPickLimit(bytes) },
+                                label = {
+                                    Text(
+                                        if (bytes == OnlineWatchCache.LIMIT_UNLIMITED) strings.onlineWatchCacheLimitUnlimited
+                                        else formatCacheSize(bytes)
+                                    )
+                                }
                             )
                         }
                     }
@@ -235,10 +304,23 @@ internal fun OnlineWatchCacheManagerPage(
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
+                                // Size · how much of the clip is on disk ·
+                                // whether its subtitles are saved: what will
+                                // play without the network.
+                                val coverage = video.coverage
+                                val saved = when {
+                                    video.complete -> strings.onlineWatchCacheComplete
+                                    coverage != null -> strings.onlineWatchCachePercent((coverage * 100).toInt().coerceIn(0, 99))
+                                    else -> null
+                                }
                                 Text(
-                                    formatCacheSize(video.totalBytes),
+                                    listOfNotNull(
+                                        formatCacheSize(video.totalBytes),
+                                        saved,
+                                        strings.onlineWatchCacheSubtitlesSaved.takeIf { video.hasCaptions }
+                                    ).joinToString(" · "),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (video.complete) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             Spacer(Modifier.width(8.dp))
