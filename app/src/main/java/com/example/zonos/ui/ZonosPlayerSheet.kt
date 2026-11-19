@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Replay5
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.CircularProgressIndicator
@@ -90,9 +89,9 @@ import java.util.Locale
  * It shows the sentence (and its translation when there is one), the
  * phase of the request (model loading with percent + time left,
  * generating with elapsed time, playing with a seek bar), and the
- * controls: generate again (a new reading of the same text), from the
- * start (the cached take again), −5 s / +5 s, pause / resume, and the
- * playback speed (0.5–2.0×, pitch preserved, remembered).
+ * controls: generate again (a new reading of the same text), −5 s / +5 s,
+ * play / pause (play restarts a finished take), and the playback speed
+ * (0.5–2.0×, pitch preserved, remembered).
  *
  * Closing the popup does not interrupt a take that is playing or a
  * model that is loading (the banner takes over the progress); a paused
@@ -264,8 +263,11 @@ fun ZonosPlayerSheet(tts: ZonosTtsController, strings: AppStrings) {
                         Spacer(Modifier.height(14.dp))
 
                         // ── Transport ──
-                        // Always LTR: «back» stays on the left and «forward» on
-                        // the right in the Persian UI too, like every player.
+                        // Generate again · −5 s · play/pause · +5 s. One circular
+                        // arrow only (generate again); «from the start» is the
+                        // play button once the take has finished, or a drag of
+                        // the seek bar. Always LTR: «back» stays on the left and
+                        // «forward» on the right in the Persian UI too.
                         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -333,12 +335,6 @@ fun ZonosPlayerSheet(tts: ZonosTtsController, strings: AppStrings) {
                                     label = strings.ttsPlayerForward,
                                     enabled = pb != null,
                                     onClick = { tts.seekBy(ZonosTtsController.SKIP_MS) },
-                                )
-                                TransportButton(
-                                    icon = Icons.Filled.Replay,
-                                    label = strings.ttsPlayerRestart,
-                                    enabled = !busy && (hasTake || pb != null),
-                                    onClick = { tts.restart() },
                                 )
                             }
                         }

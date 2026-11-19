@@ -116,7 +116,15 @@ data class OnlineVideoDetails(
     val captions: List<OnlineCaptionTrack> = emptyList(),
     val related: List<OnlineVideo> = emptyList(),
     /** Which instance answered — the same one is used to fetch its captions. */
-    val instance: OnlineInstance
+    val instance: OnlineInstance,
+    /**
+     * True when this is the clip's saved copy rebuilt from the watch cache
+     * (no instance asked): the renditions are ordered best-saved first, the
+     * URLs may be stale and only the saved ranges play without the network.
+     */
+    val offlineCopy: Boolean = false,
+    /** For a saved copy: share (0–1) of the first rendition that is on disk. */
+    val offlineCoverage: Float = 0f
 ) {
     /** The URL the player should open: a muxed file first, else any rendition, else HLS, else DASH. */
     val playbackUrl: String?

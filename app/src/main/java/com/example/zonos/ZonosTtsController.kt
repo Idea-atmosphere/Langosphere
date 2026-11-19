@@ -209,7 +209,11 @@ class ZonosTtsController(
         speak(req.key, req.text)
     }
 
-    /** Play the popup's sentence from the start: rewind the playing take, else replay the cached one. */
+    /**
+     * Play the popup's sentence from the start — the centre play button once
+     * a take exists (a finished take replays, a playing one rewinds). The
+     * transport row has no separate button for this any more.
+     */
     fun restart() {
         val req = _player.value ?: return
         val pb = engine.playback.value

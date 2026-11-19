@@ -109,8 +109,53 @@ class OnlineVideoViewModel(application: Application) : AndroidViewModel(applicat
     fun clearWatchCache() {
         viewModelScope.launch(Dispatchers.IO) {
             OnlineWatchCache.clearAll(app)
-            _cachedVideos.value = emptyList()
+            _cachedVideos.value = OnlineWatchCache.cachedVideos(app)
         }
+    }
+
+    /** Where the saved videos live (resolved off the main thread at start-up; null until then). */
+    private val _watchStorage = MutableStateFlow<OnlineWatchCache.Storage?>(null)
+    val watchStorage: StateFlow<OnlineWatchCache.Storage?> = _watchStorage
+
+    /** The storage limit of the saved media ([OnlineWatchCache.LIMIT_UNLIMITED] = never evict). */
+    private val _watchCacheLimit = MutableStateFlow(OnlineWatchCache.maxBytes(application))
+    val watchCacheLimit: StateFlow<Long> = _watchCacheLimit
+
+    fun setWatchCacheLimit(bytes: Long) {
+        if (_watchCacheLimit.value == bytes) return
+        _watchCacheLimit.value = bytes
+        viewModelScope.launch(Dispatchers.IO) {
+            OnlineWatchCache.setMaxBytes(app, bytes)
+            _cachedVideos.value = OnlineWatchCache.cachedVideos(app)
+        }
+    }
+
+    init {
+        // Resolve the folder (Download/Langosphere/online when usable),
+        // write .nomedia and move older private data — before the first clip
+        // opens, so playback never waits for the one-time migration.
+        viewModelScope.launch(Dispatchers.IO) {
+            OnlineWatchCache.prepare(getApplication())
+            _watchStorage.value = OnlineWatchCache.storage(getApplication())
+            _watchCacheLimit.value = OnlineWatchCache.maxBytes(getApplication())
+        }
+    }
+
+    /**
+     * The clip whose saved copy already failed once (the player reached a
+     * part that is not on disk) and was then re-fetched from the network.
+     * A second failure means there is no network either: the clip stops
+     * with «the rest isn't saved» instead of looping between the two.
+     * The app asks for no network-state permission, so "offline" is only
+     * ever learnt from the failed requests themselves.
+     */
+    @Volatile private var savedCopyRetried: String? = null
+
+    /** The clip's saved copy, or null when nothing of it is on disk (IO). */
+    private fun savedCopy(videoId: String): OnlineVideoDetails? = try {
+        OnlineWatchCache.offlineCopy(app, videoId)
+    } catch (e: Exception) {
+        null
     }
 
 
@@ -744,6 +789,19 @@ class OnlineVideoViewModel(application: Application) : AndroidViewModel(applicat
      * so the user is never left without a way to watch it.
      */
     fun retryVideoAfterPlaybackFailure(failedInstance: OnlineInstance, video: OnlineVideo, error: String? = null) {
+        if (failedInstance.baseUrl == OnlineWatchCache.OFFLINE_BASE_URL) {
+            // The saved copy ran into a part that is not on disk (or a
+            // stale URL). Once: fetch fresh URLs — the saved parts keep
+            // coming from the folder. Twice: there is no network; stop.
+            if (savedCopyRetried == video.id) {
+                _details.value = null
+                _videoError.value = strings().onlineSavedCopyEnded
+            } else {
+                savedCopyRetried = video.id
+                loadVideo(video.id, video, forceNetwork = true)
+            }
+            return
+        }
         failedPlaybackInstances.add(failedInstance.baseUrl)
         val remaining = _instances.value.count { it.enabled && it.baseUrl !in failedPlaybackInstances }
         // The direct YouTube source does not use up one of the mirror retries.
@@ -818,7 +876,7 @@ class OnlineVideoViewModel(application: Application) : AndroidViewModel(applicat
         _webFallbackError.value = null
     }
 
-    private fun loadVideo(videoId: String, placeholder: OnlineVideo? = null) {
+    private fun loadVideo(videoId: String, placeholder: OnlineVideo? = null, forceNetwork: Boolean = false) {
         // Opening another clip wipes every caption of the previous one at
         // once, before anything is fetched. A retry of the SAME clip (next
         // instance, back from the embed) keeps captions that already loaded.
@@ -826,6 +884,9 @@ class OnlineVideoViewModel(application: Application) : AndroidViewModel(applicat
         _currentVideoId.value = videoId
         videoJob?.cancel()
         if (!sameClip) resetCaptionState()
+        // A fresh open (not the refetch after the saved copy ran out) may
+        // fall back to the saved copy again.
+        if (!forceNetwork) savedCopyRetried = null
         if (captionsVideoId != videoId && _captionStatus.value != CaptionStatus.LOADING) {
             _captionStatus.value = CaptionStatus.LOADING
         }
@@ -836,16 +897,29 @@ class OnlineVideoViewModel(application: Application) : AndroidViewModel(applicat
         // playback with no instance in between. Skipped once it failed for
         // this clip, so a retry moves on to the mirrors.
         val tryDirect = InnerTubeClient.DIRECT_BASE_URL !in failedPlaybackInstances
-        if (!tryDirect && candidates.none { it.enabled }) {
-            // Nothing left to ask: go straight to the fallback web player.
-            openWebFallback(placeholder ?: OnlineVideo(id = videoId, title = ""), strings().onlineNoPlayableStream)
-            return
-        }
         // Set before the coroutine starts so the player pane stays open
         // (spinner) while one instance is swapped for the next.
         _isLoadingVideo.value = true
         videoJob = viewModelScope.launch(Dispatchers.IO) {
             _isLoadingVideo.value = true
+            // The saved copy first: a clip saved from start to end plays
+            // from Download/Langosphere/online without asking anyone —
+            // the watch folder is the Online tab's offline mode. A partly
+            // saved clip takes the network path (fresh URLs; the saved
+            // parts still come from the folder) and falls back to the
+            // saved part when no source answers.
+            val saved = if (forceNetwork) null else savedCopy(videoId)
+            if (saved != null && OnlineWatchCache.isComplete(saved.offlineCoverage)) {
+                showDetails(videoId, placeholder, saved)
+                _isLoadingVideo.value = false
+                return@launch
+            }
+            if (!tryDirect && candidates.none { it.enabled }) {
+                // Nothing left to ask: go straight to the fallback web player.
+                _isLoadingVideo.value = false
+                openWebFallback(placeholder ?: OnlineVideo(id = videoId, title = ""), strings().onlineNoPlayableStream)
+                return@launch
+            }
             try {
                 val preferred = _preferredInstance.value?.takeUnless { it in failedPlaybackInstances }
                 var directError: Exception? = null
@@ -880,6 +954,21 @@ class OnlineVideoViewModel(application: Application) : AndroidViewModel(applicat
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
+                // No source answered: the saved copy (if any) before the
+                // fallback web player — it needs no instance at all.
+                val savedNow = saved ?: savedCopy(videoId)
+                if (savedNow != null) {
+                    if (savedCopyRetried == videoId) {
+                        // Its saved part already ran out and the network
+                        // is still away: stop instead of starting it over.
+                        _videoError.value = strings().onlineSavedCopyEnded
+                        return@launch
+                    }
+                    showDetails(videoId, placeholder, savedNow)
+                    _message.value = if (OnlineWatchCache.isComplete(savedNow.offlineCoverage)) strings().onlineSavedCopyOffline
+                    else strings().onlineSavedCopyPartial((savedNow.offlineCoverage * 100).toInt().coerceIn(0, 99))
+                    return@launch
+                }
                 // Up to PLAYBACK_MAX_ATTEMPTS instances were asked (403, 5xx,
                 // timeouts …). Remember them so "try direct playback again"
                 // moves on to the next mirrors, and keep the user watching
@@ -909,19 +998,56 @@ class OnlineVideoViewModel(application: Application) : AndroidViewModel(applicat
         // Captions: the best English track of this source first, then
         // YouTube's InnerTube tracks, the other instances and timedtext.
         if (fixed.captions.isNotEmpty() && _captionTracks.value.isEmpty()) _captionTracks.value = fixed.captions
+        if (fixed.offlineCopy) {
+            // The saved copy: its subtitle files, no lookup.
+            showSavedCaptions(videoId, fixed.captions)
+            return
+        }
         ensureCaptions(videoId, fixed.captions, fixed.instance)
         // «ذخیره هنگام پخش»: the manager's storage list knows this clip by
-        // its stable rendition keys; entries with no cached bytes are pruned
-        // on the next listing, so registering is always safe.
-        OnlineWatchCache.registerVideo(
-            app,
-            videoId,
-            fixed.video.title,
-            keys = buildList {
-                fixed.progressiveStreams.forEach { add(OnlineWatchCache.streamKey(videoId, it)) }
-                add(OnlineWatchCache.audioKey(videoId))
+        // its stable rendition keys — and, for the offline replay, its
+        // renditions and caption tracks; entries with no cached bytes are
+        // pruned on the next listing, so registering is always safe.
+        OnlineWatchCache.registerVideo(app, fixed)
+    }
+
+    /**
+     * The saved copy's subtitles: the main slot (and the translation slot,
+     * when one was watched) straight from the watch folder — nothing is
+     * fetched. The stored track list still fills the picker.
+     */
+    private fun showSavedCaptions(videoId: String, knownTracks: List<OnlineCaptionTrack>) {
+        if (captionsVideoId == videoId && _captions.value.isNotEmpty()) return
+        captionJob?.cancel()
+        val generation = ++captionGeneration
+        resolvingVideoId = videoId
+        _captionStatus.value = CaptionStatus.LOADING
+        _isLoadingCaptions.value = true
+        captionJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val main = try { OnlineWatchCache.loadCaptions(app, videoId, OnlineWatchCache.SLOT_MAIN) } catch (e: Exception) { null }
+                val translation = try { OnlineWatchCache.loadCaptions(app, videoId, OnlineWatchCache.SLOT_TRANSLATION) } catch (e: Exception) { null }
+                if (generation != captionGeneration || _currentVideoId.value != videoId) return@launch
+                if (_captionTracks.value.isEmpty()) _captionTracks.value = knownTracks
+                if (main != null) {
+                    captionsVideoId = videoId
+                    _activeTrack.value = cachedTrack(main, OnlineWatchCache.SLOT_MAIN)
+                    _captions.value = main.entries
+                    _captionStatus.value = CaptionStatus.READY
+                } else {
+                    _captionStatus.value = CaptionStatus.NONE
+                }
+                if (translation != null && _translationCaptions.value.isEmpty()) {
+                    _translationTrack.value = cachedTrack(translation, OnlineWatchCache.SLOT_TRANSLATION)
+                    _translationCaptions.value = translation.entries
+                }
+            } finally {
+                if (generation == captionGeneration) {
+                    _isLoadingCaptions.value = false
+                    resolvingVideoId = null
+                }
             }
-        )
+        }
     }
 
     fun closeVideo() {
@@ -1079,7 +1205,7 @@ class OnlineVideoViewModel(application: Application) : AndroidViewModel(applicat
         _isLoadingCaptions.value = true
         captionJob = viewModelScope.launch(Dispatchers.IO) {
             try {
-                val entries = OnlineVideoRepository.fetchCaptions(track, track.languageCode.ifBlank { "en" })
+                val entries = fetchOrCached(videoId, track, "en")
                 if (generation != captionGeneration || _currentVideoId.value != videoId) return@launch
                 if (entries.isEmpty()) {
                     // Keep whatever was loaded before; this track is just empty.
@@ -1107,6 +1233,19 @@ class OnlineVideoViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    /**
+     * The entries of [track]: a `cached:<slot>` track (the saved copy's
+     * subtitles, see [cachedTrack]) is read back from the watch folder —
+     * no network — anything else is fetched as before.
+     */
+    private fun fetchOrCached(videoId: String, track: OnlineCaptionTrack, fallbackLanguage: String): List<SubtitleEntry> {
+        val slot = track.url.removePrefix("cached:").takeIf { it != track.url }
+        if (slot != null) {
+            return OnlineWatchCache.loadCaptions(app, videoId, slot)?.entries ?: emptyList()
+        }
+        return OnlineVideoRepository.fetchCaptions(track, track.languageCode.ifBlank { fallbackLanguage })
+    }
+
     /** Downloads [track] as the translation shown under each line (null clears it). */
     fun loadTranslationTrack(track: OnlineCaptionTrack?) {
         if (track == null) {
@@ -1118,7 +1257,7 @@ class OnlineVideoViewModel(application: Application) : AndroidViewModel(applicat
         translationTrackJob?.cancel()
         translationTrackJob = viewModelScope.launch(Dispatchers.IO) {
             try {
-                val entries = OnlineVideoRepository.fetchCaptions(track, track.languageCode.ifBlank { "fa" })
+                val entries = fetchOrCached(videoId, track, "fa")
                 if (_currentVideoId.value != videoId) return@launch
                 _translationTrack.value = track
                 _translationCaptions.value = entries

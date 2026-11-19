@@ -337,12 +337,17 @@ private fun OnlineBrowsePane(viewModel: OnlineVideoViewModel, strings: AppString
         val defaultQuality by viewModel.defaultQualityHeight.collectAsState()
         val cachedList by viewModel.cachedVideos.collectAsState()
         LaunchedEffect(Unit) { viewModel.refreshCachedVideos() }
+        val watchStorage by viewModel.watchStorage.collectAsState()
+        val watchLimit by viewModel.watchCacheLimit.collectAsState()
         OnlineWatchCacheManagerPage(
             strings = strings,
             saveEnabled = saveEnabled,
             onToggleSave = { viewModel.setSaveWhilePlaying(it) },
             defaultQualityHeight = defaultQuality,
             onPickDefaultQuality = { viewModel.setDefaultQualityHeight(it) },
+            storage = watchStorage,
+            limitBytes = watchLimit,
+            onPickLimit = { viewModel.setWatchCacheLimit(it) },
             cachedVideos = cachedList,
             onOpenVideo = { cached ->
                 showWatchCache = false
@@ -1195,8 +1200,13 @@ private fun OnlinePlayerPane(
     // a default quality («کیفیت پیش‌فرض»), which every newly opened clip
     // then plays and saves with.
     val defaultQualityHeight by viewModel.defaultQualityHeight.collectAsState()
-    var selectedQuality by remember(d?.video?.id, defaultQualityHeight) {
-        mutableStateOf(OnlineWatchCache.pickDefaultStreamIndex(streams, defaultQualityHeight).coerceAtLeast(0))
+    // A saved copy lists its renditions best-saved first: index 0 is the
+    // one that plays without the network, whatever the default quality.
+    var selectedQuality by remember(d?.video?.id, defaultQualityHeight, d?.offlineCopy) {
+        mutableStateOf(
+            if (d?.offlineCopy == true) 0
+            else OnlineWatchCache.pickDefaultStreamIndex(streams, defaultQualityHeight).coerceAtLeast(0)
+        )
     }
     /*
      * Public instances often return signed URLs that expire or that
@@ -1348,6 +1358,7 @@ private fun OnlinePlayerPane(
                     )
                     val source = when {
                         webId != null -> strings.onlineFallbackHost
+                        d?.offlineCopy == true -> strings.onlineSavedCopy
                         InnerTubeClient.isDirect(d?.instance) -> strings.onlineDirectSource
                         else -> d?.instance?.host
                     }
@@ -1551,7 +1562,9 @@ private fun OnlinePlayerPane(
                         // pick a file, or paste from the clipboard).
                         // The embed fallback cannot be cached (it plays in
                         // a WebView); captions still are, via the ViewModel.
-                        saveWhilePlaying = saveWhilePlaying && webId == null,
+                        // A saved copy always reads through the cache, even
+                        // with the saving switch off — that is where its bytes are.
+                        saveWhilePlaying = (saveWhilePlaying || d?.offlineCopy == true) && webId == null,
                         streamCacheKeyFor = streamCacheKeyFor,
                         onlineDrawerActions = OnlineDrawerActions(
                             isBookmarked = isBookmarked,
@@ -1711,7 +1724,11 @@ private fun OnlinePlayerPane(
                 Column(modifier = Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState())) {
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         StatusPill(
-                            text = if (InnerTubeClient.isDirect(d.instance)) strings.onlineDirectSource else d.instance.kind.label + " · " + d.instance.host,
+                            text = when {
+                                d.offlineCopy -> strings.onlineSavedCopy
+                                InnerTubeClient.isDirect(d.instance) -> strings.onlineDirectSource
+                                else -> d.instance.kind.label + " · " + d.instance.host
+                            },
                             tone = PillTone.Accent
                         )
                         if (jsonPackage != null) StatusPill(text = jsonSubFileName.ifBlank { strings.subJsonLabel }, tone = PillTone.Positive)
