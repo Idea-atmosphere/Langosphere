@@ -53,8 +53,6 @@ import com.example.ui.components.SentenceLessonNote
 import com.example.ui.components.SentenceStudyLabels
 import com.example.ui.components.SentenceTermText
 import com.example.ui.components.SpeakerButton
-import com.example.zonos.ui.ZonosLineButtons
-import com.example.zonos.ui.ZonosReplayButton
 import com.example.zonos.ui.ZonosSpeakButton
 import com.example.ui.components.anime.inkBorder
 import com.example.ui.components.anime.inkShadow
@@ -359,10 +357,11 @@ internal fun MergedReaderPaperV3(
                                 .fillMaxWidth()
                                 .sentenceBubble(ink, bubbleMode && matched != null),
                         ) {
-                        // The sentence line + its on-device voice buttons
-                        // (generate-and-play, play again). Every line of the
-                        // page gets them, translated or not: that is what
-                        // "read the PDF sentence by sentence" means.
+                        // The sentence line + its on-device voice button (opens
+                        // the Zonos player popup, with the translation when the
+                        // line matched an entry). Every line of the page gets
+                        // it, translated or not: that is what "read the PDF
+                        // sentence by sentence" means.
                         Row(verticalAlignment = Alignment.Top) {
                         BookText(
                             text = item.text,
@@ -381,12 +380,13 @@ internal fun MergedReaderPaperV3(
                             onNote = { },
                             onRemoveHighlight = onRemoveHighlight,
                         )
-                        ZonosLineButtons(
+                        ZonosSpeakButton(
                             key = "ml-$location-$index-${item.text.hashCode()}",
                             text = item.text,
-                            labels = studyLabels,
+                            translation = matched?.translation,
                             tint = ink.copy(alpha = 0.6f),
                             size = 15,
+                            contentDescription = studyLabels.zonosSpeak,
                         )
                         }
                         if (matched == null) {
@@ -633,23 +633,16 @@ private fun MergedSentenceBlock(
                 contentDescription = studyLabels.speak,
                 size = 16,
             )
-            // On-device voice (Zonos): reads this sentence only — the next one
-            // plays from its own box — and keeps the focus on it. Once a take
-            // exists, «play again» repeats it without generating.
+            // On-device voice (Zonos): opens the player popup for this
+            // sentence only — the next one plays from its own box — and
+            // keeps the focus on it. Play again / ±5 s / speed live there.
             ZonosSpeakButton(
                 key = focusKey,
                 text = sentence.english,
+                translation = sentence.translation,
                 tint = ink.copy(alpha = 0.7f),
                 size = 16,
                 contentDescription = studyLabels.zonosSpeak,
-                onSpeak = { if (StudyModeState.focusMode) StudyModeState.focus(focusKey) },
-            )
-            ZonosReplayButton(
-                key = focusKey,
-                text = sentence.english,
-                tint = ink.copy(alpha = 0.7f),
-                size = 16,
-                contentDescription = studyLabels.zonosReplay,
                 onSpeak = { if (StudyModeState.focusMode) StudyModeState.focus(focusKey) },
             )
         }

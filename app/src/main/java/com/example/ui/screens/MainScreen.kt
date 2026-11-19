@@ -120,6 +120,7 @@ import com.example.ui.tutorial.LocalTutorial
 import com.example.zonos.ui.LocalZonosTts
 import com.example.zonos.ui.ZonosEngineHost
 import com.example.zonos.ui.ZonosNoticeEffect
+import com.example.zonos.ui.ZonosPlayerSheet
 import com.example.zonos.ui.ZonosSpeechBanner
 import com.example.ui.tutorial.TutorialHost
 import com.example.ui.tutorial.TutorialOverlay
@@ -198,6 +199,9 @@ fun MainScreen(
                     modifier = Modifier.align(Alignment.TopCenter),
                 )
             }
+            // The Zonos player popup (sentence + translation, generate again,
+            // play again, ±5 s, pause, speed) that every Zonos button opens.
+            ZonosPlayerSheet(tts = zonosTts, strings = ttsStrings)
             ZonosNoticeEffect(tts = zonosTts, strings = ttsStrings)
         }
     }

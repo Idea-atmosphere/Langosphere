@@ -22,9 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RecordVoiceOver
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,7 +46,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.ui.components.SentenceStudyLabels
 import com.example.ui.theme.AppStrings
 import com.example.zonos.EngineStatus
 import com.example.zonos.LoadProgress
@@ -68,36 +65,35 @@ import java.util.Locale
 val LocalZonosTts = staticCompositionLocalOf<ZonosTtsController?> { null }
 
 /**
- * The small "read aloud with Zonos" button that sits next to a subtitle
- * cue or a book sentence. [key] identifies the sentence: while it is the
- * one being generated/played the icon becomes a spinner and a tap stops
- * it. Only one sentence is ever generated at a time (the controller
- * stops the previous one), which is the rule for the book reader.
+ * The small Zonos button that sits next to a subtitle cue or a book
+ * sentence. A tap opens the player popup for [key] (and starts the line:
+ * the cached take when there is one, else a fresh generation); the popup
+ * offers generate-again, play-again, ±5 s and the playback speed, and
+ * shows [text] with [translation]. While this key is the one loading /
+ * generating / playing the icon carries a spinner; tapping it then just
+ * brings the popup back (stop lives in the popup). Only one sentence is
+ * ever generated at a time, which is the rule for the book reader.
  */
 @Composable
 fun ZonosSpeakButton(
     key: String,
     text: String,
+    translation: String? = null,
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.primary,
     size: Int = 18,
     contentDescription: String? = null,
-    /** Runs when a tap starts speech (not on stop) — the reader uses it to focus the sentence. */
+    /** Runs on every tap — the reader uses it to focus the sentence. */
     onSpeak: (() -> Unit)? = null,
 ) {
     val tts = LocalZonosTts.current ?: return
     if (text.isBlank()) return
     val playingKey by tts.playingKey.collectAsState()
-    val replaying by tts.replaying.collectAsState()
-    val isThis = playingKey == key && !replaying
+    val isThis = playingKey == key
     IconButton(
         onClick = {
-            if (isThis) {
-                tts.stop()
-            } else {
-                onSpeak?.invoke()
-                tts.speak(key, text)
-            }
+            onSpeak?.invoke()
+            tts.openPlayer(key, text, translation)
         },
         modifier = modifier.size((size + 12).dp),
     ) {
@@ -109,10 +105,10 @@ fun ZonosSpeakButton(
                     color = tint,
                 )
                 Icon(
-                    imageVector = Icons.Filled.Stop,
+                    imageVector = Icons.Filled.RecordVoiceOver,
                     contentDescription = contentDescription,
                     tint = tint,
-                    modifier = Modifier.size((size * 0.55f).dp),
+                    modifier = Modifier.size((size * 0.6f).dp),
                 )
             }
         } else {
@@ -127,106 +123,12 @@ fun ZonosSpeakButton(
 }
 
 /**
- * "Hear it again": plays the take generated earlier for [key] without
- * generating (instant, same reading). Composes nothing until a take for
- * this key exists, so it appears right after the first playback and goes
- * away when the engine page drops it. Same spinner/stop behaviour as
- * [ZonosSpeakButton] while it plays.
- */
-@Composable
-fun ZonosReplayButton(
-    key: String,
-    text: String,
-    modifier: Modifier = Modifier,
-    tint: Color = MaterialTheme.colorScheme.primary,
-    size: Int = 18,
-    contentDescription: String? = null,
-    onSpeak: (() -> Unit)? = null,
-) {
-    val tts = LocalZonosTts.current ?: return
-    if (text.isBlank()) return
-    val takes by tts.takes.collectAsState()
-    if (key !in takes) return
-    val playingKey by tts.playingKey.collectAsState()
-    val replaying by tts.replaying.collectAsState()
-    val isThis = playingKey == key && replaying
-    IconButton(
-        onClick = {
-            if (isThis) {
-                tts.stop()
-            } else {
-                onSpeak?.invoke()
-                tts.replay(key, text)
-            }
-        },
-        modifier = modifier.size((size + 12).dp),
-    ) {
-        if (isThis) {
-            Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(size.dp),
-                    strokeWidth = 2.dp,
-                    color = tint,
-                )
-                Icon(
-                    imageVector = Icons.Filled.Stop,
-                    contentDescription = contentDescription,
-                    tint = tint,
-                    modifier = Modifier.size((size * 0.55f).dp),
-                )
-            }
-        } else {
-            Icon(
-                imageVector = Icons.Filled.PlayArrow,
-                contentDescription = contentDescription,
-                tint = tint,
-                modifier = Modifier.size(size.dp),
-            )
-        }
-    }
-}
-
-/**
- * The pair every reader line gets: generate-and-play, then (once a take
- * exists) play-again. [labels] gives the two content descriptions.
- */
-@Composable
-fun ZonosLineButtons(
-    key: String,
-    text: String,
-    labels: SentenceStudyLabels,
-    modifier: Modifier = Modifier,
-    tint: Color = MaterialTheme.colorScheme.primary,
-    size: Int = 16,
-    onSpeak: (() -> Unit)? = null,
-) {
-    if (LocalZonosTts.current == null || text.isBlank()) return
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        ZonosSpeakButton(
-            key = key,
-            text = text,
-            tint = tint,
-            size = size,
-            contentDescription = labels.zonosSpeak,
-            onSpeak = onSpeak,
-        )
-        ZonosReplayButton(
-            key = key,
-            text = text,
-            tint = tint,
-            size = size,
-            contentDescription = labels.zonosReplay,
-            onSpeak = onSpeak,
-        )
-    }
-}
-
-/**
  * Floating card at the top of the screen while a requested playback is
  * waiting for the model to load (percent + time left) or for the
- * sentence to be generated (elapsed). Hidden while audio plays and when
- * nothing is requested. The X stops the request (the model keeps
- * loading in the background, so the next tap is faster).
+ * sentence to be generated (elapsed) and the player popup is closed
+ * (the popup shows the same progress itself). Hidden while audio plays
+ * and when nothing is requested. The X stops the request (the model
+ * keeps loading in the background, so the next tap is faster).
  */
 @Composable
 fun ZonosSpeechBanner(tts: ZonosTtsController, strings: AppStrings, modifier: Modifier = Modifier) {
@@ -235,7 +137,9 @@ fun ZonosSpeechBanner(tts: ZonosTtsController, strings: AppStrings, modifier: Mo
     val progress by tts.loadProgress.collectAsState()
     val engineState by tts.engine.state.collectAsState()
     val core by tts.coreStatus.collectAsState()
-    val visible = playingKey != null && (phase == SpeechPhase.LOADING_MODEL || phase == SpeechPhase.GENERATING)
+    val player by tts.player.collectAsState()
+    val visible = player == null && playingKey != null &&
+        (phase == SpeechPhase.LOADING_MODEL || phase == SpeechPhase.GENERATING)
 
     // Elapsed time of the generation phase (there is no byte progress for it).
     var generatingSince by remember { mutableLongStateOf(0L) }
