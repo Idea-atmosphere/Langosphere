@@ -39,6 +39,8 @@
     <string name="tutorial_topic_prompts">JSON lesson &amp; prompts</string>
     <string name="tutorial_topic_tts">Text to speech</string>
     <string name="tutorial_topic_tts_desc">The voice that runs on the phone (Zonos3-Mini): the model pack, voices, language and speed, the Voice Studio — and where the voice buttons are.</string>
+    <string name="tutorial_topic_cue">Subtitle card buttons</string>
+    <string name="tutorial_topic_cue_desc">One subtitle card, button by button — the Video and Online tabs use the same card: words, translation, the two voices, replay, loop, pause at the end, Leitner and the lesson badge. Open a video with subtitles first.</string>
     <string name="tutorial_topic_prompts_desc">The Prompts window part by part: level, modes, language pair, chunks, copying the prompt — and how the answer gets into the player.</string>
 
     <!-- Basics -->
@@ -96,8 +98,8 @@
     <string name="tut_video_7_body">Drag this handle up or down to change how tall the video is compared to the subtitle list. The ratio is remembered.</string>
     <string name="tut_video_7_action">Drag the handle up or down.</string>
     <string name="tut_video_8_title">Subtitle cards</string>
-    <string name="tut_video_8_body">Every line is a card: tap a word for the dictionary, the line itself for its lesson, the speaker to hear it, and + to save the sentence to Leitner. The active card follows playback, and tapping a card seeks the video to that line.</string>
-    <string name="tut_video_8_action">Tap a word or a line to try the popups.</string>
+    <string name="tut_video_8_body">Every line of the subtitles is a card. The card being spoken lights up and the list follows playback; tapping a card seeks the video to that line. The next steps go through one card button by button.</string>
+    <string name="tut_video_8_action">Tap a card to jump to its line.</string>
     <string name="tut_video_9_title">Tool cluster</string>
     <string name="tut_video_9_body">The three dots unfold player settings (subtitle display, sync, smart pause, skip amount, audio track), A-B repeat, the subtitle switch, focus mode and fullscreen. A-B repeat: first tap marks the start, second the end, third turns the loop off. Focus mode hides everything except the video and the subtitles.</string>
     <string name="tut_video_9_action">Tap the three dots to unfold the cluster.</string>
@@ -228,4 +230,38 @@
     <string name="tut_tts_7_action">Close it with ✕ or Back when you are done.</string>
     <string name="tut_tts_8_title">Where the voice speaks</string>
     <string name="tut_tts_8_body">Video and Online: the voice button (the talking head, next to the speaker) on every subtitle card reads that line. Reader: every sentence of a book has one. All of them open the player popup — the sentence with its translation, Generate again for a new reading, −5 s / +5 s, play / pause and the speed. Readings are kept, so a sentence you play again starts at once, and closing the popup does not interrupt a reading that is playing.</string>
+
+    <!-- Subtitle card (cue.*) -->
+    <string name="tut_cue_1_title">A subtitle card</string>
+    <string name="tut_cue_1_body">The time stamp at the top says where the line sits in the video; a tap on the card (or on the line) seeks there and plays. The row of small buttons on the other side is this card\'s toolkit — the same on the Video and the Online tab, and on the cards of a JSON lesson.</string>
+    <string name="tut_cue_1_action">Tap the card to jump to its line.</string>
+    <string name="tut_cue_2_title">Words</string>
+    <string name="tut_cue_2_body">Every word is tappable: the video pauses and the dictionary popup opens with the word, its definition and the buttons to hear it or send it to the Leitner box. The line always reads left to right, whatever the app language.</string>
+    <string name="tut_cue_2_action">Tap a word.</string>
+    <string name="tut_cue_3_title">Translation</string>
+    <string name="tut_cue_3_body">The translation line, when the subtitles have one, in the direction of its own script. In challenge mode (player settings) it is blurred: press and hold to peek, tap to keep it open until you tap again.</string>
+    <string name="tut_cue_3_action">Try a tap on it.</string>
+    <string name="tut_cue_4_title">Speaker</string>
+    <string name="tut_cue_4_body">The phone\'s own voice: a short tap reads the line at normal speed, a long press reads it slowly — handy for a line you cannot parse yet.</string>
+    <string name="tut_cue_4_action">Tap it, then try a long press.</string>
+    <string name="tut_cue_5_title">Translate with AI</string>
+    <string name="tut_cue_5_body">Shows up only on a line that has no translation yet: asks the AI of the Assistant tab to translate this one line and puts the answer under it; ✕ stops a translation in progress. Lines that already have a translation hide the button.</string>
+    <string name="tut_cue_6_title">Voice (Zonos)</string>
+    <string name="tut_cue_6_body">The on-device voice from Learning tools ▸ Text to speech. It reads the original line — never the translation — and opens the player popup: the sentence with its translation, Generate again for a new reading, −5 s / +5 s, play / pause and the speed. One line speaks at a time; a spinner marks the line being generated or played.</string>
+    <string name="tut_cue_6_action">Tap it to hear the line.</string>
+    <string name="tut_cue_7_title">Replay</string>
+    <string name="tut_cue_7_body">Plays this line again from its start — one tap per repetition, the rest of the video goes on afterwards.</string>
+    <string name="tut_cue_7_action">Tap it to hear the line once more.</string>
+    <string name="tut_cue_8_title">Loop</string>
+    <string name="tut_cue_8_body">Repeats this line over and over until you tap it again; the button stays lit while the loop is on. For a span of several lines use A-B repeat in the tool cluster instead.</string>
+    <string name="tut_cue_8_action">Tap it to start the loop; tap again to stop.</string>
+    <string name="tut_cue_9_title">Pause at the end</string>
+    <string name="tut_cue_9_body">Arms a stop just before this line ends, so you can read it before the next one arrives. It fires once; the button stays lit on the card, and tapping the card or Replay arms it again. Tap the button again to clear it. The controls under the video have the same stop for the current or previous subtitle.</string>
+    <string name="tut_cue_9_action">Tap it, then play the line.</string>
+    <string name="tut_cue_10_title">+ Leitner</string>
+    <string name="tut_cue_10_body">Saves the whole sentence, with its translation, as a flashcard in the Leitner box; the button then reads In Leitner. It sits on the Online tab\'s cards and on the cards of a JSON lesson — a plain local subtitle has no sentence card; there you send single words to the box from the dictionary popup.</string>
+    <string name="tut_cue_10_action">Tap it to save the sentence.</string>
+    <string name="tut_cue_11_title">Lesson badge</string>
+    <string name="tut_cue_11_body">When a JSON lesson is attached, a badge under the line names its grammar point (or says Grammar note); tapping it pauses the video and opens the line\'s lesson — explanation, grammar and the words.</string>
+    <string name="tut_cue_11_action">Tap the badge to open the lesson.</string>
 </resources>

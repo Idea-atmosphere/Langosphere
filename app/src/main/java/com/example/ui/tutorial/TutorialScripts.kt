@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.R
@@ -72,11 +73,20 @@ enum class TutorialTopic(
      * and where the voice speaks. Also the tail of the Leitner chapter, so
      * the full tour covers it once; listed in the picker like Prompts.
      */
-    TTS(AppTab.LEITNER, R.string.tutorial_topic_tts, R.string.tutorial_topic_tts_desc);
+    TTS(AppTab.LEITNER, R.string.tutorial_topic_tts, R.string.tutorial_topic_tts_desc),
+
+    /**
+     * The subtitle card, button by button. No tab of its own: the Video and
+     * the Online tab use the same card, so the chapter runs on whichever
+     * player is open (the picker says to open a video first). Also played
+     * inside the Video chapter right after the transcript step.
+     */
+    CUE(null, R.string.tutorial_topic_cue, R.string.tutorial_topic_cue_desc);
 
     val icon: ImageVector get() = when (this) {
         PROMPTS -> Icons.Filled.DataObject
         TTS -> Icons.Filled.RecordVoiceOver
+        CUE -> Icons.Filled.Subtitles
         else -> tab?.icon() ?: Icons.Filled.TouchApp
     }
 
@@ -91,7 +101,7 @@ enum class TutorialTopic(
             listOf(BASICS) + tabOrder.map { forTab(it) }
 
         /** What the picker lists one by one: the tour's topics plus the stand-alone chapters. */
-        fun pickerList(tabOrder: List<AppTab>): List<TutorialTopic> = fullTour(tabOrder) + PROMPTS + TTS
+        fun pickerList(tabOrder: List<AppTab>): List<TutorialTopic> = fullTour(tabOrder) + PROMPTS + TTS + CUE
     }
 }
 
@@ -165,6 +175,29 @@ object TutorialScripts {
         promptsStep("prompts.close", R.string.tut_prompts_12_title, R.string.tut_prompts_12_body, R.string.tut_prompts_12_action),
     )
 
+    /**
+     * One subtitle card, part by part. The player registers the `cue.*`
+     * targets on a single card (the active one when it is on the screen,
+     * else the first one on the screen), so the ring moves from button to
+     * button on that card. Buttons a card does not have right now (the AI
+     * translation of a line that already has one, «+ Leitner» on local
+     * subtitles, the lesson badge without a JSON lesson) leave the step as
+     * a plain card.
+     */
+    private val cue = listOf(
+        step("cue.card", R.string.tut_cue_1_title, R.string.tut_cue_1_body, action = R.string.tut_cue_1_action),
+        step("cue.words", R.string.tut_cue_2_title, R.string.tut_cue_2_body, action = R.string.tut_cue_2_action),
+        step("cue.translation", R.string.tut_cue_3_title, R.string.tut_cue_3_body, action = R.string.tut_cue_3_action),
+        step("cue.speaker", R.string.tut_cue_4_title, R.string.tut_cue_4_body, action = R.string.tut_cue_4_action),
+        step("cue.translate", R.string.tut_cue_5_title, R.string.tut_cue_5_body),
+        step("cue.voice", R.string.tut_cue_6_title, R.string.tut_cue_6_body, action = R.string.tut_cue_6_action),
+        step("cue.replay", R.string.tut_cue_7_title, R.string.tut_cue_7_body, action = R.string.tut_cue_7_action),
+        step("cue.loop", R.string.tut_cue_8_title, R.string.tut_cue_8_body, action = R.string.tut_cue_8_action),
+        step("cue.pauseAtEnd", R.string.tut_cue_9_title, R.string.tut_cue_9_body, action = R.string.tut_cue_9_action),
+        step("cue.leitner", R.string.tut_cue_10_title, R.string.tut_cue_10_body, action = R.string.tut_cue_10_action),
+        step("cue.lesson", R.string.tut_cue_11_title, R.string.tut_cue_11_body, action = R.string.tut_cue_11_action),
+    )
+
     private val video = listOf(
         step("video.importHeader", R.string.tut_video_1_title, R.string.tut_video_1_body, action = R.string.tut_video_1_action),
         step("video.mediaTile", R.string.tut_video_2_title, R.string.tut_video_2_body, action = R.string.tut_video_2_action),
@@ -175,6 +208,7 @@ object TutorialScripts {
         step("video.stage", R.string.tut_video_6_title, R.string.tut_video_6_body, action = R.string.tut_video_6_action),
         step("video.splitHandle", R.string.tut_video_7_title, R.string.tut_video_7_body, action = R.string.tut_video_7_action),
         step("video.transcript", R.string.tut_video_8_title, R.string.tut_video_8_body, action = R.string.tut_video_8_action),
+    ) + cue + listOf(
         step("video.toolCluster", R.string.tut_video_9_title, R.string.tut_video_9_body, action = R.string.tut_video_9_action),
     )
 
@@ -240,5 +274,6 @@ object TutorialScripts {
         TutorialTopic.LEITNER -> leitner
         TutorialTopic.PROMPTS -> prompts
         TutorialTopic.TTS -> tts
+        TutorialTopic.CUE -> cue
     }
 }

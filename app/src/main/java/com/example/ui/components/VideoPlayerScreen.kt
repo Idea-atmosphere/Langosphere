@@ -144,6 +144,7 @@ import com.example.ui.components.anime.inkShadow
 import com.example.ui.theme.AnimeColors
 import com.example.ui.theme.isAnimeDesign
 import com.example.ui.theme.isNeobrutalismDesign
+import com.example.ui.tutorial.LocalTutorial
 import com.example.ui.tutorial.tutorialTarget
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -831,6 +832,33 @@ fun VideoPlayerScreen(
     }
     val jsonModeActive = jsonPackage != null && jsonPackage.subtitles.isNotEmpty()
     val isAutoStoppingActive = autoPauseAtTime != null
+
+    // The cue card the interactive tutorial points at (its `cue.*` steps).
+    // The card keeps the ring as long as it is wholly on the screen, so the
+    // spotlight does not hop from card to card while the video plays; once
+    // it scrolls away the active card takes over when it is wholly on the
+    // screen, else the first card that is. Only computed while a tour runs:
+    // reading the list's layout info here recomposes on every scroll.
+    val tutorial = LocalTutorial.current
+    val tutorialCueMemo = remember { intArrayOf(-1) }
+    val tutorialCueIndex: Int = if (!tutorial.isActive) {
+        tutorialCueMemo[0] = -1
+        -1
+    } else {
+        val info = listState.layoutInfo
+        val visible = info.visibleItemsInfo
+        fun whole(index: Int): Boolean = visible.any {
+            it.index == index && it.offset >= info.viewportStartOffset && it.offset + it.size <= info.viewportEndOffset
+        }
+        val active = if (jsonModeActive) activeJsonIndex else activeIndex
+        val picked = when {
+            whole(tutorialCueMemo[0]) -> tutorialCueMemo[0]
+            whole(active) -> active
+            else -> (visible.firstOrNull { whole(it.index) } ?: visible.firstOrNull())?.index ?: -1
+        }
+        tutorialCueMemo[0] = picked
+        picked
+    }
 
     // A revealed line stays revealed only until the next one starts.
     LaunchedEffect(activeIndex, activeJsonIndex) {
@@ -1950,7 +1978,8 @@ fun VideoPlayerScreen(
                                     }
                                 },
                                 studyLabels = studyLabels,
-                                focusKey = "sub-${jsonSub.id ?: cueIndex}"
+                                focusKey = "sub-${jsonSub.id ?: cueIndex}",
+                                tutorialTargets = cueIndex == tutorialCueIndex,
                             )
                         }
                     }
@@ -2049,7 +2078,8 @@ fun VideoPlayerScreen(
                                 translateEnabled = !isTranslatingSingle,
                                 onStopTranslation = onStopTranslation,
                                 studyLabels = studyLabels,
-                                focusKey = if (onlineStudio) "cue-$index" else null
+                                focusKey = if (onlineStudio) "cue-$index" else null,
+                                tutorialTargets = index == tutorialCueIndex,
                             )
                         }
                     }
