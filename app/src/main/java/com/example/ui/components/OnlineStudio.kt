@@ -59,6 +59,7 @@ import com.example.logic.autoTextDirection
 import com.example.ui.theme.AppStrings
 import com.example.ui.theme.LanguageWeightState
 import com.example.ui.theme.appCorner
+import com.example.ui.tutorial.tutorialTarget
 import com.example.zonos.ui.LocalZonosTts
 
 /**
@@ -135,9 +136,16 @@ fun CueCard(
     onStopTranslation: () -> Unit = {},
     studyLabels: SentenceStudyLabels? = null,
     focusKey: String? = null,
+    /**
+     * True for the one card of the list the interactive tutorial points at
+     * (the caller picks it): that card registers its parts as `cue.*`
+     * targets — the card, the words, the translation and every button.
+     */
+    tutorialTargets: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     val radius = OnlineStudioTokens.radiusSmall
+    fun Modifier.cueTarget(name: String): Modifier = if (tutorialTargets) tutorialTarget("cue.$name") else this
     val shape = RoundedCornerShape(radius)
     val haloShape = RoundedCornerShape(radius + 3.dp)
     val progress by animateFloatAsState(
@@ -156,6 +164,7 @@ fun CueCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 9.dp, vertical = 3.dp)
+            .cueTarget("card")
             // Shared focus mode: the other lines dim, a tap re-focuses.
             .focusDim(focusKey)
             .pointerInput(StudyModeState.focusMode, focusKey) {
@@ -188,6 +197,7 @@ fun CueCard(
                     if (studyLabels != null) {
                         SpeakerButton(
                             text = englishText,
+                            modifier = Modifier.cueTarget("speaker"),
                             tint = scheme.onSurfaceVariant,
                             contentDescription = studyLabels.speak,
                             size = 16,
@@ -208,7 +218,8 @@ fun CueCard(
                                 contentDescription = strings.onlineCueTranslateCd,
                                 tint = scheme.tertiary,
                                 enabled = translateEnabled,
-                                onClick = onTranslate
+                                onClick = onTranslate,
+                                modifier = Modifier.cueTarget("translate"),
                             )
                         }
                     }
@@ -224,6 +235,7 @@ fun CueCard(
                             text = englishText,
                             translation = translationText,
                             contentDescription = strings.ttsSpeakLine,
+                            modifier = Modifier.cueTarget("voice"),
                         )
                     }
                     // The three per-cue transport actions stay circular and
@@ -234,7 +246,8 @@ fun CueCard(
                             icon = Icons.Default.Replay,
                             contentDescription = strings.cueReplayCd,
                             tint = scheme.primary,
-                            onClick = onReplay
+                            onClick = onReplay,
+                            modifier = Modifier.cueTarget("replay"),
                         )
                     }
                     if (onToggleLoop != null) {
@@ -243,7 +256,8 @@ fun CueCard(
                             contentDescription = strings.cueLoopCd,
                             tint = if (loopActive) scheme.primary else scheme.onSurfaceVariant,
                             active = loopActive,
-                            onClick = onToggleLoop
+                            onClick = onToggleLoop,
+                            modifier = Modifier.cueTarget("loop"),
                         )
                     }
                     if (onTogglePauseAtEnd != null) {
@@ -252,7 +266,8 @@ fun CueCard(
                             contentDescription = strings.cuePauseAtEndCd,
                             tint = if (pauseAtEndActive) scheme.primary else scheme.onSurfaceVariant,
                             active = pauseAtEndActive,
-                            onClick = onTogglePauseAtEnd
+                            onClick = onTogglePauseAtEnd,
+                            modifier = Modifier.cueTarget("pauseAtEnd"),
                         )
                     }
                     if (onAddToLeitner != null) {
@@ -261,7 +276,8 @@ fun CueCard(
                             contentDescription = strings.onlineCueLeitnerCd,
                             icon = if (leitnerSaved) Icons.Default.Check else null,
                             enabled = !leitnerSaved,
-                            onClick = onAddToLeitner
+                            onClick = onAddToLeitner,
+                            modifier = Modifier.cueTarget("leitner"),
                         )
                     }
                 }
@@ -274,7 +290,7 @@ fun CueCard(
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                     ClickableWordText(
                         text = englishText,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().cueTarget("words"),
                         style = MaterialTheme.typography.bodyLarge.copy(
                             color = enColor,
                             fontFamily = enFont,
@@ -302,13 +318,14 @@ fun CueCard(
                     ),
                     color = faColor,
                     textAlign = TextAlign.Start,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().cueTarget("translation")
                 )
             }
             if (lessonLabel != null && onLesson != null) {
                 Spacer(Modifier.height(8.dp))
                 Surface(
                     onClick = onLesson,
+                    modifier = Modifier.cueTarget("lesson"),
                     shape = RoundedCornerShape(50),
                     color = scheme.tertiary.copy(alpha = 0.14f),
                     contentColor = scheme.tertiary
@@ -344,6 +361,7 @@ private fun CueZonosButton(
     text: String,
     translation: String?,
     contentDescription: String,
+    modifier: Modifier = Modifier,
 ) {
     val tts = LocalZonosTts.current ?: return
     val scheme = MaterialTheme.colorScheme
@@ -351,7 +369,7 @@ private fun CueZonosButton(
     val isThis = playingKey == key
     val tint = if (isThis) scheme.primary else scheme.tertiary
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(30.dp)
             .clip(CircleShape)
             .background(tint.copy(alpha = if (isThis) 0.24f else 0.12f))
@@ -376,9 +394,10 @@ private fun CueIconButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
     active: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(30.dp)
             .clip(CircleShape)
             .background(tint.copy(alpha = if (active) 0.24f else if (enabled) 0.12f else 0.05f))
@@ -397,11 +416,12 @@ private fun CueTextButton(
     onClick: () -> Unit,
     icon: ImageVector? = null,
     enabled: Boolean = true,
+    modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
     val tint = if (enabled) scheme.secondary else scheme.onSurfaceVariant
     Row(
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(50))
             .background(tint.copy(alpha = 0.12f))
             .clickable(enabled = enabled, onClick = onClick)

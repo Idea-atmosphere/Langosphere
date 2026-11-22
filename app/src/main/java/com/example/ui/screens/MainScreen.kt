@@ -125,6 +125,7 @@ import com.example.zonos.ui.ZonosSpeechBanner
 import com.example.ui.tutorial.TutorialHost
 import com.example.ui.tutorial.TutorialOverlay
 import com.example.ui.tutorial.TutorialPickerDialog
+import com.example.ui.tutorial.TutorialTopic
 import com.example.ui.tutorial.rememberTutorialController
 import com.example.ui.tutorial.tutorialTarget
 import kotlinx.coroutines.delay
@@ -1706,7 +1707,15 @@ private fun MainScreenContent(
         isFullScreen = false
         focusMode = false
         viewModel.setReaderFullscreen(false)
-        val tab = tutorial.currentTopic?.tab ?: return@LaunchedEffect
+        val topic = tutorial.currentTopic ?: return@LaunchedEffect
+        // The subtitle-card chapter has no tab of its own: it runs on the
+        // Video or the Online tab, whichever is open, and goes to Video
+        // when neither is.
+        val tab = topic.tab ?: when {
+            topic != TutorialTopic.CUE -> return@LaunchedEffect
+            tabOrder.getOrNull(pagerState.currentPage).let { it == AppTab.VIDEO || it == AppTab.ONLINE } -> return@LaunchedEffect
+            else -> AppTab.VIDEO
+        }
         val index = tabOrder.indexOf(tab)
         if (index >= 0 && pagerState.currentPage != index) {
             pagerState.animateScrollToPage(index)
