@@ -1,23 +1,11 @@
 > 🌐 **خوندن به فارسی:** [فارسی](./docs/README-Fa.md)
 
-<!-- Download card + donate panel: rendered hourly by .github/workflows/downloads-card.yml
-     (scripts/downloads_card.py) onto the `stats` branch; dark/light follows the GitHub theme.
-     Two images because an <img> can carry only one link: the card opens Releases, the panel the donation page. -->
-<p align="center">
-  <a href="https://github.com/Idea-atmosphere/Langosphere/releases"><picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Idea-atmosphere/Langosphere/stats/downloads-en-dark.svg">
-      <img alt="Langosphere download counts" src="https://raw.githubusercontent.com/Idea-atmosphere/Langosphere/stats/downloads-en-light.svg" width="424" height="172">
-    </picture></a>
-  <a href="https://idea-atmosphere.github.io/Nothing/designs/minimal.html"><picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Idea-atmosphere/Langosphere/stats/donate-en-dark.svg">
-      <img alt="Support the project — Gram (TON), Tron (TRX), Ethereum (ETH)" src="https://raw.githubusercontent.com/Idea-atmosphere/Langosphere/stats/donate-en-light.svg" width="212" height="172">
-    </picture></a>
-</p>
 <p align="center">
   <a href="https://github.com/Idea-atmosphere/Langosphere/releases"><img alt="Total downloads" src="https://img.shields.io/github/downloads/Idea-atmosphere/Langosphere/total?style=for-the-badge&logo=android&logoColor=white&label=Downloads&color=3A5AD4"></a>
   <a href="https://github.com/Idea-atmosphere/Langosphere/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Idea-atmosphere/Langosphere?style=for-the-badge&label=Latest&color=7A4FD1"></a>
   <a href="https://github.com/Idea-atmosphere/Langosphere/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/Idea-atmosphere/Langosphere?style=for-the-badge&logo=github&label=Stars&color=2F7D6B"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Idea-atmosphere/Langosphere?style=for-the-badge&color=5B6690"></a>
+  <a href="https://idea-atmosphere.github.io/Nothing/designs/minimal.html"><img alt="Donate — Gram (TON), Tron (TRX), Ethereum (ETH)" src="https://img.shields.io/badge/Donate-TON_%C2%B7_TRX_%C2%B7_ETH-E5397A?style=for-the-badge&logo=githubsponsors&logoColor=white"></a>
 </p>
 
 ---
@@ -137,7 +125,6 @@ To stay updated on the latest updates, report issues, or suggest your ideas, you
 * Special thanks to **mumu-lhl** and the [Ciyue](https://github.com/mumu-lhl/Ciyue) project, whose MDict reader powered the first versions of the dictionary feature. The current reader (`app/src/main/java/com/example/mdict/`) is a Kotlin port of the reference `readmdict.py` logic from [mdict-utils](https://github.com/liuyug/mdict-utils).
 * Speex pronunciation audio is decoded by the vendored [JSpeex](https://jspeex.sourceforge.net/) sources (`app/src/main/java/org/xiph/speex/`, © Wimba S.A. / Xiph.org Foundation, redistributed under the Xiph.org variant of the BSD license — the license text is kept in every file header).
 * Thanks to **0xdolan** for the [AryanpourDictionary](https://github.com/0xdolan/AryanpourDictionary) project.
-* The download card at the top of this page embeds a subset of the [Vazirmatn](https://github.com/rastikerdar/vazirmatn) typeface by Saber Rastikerdar (SIL Open Font License 1.1 — `scripts/fonts/OFL.txt`).
 
 ---
 ## License

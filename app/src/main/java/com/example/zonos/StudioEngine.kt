@@ -153,7 +153,7 @@ try{window.addEventListener('resize',sizeModals);}catch(e){}
          * Export hook: the Studio exports audio via blob: anchor clicks,
          * which a DownloadListener cannot fetch — intercept the click,
          * read the blob, post it back as base64 through the bridge; the
-         * Kotlin side saves it under Download/Langosphere/exports/.
+         * Kotlin side saves it under Download/Langosphere/models/exports/.
          */
         const val STUDIO_EXPORT_HOOK_JS = """
 (function(){try{
