@@ -16,6 +16,8 @@ import java.io.InputStream
  *
  *   /storage/emulated/0/Download/Langosphere/models/
  *     backbone/ zac/ voices/ laci/ companions/ + .pack-manifest.json
+ *     exports/  — what the Studio page exports (ExportSaver), kept in
+ *                 the same tree so the feature owns one folder
  *
  * The learner can either let the app download the pack there, or put the
  * files there by hand (browser download, `hf download`, a copy from

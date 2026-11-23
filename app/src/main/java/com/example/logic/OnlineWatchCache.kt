@@ -52,7 +52,7 @@ import java.util.TreeSet
  *    subtitles «برای استفاده‌های بعدی».
  *
  * WHERE: the app's own folder in Downloads — `Download/Langosphere/online/`
- * (next to `models/` and `exports/`), with a `.nomedia` file so the gallery
+ * (next to `models/`), with a `.nomedia` file so the gallery
  * never lists the chunks. Android 11+ lets the app create and use its own
  * files there through plain file paths without any storage permission;
  * where that is not possible (Android 10 and older, or an unmounted

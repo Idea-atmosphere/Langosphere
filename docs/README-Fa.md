@@ -2,24 +2,12 @@
 
 > 🌐 **Read in English:** [English](../README.md)
 
-<!-- کارت دانلود و پنل حمایت: workflow «Downloads card» (scripts/downloads_card.py) هر ساعت آن‌ها را روی شاخهٔ stats
-     می‌سازد؛ نسخهٔ تیره/روشن از تم GitHub پیروی می‌کند. دو تصویر جدا هستند چون هر <img> فقط یک لینک می‌گیرد:
-     کارت به صفحهٔ Releases و پنل به صفحهٔ حمایت می‌رود. -->
-<p align="center">
-  <a href="https://github.com/Idea-atmosphere/Langosphere/releases"><picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Idea-atmosphere/Langosphere/stats/downloads-fa-dark.svg">
-      <img alt="شمار دانلودهای Langosphere" src="https://raw.githubusercontent.com/Idea-atmosphere/Langosphere/stats/downloads-fa-light.svg" width="424" height="172">
-    </picture></a>
-  <a href="https://idea-atmosphere.github.io/Nothing/designs/minimal.html"><picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Idea-atmosphere/Langosphere/stats/donate-fa-dark.svg">
-      <img alt="حمایت از پروژه — Gram (TON)، Tron (TRX)، Ethereum (ETH)" src="https://raw.githubusercontent.com/Idea-atmosphere/Langosphere/stats/donate-fa-light.svg" width="212" height="172">
-    </picture></a>
-</p>
 <p align="center">
   <a href="https://github.com/Idea-atmosphere/Langosphere/releases"><img alt="Total downloads" src="https://img.shields.io/github/downloads/Idea-atmosphere/Langosphere/total?style=for-the-badge&logo=android&logoColor=white&label=Downloads&color=3A5AD4"></a>
   <a href="https://github.com/Idea-atmosphere/Langosphere/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Idea-atmosphere/Langosphere?style=for-the-badge&label=Latest&color=7A4FD1"></a>
   <a href="https://github.com/Idea-atmosphere/Langosphere/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/Idea-atmosphere/Langosphere?style=for-the-badge&logo=github&label=Stars&color=2F7D6B"></a>
   <a href="../LICENSE"><img alt="License" src="https://img.shields.io/github/license/Idea-atmosphere/Langosphere?style=for-the-badge&color=5B6690"></a>
+  <a href="https://idea-atmosphere.github.io/Nothing/designs/minimal.html"><img alt="Donate — Gram (TON), Tron (TRX), Ethereum (ETH)" src="https://img.shields.io/badge/Donate-TON_%C2%B7_TRX_%C2%B7_ETH-E5397A?style=for-the-badge&logo=githubsponsors&logoColor=white"></a>
 </p>
 
 ---
@@ -138,7 +126,6 @@
 
 * تشکر ویژه از **mumu-lhl** و پروژه [Ciyue](https://github.com/mumu-lhl/Ciyue) که اگر نبود، خواندن فایل `Aryanpour Dictionary.mdx` بسیار سخت‌تر می‌شد.
 * تشکر از **0xdolan** بابت پروژه [AryanpourDictionary](https://github.com/0xdolan/AryanpourDictionary).
-* کارت دانلود بالای همین صفحه، زیرمجموعه‌ای از قلم [وزیرمتن](https://github.com/rastikerdar/vazirmatn) اثر صابر راستی‌کردار را در خود دارد (مجوز SIL Open Font License 1.1 — `scripts/fonts/OFL.txt`).
 
 ---
 ## لایسنس
