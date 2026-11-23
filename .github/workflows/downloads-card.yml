@@ -1,0 +1,80 @@
+# Renders the download card and donate panel that the READMEs embed and
+# publishes them on the orphan `stats` branch
+# (raw.githubusercontent.com/<repo>/stats/...).
+#
+#   scripts/downloads_card.py  ->  downloads-{en,fa}-{dark,light}.svg
+#                                  donate-{en,fa}-{dark,light}.svg
+#                                  downloads.json
+#
+# Runs once an hour (GitHub has no "asset downloaded" event, so the count can
+# only be polled), when a release is published, when the generator itself
+# changes on main, and on demand from the Actions tab. It never runs on
+# pull-request code, needs no secret besides the automatic GITHUB_TOKEN (used
+# read-only against the API and to push the `stats` branch), and touches no
+# branch other than `stats`.
+name: Downloads card
+
+on:
+  schedule:
+    - cron: "17 * * * *"          # hourly, at :17
+  release:
+    types: [published]
+  push:
+    branches: [main]
+    paths:
+      - "scripts/downloads_card.py"
+      - "scripts/fonts/**"
+      - ".github/workflows/downloads-card.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write                  # push to the stats branch
+
+concurrency:
+  group: downloads-card
+  cancel-in-progress: true
+
+jobs:
+  render:
+    # The cron must not fire in forks; a fork can still run it by hand.
+    if: github.repository == 'Idea-atmosphere/Langosphere' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the generator
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Render the images
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # read-only here: it only raises the API rate limit
+        run: python3 scripts/downloads_card.py --repo "$GITHUB_REPOSITORY" --out "$RUNNER_TEMP/stats"
+
+      - name: Publish to the stats branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Fresh single-commit orphan branch every time: nothing to merge, nothing to grow.
+          git switch --orphan stats
+          git clean -fdxq                     # only the generated files go on this branch
+          cp "$RUNNER_TEMP"/stats/* .
+          cat > README.md <<'EOF'
+          # stats
+
+          Generated files — do not edit by hand.
+
+          `.github/workflows/downloads-card.yml` on `main` renders them with
+          `scripts/downloads_card.py` and force-pushes this single-commit branch
+          every hour and after every release. The project README embeds
+          `downloads-en-*.svg` and `donate-en-*.svg` from here (dark/light picked
+          by the viewer's theme), the Persian README the `-fa-` files;
+          `downloads.json` is the API snapshot they were drawn from.
+          EOF
+          git add -A
+          git -c commit.gpgsign=false commit -q -m "stats: download card for $(date -u +%Y-%m-%dT%H:%MZ)"
+          AUTH="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH" push --force origin HEAD:refs/heads/stats
