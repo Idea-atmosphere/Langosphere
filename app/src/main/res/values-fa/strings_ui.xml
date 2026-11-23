@@ -575,9 +575,9 @@
     <string name="update_link_copied_toast">لینک دانلود کپی شد</string>
     <string name="update_uptodate_toast">شما همین حالا آخرین نسخه را دارید</string>
     <string name="update_check_failed_toast">بررسی به‌روزرسانی ناموفق بود: %1$s</string>
-    <string name="bitcoin_title">بیت‌کوین (Bitcoin)</string>
-    <string name="tether_title">تتر (USDT)</string>
-    <string name="ton_title">تون (TON)</string>
+    <string name="ton_title">گرام (TON)</string>
+    <string name="tron_title">ترون (TRX)</string>
+    <string name="ethereum_title">اتریوم (ETH)</string>
     <!-- Phase 2: study -->
     <string name="study_playback_speed">سرعت پخش</string>
     <string name="study_loop_this_line">تکرار همین جمله</string>

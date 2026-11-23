@@ -1,0 +1,29 @@
+<!--
+    Ethereum (ETH) diamond for the donate popup / "درباره" section.
+    Source: ethereum.org/assets — eth-diamond-purple.svg (#8A92B2 / #62688F / #454A75)
+    Static local vector data only; no external references or network calls.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="1920"
+    android:viewportHeight="1920">
+  <path
+      android:fillColor="#FF8A92B2"
+      android:pathData="M959.8,80.7L420.1,976.3L959.8,731Z"/>
+  <path
+      android:fillColor="#FF62688F"
+      android:pathData="M959.8,731L420.1,976.3L959.8,1295.4Z"/>
+  <path
+      android:fillColor="#FF62688F"
+      android:pathData="M1499.6,976.3L959.8,80.7L959.8,731Z"/>
+  <path
+      android:fillColor="#FF454A75"
+      android:pathData="M959.8,1295.4L1499.6,976.3L959.8,731Z"/>
+  <path
+      android:fillColor="#FF8A92B2"
+      android:pathData="M420.1,1078.7L959.8,1839.3L959.8,1397.6Z"/>
+  <path
+      android:fillColor="#FF62688F"
+      android:pathData="M959.8,1397.6L959.8,1839.3L1499.9,1078.7Z"/>
+</vector>

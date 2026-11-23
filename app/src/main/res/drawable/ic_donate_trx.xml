@@ -1,0 +1,14 @@
+<!--
+    TRON (TRX) glyph for the donate popup / "درباره" section.
+    Source: tron.network — favicon.svg (the TRON mark, #EA0029), viewBox moved to the origin
+    Static local vector data only; no external references or network calls.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="2094"
+    android:viewportHeight="2094">
+  <path
+      android:fillColor="#FFEA0029"
+      android:pathData="M1556.58,212.896L41.913,0L887.89,2094L2054,601.49L1556.58,212.896ZM1771.99,574.18L1279.71,679.51L1535.74,389.649L1771.92,574.18L1771.99,574.18ZM1375.74,341.042L1059.76,698.77L432.156,208.477L1375.74,341.108L1375.74,341.042ZM873.25,1651.79L338.569,328.313L988.01,835.69L873.31,1651.79L873.25,1651.79ZM1023.88,1672.89L1137.39,865.43L1758.6,732.54L1023.95,1672.89L1023.88,1672.89Z"/>
+</vector>
