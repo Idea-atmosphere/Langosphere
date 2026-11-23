@@ -841,9 +841,9 @@ class AppStrings(
     fun updateCheckFailedToast(detail: String) =
         res.getString(R.string.update_check_failed_toast, detail)
 
-    val bitcoinTitle = res.getString(R.string.bitcoin_title)
-    val tetherTitle = res.getString(R.string.tether_title)
     val tonTitle = res.getString(R.string.ton_title)
+    val tronTitle = res.getString(R.string.tron_title)
+    val ethereumTitle = res.getString(R.string.ethereum_title)
 
     // ── Phase 2: study ──
     val studyPlaybackSpeed = res.getString(R.string.study_playback_speed)

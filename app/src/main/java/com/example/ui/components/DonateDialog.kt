@@ -52,12 +52,11 @@ import androidx.compose.material3.HorizontalDivider
 /**
  * Donate popup (shown on every app launch, unless dismissed permanently) and
  * the "About" dialog (reachable from the top bar menu). Both share the same
- * donate list (support link + Bitcoin/Tether/TON addresses) and are fully
+ * donate list (support link + TON / Tron / Ethereum addresses) and are fully
  * localized via [AppStrings] so they follow the user's chosen app language.
  *
- * The crypto rows use vector drawables (ic_donate_btc / ic_donate_usdt /
- * ic_donate_ton) with a distinct glyph per currency; update the addresses in
- * DonateInfo.kt with your real wallet addresses.
+ * The crypto rows use the official vector marks (ic_donate_ton /
+ * ic_donate_trx / ic_donate_eth); the addresses live in DonateInfo.kt.
  */
 
 private data class DonateEntry(
@@ -67,7 +66,14 @@ private data class DonateEntry(
     val isLink: Boolean,
     val backgroundColor: Color,
     val contentColor: Color,
-    val drawableRes: Int
+    val drawableRes: Int,
+    /**
+     * The tile behind the picture. Null = the content colour at 15 %, which
+     * suits a mark that brings its own disc (TON); a mark without one (the
+     * TRON glyph, the ETH diamond) sits on a white tile instead so it keeps
+     * its brand colour on the coloured row.
+     */
+    val iconTile: Color? = null,
 )
 
 private fun donateEntries(strings: AppStrings): List<DonateEntry> = listOf(
@@ -81,24 +87,6 @@ private fun donateEntries(strings: AppStrings): List<DonateEntry> = listOf(
         drawableRes = R.drawable.ic_donate_link
     ),
     DonateEntry(
-        title = strings.bitcoinTitle,
-        subtitle = DonateInfo.BTC_ADDRESS,
-        actionValue = DonateInfo.BTC_ADDRESS,
-        isLink = false,
-        backgroundColor = Color(0xFFE8A64A),
-        contentColor = Color(0xFF2B1A00),
-        drawableRes = R.drawable.ic_donate_btc
-    ),
-    DonateEntry(
-        title = strings.tetherTitle,
-        subtitle = DonateInfo.USDT_ADDRESS,
-        actionValue = DonateInfo.USDT_ADDRESS,
-        isLink = false,
-        backgroundColor = Color(0xFF4FA08D),
-        contentColor = Color(0xFF04211B),
-        drawableRes = R.drawable.ic_donate_usdt
-    ),
-    DonateEntry(
         title = strings.tonTitle,
         subtitle = DonateInfo.TON_ADDRESS,
         actionValue = DonateInfo.TON_ADDRESS,
@@ -106,6 +94,27 @@ private fun donateEntries(strings: AppStrings): List<DonateEntry> = listOf(
         backgroundColor = Color(0xFF3B92E6),
         contentColor = Color(0xFF001A33),
         drawableRes = R.drawable.ic_donate_ton
+    ),
+    DonateEntry(
+        title = strings.tronTitle,
+        subtitle = DonateInfo.TRX_ADDRESS,
+        actionValue = DonateInfo.TRX_ADDRESS,
+        isLink = false,
+        // TRON Red (PANTONE 185C) from the TRON DAO brand kit.
+        backgroundColor = Color(0xFFDC062B),
+        contentColor = Color.White,
+        drawableRes = R.drawable.ic_donate_trx,
+        iconTile = Color.White,
+    ),
+    DonateEntry(
+        title = strings.ethereumTitle,
+        subtitle = DonateInfo.ETH_ADDRESS,
+        actionValue = DonateInfo.ETH_ADDRESS,
+        isLink = false,
+        backgroundColor = Color(0xFF7F93EE),
+        contentColor = Color(0xFF0B1240),
+        drawableRes = R.drawable.ic_donate_eth,
+        iconTile = Color.White,
     )
 )
 
@@ -158,7 +167,7 @@ private fun DonateRow(entry: DonateEntry, strings: AppStrings) {
             modifier = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(entry.contentColor.copy(alpha = 0.15f)),
+                .background(entry.iconTile ?: entry.contentColor.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
             Image(

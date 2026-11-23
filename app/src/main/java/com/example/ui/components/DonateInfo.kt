@@ -1,53 +1,45 @@
 package com.example.ui.components
 
 /**
- * Placeholder donation info for the "donate popup" and the "درباره" (About)
- * section (version 1.0.5).
+ * Donation info for the "donate popup" and the "درباره" (About) section.
  *
  * ── WHERE THIS FILE IS ──
  *   app/src/main/java/com/example/ui/components/DonateInfo.kt
  *
  * ── THE TOP "SUPPORT LINK" ROW ──
  *   The very first row in the popup / "درباره" section is a link to a
- *   donation / crowdfunding page (similar in style to a Boosty page, just
- *   pointing at whatever other website you choose). Replace
- *   SUPPORT_LINK_TITLE with that site/page's name and SUPPORT_LINK_URL with
- *   its real address. Tapping that row opens SUPPORT_LINK_URL in the
- *   device's browser.
+ *   donation page. SUPPORT_LINK_TITLE is the site/page name shown on the
+ *   row and SUPPORT_LINK_URL its address; tapping the row opens the URL in
+ *   the device's browser.
  *
  * ── THE CRYPTO ADDRESS ROWS ──
- *   1. Replace BTC_ADDRESS below with your real Bitcoin address.
- *   2. Replace USDT_ADDRESS with your real Tether address. USDT exists on
- *      several networks (TRC20, ERC20, BEP20, ...) — keep the network name
- *      in the string (e.g. "T...xyz (TRC20)") so users send on the right
- *      one.
- *   3. Replace TON_ADDRESS with your real TON wallet address.
- *   Tapping any of these rows copies that address to the clipboard.
+ *   One row per wallet, in this order: TON, Tron (TRX), Ethereum (ETH).
+ *   Tapping a row copies that address to the clipboard. To change an
+ *   address, edit the constant below, save and rebuild — both the popup
+ *   (shown on every launch until dismissed for good) and the "درباره"
+ *   section read straight from these constants.
  *
- *   Save the file and rebuild the app — both the popup (shown on every
- *   launch) and the "درباره" section in the top-bar menu read directly
- *   from these constants, so nothing else needs to change.
- *
- * ── WHERE TO PUT YOUR OWN PICTURES ──
- *   The small icons are separate files in app/src/main/res/drawable:
- *     ic_donate_link.xml  (support-link picture placeholder)
- *     ic_donate_btc.xml   (Bitcoin picture placeholder)
- *     ic_donate_usdt.xml  (Tether picture placeholder)
- *     ic_donate_ton.xml   (TON picture placeholder)
- *   Each of those files has step-by-step instructions at the top for
- *   swapping in your own real picture (drag your .png/.jpg into the
- *   drawable folder, then update the matching "drawableRes" line in
- *   DonateDialog.kt to point at your new file).
- *
- * These are just placeholder strings; they are not a real link or real
- * wallet addresses.
+ * ── THE PICTURES ──
+ *   The small icons are vector drawables in app/src/main/res/drawable:
+ *     ic_donate_link.xml  (support-link picture)
+ *     ic_donate_ton.xml   (TON symbol — ton.org brand assets)
+ *     ic_donate_trx.xml   (TRON mark — tron.network)
+ *     ic_donate_eth.xml   (ETH diamond, purple — ethereum.org/assets)
+ *   The row titles come from strings_ui.xml (ton_title / tron_title /
+ *   ethereum_title) so they follow the app language; the row colours and
+ *   the drawable of each row are set in DonateDialog.kt (donateEntries).
  */
 object DonateInfo {
     // Opened in the browser when the user taps the top row.
     const val SUPPORT_LINK_TITLE: String = "دارمت"
     const val SUPPORT_LINK_URL: String = "https://daramet.com/Idea_atmosphere"
 
-    const val BTC_ADDRESS: String = "Soon or Never"
-    const val USDT_ADDRESS: String = "Soon or Never"
-    const val TON_ADDRESS: String = "Soon or Never"
+    /** TON wallet (The Open Network). */
+    const val TON_ADDRESS: String = "UQDivGkSK4EpCBz3Vzs2fDqH8P4Kz2jr9XugYpeqzPrHaHUP"
+
+    /** Tron wallet (TRX, TRC20 network). */
+    const val TRX_ADDRESS: String = "TCT4KvunT4vuSZrk9cqQCASj1uff4zpiJV"
+
+    /** Ethereum wallet (ETH, ERC20 network). */
+    const val ETH_ADDRESS: String = "0x272c9eE3b77da2619cA374f771E867268021c756"
 }

@@ -575,9 +575,9 @@
     <string name="update_link_copied_toast">Download link copied</string>
     <string name="update_uptodate_toast">You already have the latest version</string>
     <string name="update_check_failed_toast">Update check failed: %1$s</string>
-    <string name="bitcoin_title">Bitcoin</string>
-    <string name="tether_title">Tether (USDT)</string>
-    <string name="ton_title">TON</string>
+    <string name="ton_title">Gram (TON)</string>
+    <string name="tron_title">Tron (TRX)</string>
+    <string name="ethereum_title">Ethereum (ETH)</string>
     <!-- Phase 2: study -->
     <string name="study_playback_speed">Playback speed</string>
     <string name="study_loop_this_line">Loop this line</string>
