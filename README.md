@@ -49,10 +49,10 @@ Implemented, partially completed, and pending features that have not been added 
 | Offline quiz from imported JSON lessons | ✅ Added (beta) |
 | Five app designs, colors, fonts and tab layout | ✅ Added |
 | Reading dictionary files (MDict `.mdx`/`.mdd` and .db) | ✅ Added |
+| TTS (text-to-speech, offline Zonos voices) | ✅ Added |
 | Smart assistant | ⚠️ In progress (Partial) |
 | Offline OCR | ❌ Not added yet |
 | Offline translator | ❌ Not added yet |
-| TTS (text-to-speech) | ❌ Not added yet |
 | Shadowing mode (repeat along with the original audio) | ❌ Not added yet |
 | Voice recording and comparison with native pronunciation | ❌ Not added yet |
 | Dictation (listening exercise) | ❌ Not added yet |
