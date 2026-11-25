@@ -203,7 +203,7 @@ public class VQ {
             } else {
                 sign = 0;
             }
-            dist += .5 * E[i];
+            dist = (float) (dist + .5 * E[i]);
             if (i < N || dist < best_dist[N - 1]) {
                 for (k = N - 1; (k >= 1) && (k > used || dist < best_dist[k - 1]); k--) {
                     best_dist[k] = best_dist[k - 1];

@@ -473,7 +473,7 @@ public class NbEncoder
                     bitrate = getBitRate();
                     abr_drift += (bitrate - abr_enabled);
                     abr_drift2 = .95f * abr_drift2 + .05f * (bitrate - abr_enabled);
-                    abr_count += 1.0;
+                    abr_count = (float) (abr_count + 1.0);
                 }
 
             } else {
