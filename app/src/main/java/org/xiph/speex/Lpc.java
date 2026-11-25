@@ -135,7 +135,7 @@ public class Lpc {
             }
             if ((i % 2) != 0)
                 lpc[j] += lpc[j] * r;
-            error *= 1.0 - r * r;
+            error = (float) (error * (1.0 - r * r));
         }
         return error;
     }

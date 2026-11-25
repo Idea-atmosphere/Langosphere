@@ -364,7 +364,7 @@ public class SbDecoder
     /* Final signal synthesis from excitation */
         if (!dtx) {
             for (i = 0; i < frameSize; i++)
-                excBuf[excIdx + i] *= .9;
+                excBuf[excIdx + i] = (float) (excBuf[excIdx + i] * .9);
         }
         for (i = 0; i < frameSize; i++)
             high[i] = excBuf[excIdx + i];

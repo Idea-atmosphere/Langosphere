@@ -457,7 +457,7 @@ public class NbDecoder
                     innov2[i] = 0;
                 submodes[submodeID].innovation.unquant(innov2, 0, subframeSize, bits);
                 for (i = 0; i < subframeSize; i++)
-                    innov2[i] *= ener * (1 / 2.2);
+                    innov2[i] = (float) (innov2[i] * (ener * (1 / 2.2)));
                 for (i = 0; i < subframeSize; i++)
                     excBuf[extIdx + i] += innov2[i];
             }
